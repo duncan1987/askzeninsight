@@ -9,7 +9,10 @@ export const USAGE_LIMITS = {
  * Get user's usage limit based on subscription status
  */
 export async function getUserUsageLimit(userId: string): Promise<number> {
-  const supabase = createClient()
+  const supabase = await createClient()
+  if (!supabase) {
+    return USAGE_LIMITS.FREE_DAILY
+  }
 
   // Check if user has active subscription
   const { data: subscription } = await supabase
@@ -36,7 +39,10 @@ export async function checkUsageLimit(
   // Count messages in last 24 hours
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
-  const supabase = createClient()
+  const supabase = await createClient()
+  if (!supabase) {
+    return { canProceed: true, limit, remaining: limit }
+  }
 
   const { count } = await supabase
     .from('usage_records')
@@ -60,7 +66,15 @@ export async function getUsageStats(userId?: string) {
 
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
-  const supabase = createClient()
+  const supabase = await createClient()
+  if (!supabase) {
+    return {
+      used: 0,
+      limit,
+      remaining: limit,
+      percentage: 0,
+    }
+  }
 
   const { count } = await supabase
     .from('usage_records')
@@ -88,7 +102,10 @@ export async function recordUsage(
   userId: string | undefined,
   messageType: 'user' | 'assistant'
 ) {
-  const supabase = createClient()
+  const supabase = await createClient()
+  if (!supabase) {
+    return
+  }
 
   await supabase.from('usage_records').insert({
     user_id: userId || null,

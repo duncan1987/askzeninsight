@@ -3,8 +3,10 @@ import { getUsageStats } from '@/lib/usage-limits'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createClient()
+  const { data: { user } } = supabase
+    ? await supabase.auth.getUser()
+    : { data: { user: null as any } }
 
   const stats = await getUsageStats(user?.id)
 

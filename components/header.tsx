@@ -7,8 +7,17 @@ import { SignInButton } from "@/components/auth/sign-in-button"
 import { SubscriptionButton } from "@/components/auth/subscription-button"
 
 export async function Header() {
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  let session = null
+
+  try {
+    const supabase = await createClient()
+    if (supabase) {
+      const result = await supabase.auth.getSession()
+      session = result.data.session
+    }
+  } catch (error) {
+    console.error('Error getting session:', error)
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

@@ -1,6 +1,6 @@
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyCreemWebhook } from '@/lib/creem'
 
 export async function POST(req: Request) {
@@ -17,7 +17,13 @@ export async function POST(req: Request) {
     }
 
     const event = JSON.parse(body)
-    const supabase = createClient()
+    const supabase = createAdminClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Supabase is not configured' },
+        { status: 500 }
+      )
+    }
 
     // Handle different event types
     switch (event.type) {
@@ -26,7 +32,7 @@ export async function POST(req: Request) {
         const { user_id, user_email, subscription_id, status } = event.data
 
         // Create or update subscription in database
-        await supabase
+        const { error } = await supabase
           .from('subscriptions')
           .upsert({
             user_id: user_id,
@@ -37,6 +43,7 @@ export async function POST(req: Request) {
             ).toISOString(),
           })
 
+        if (error) throw error
         break
       }
 
@@ -44,13 +51,14 @@ export async function POST(req: Request) {
       case 'subscription.expired': {
         const { subscription_id } = event.data
 
-        await supabase
+        const { error } = await supabase
           .from('subscriptions')
           .update({
             status: 'cancelled',
           })
           .eq('creem_subscription_id', subscription_id)
 
+        if (error) throw error
         break
       }
 
@@ -58,13 +66,14 @@ export async function POST(req: Request) {
         const { user_id } = event.data
 
         // Update subscription status to past_due
-        await supabase
+        const { error } = await supabase
           .from('subscriptions')
           .update({
             status: 'past_due',
           })
           .eq('user_id', user_id)
 
+        if (error) throw error
         break
       }
     }

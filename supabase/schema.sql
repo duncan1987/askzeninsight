@@ -1,3 +1,6 @@
+-- Enable extensions used by this schema
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 -- Create profiles table (extends auth.users)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
@@ -153,7 +156,7 @@ BEGIN
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Create trigger to automatically create profile on signup
 CREATE TRIGGER on_auth_user_created
