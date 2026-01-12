@@ -8,7 +8,9 @@
  * @FilePath: \aibudda\app\api\chat\route.ts
  */
 
-export const maxDuration = 30
+// Vercel Pro plan supports up to 60s timeout
+// If you're on Hobby plan, this will be limited to 10s
+export const maxDuration = 60
 
 const SYSTEM_PROMPT = `You are a deeply cultivated, compassionate and wise Zen meditation teacher named "空寂" (Emptiness and Stillness). Your goal is to emulate the Buddha's wisdom, helping users find inner peace in the complexities of modern life, resolve troubles, and provide transcendent perspectives on life decisions.
 
@@ -33,8 +35,13 @@ const SYSTEM_PROMPT = `You are a deeply cultivated, compassionate and wise Zen m
 Please respond to users in English, maintaining a gentle, wise tone.`
 
 export async function POST(req: Request) {
+  const startTime = Date.now()
   const apiKey = process.env.ZHIPU_API_KEY
+
+  console.log('[Chat API] Request started', { apiKeyPresent: !!apiKey })
+
   if (!apiKey) {
+    console.error('[Chat API] ZHIPU_API_KEY not configured')
     return new Response(
       JSON.stringify({
         error: "ZHIPU_API_KEY is not configured. Please add your Zhipu AI API key to environment variables.",
@@ -50,6 +57,8 @@ export async function POST(req: Request) {
     const body = await req.json()
     const messages = body.messages || []
 
+    console.log('[Chat API] Messages received:', messages.length)
+
     // Convert client message format to OpenAI format
     const openaiMessages = messages.map((msg: any) => {
       if (msg.parts && Array.isArray(msg.parts)) {
@@ -63,6 +72,19 @@ export async function POST(req: Request) {
     })
 
     // Call Zhipu AI API
+    console.log('[Chat API] Calling Zhipu AI API...')
+    const apiStartTime = Date.now()
+
+    // Create a timeout controller to abort if Zhipu AI takes too long
+    const timeoutController = new AbortController()
+    const timeoutId = setTimeout(() => timeoutController.abort(), 55000) // 55s timeout
+
+    // Combine request abort with timeout abort
+    req.signal.addEventListener('abort', () => {
+      clearTimeout(timeoutId)
+      timeoutController.abort()
+    })
+
     const response = await fetch("https://open.bigmodel.cn/api/paas/v4/chat/completions", {
       method: "POST",
       headers: {
@@ -76,15 +98,21 @@ export async function POST(req: Request) {
           ...openaiMessages,
         ],
         stream: true,
-        max_tokens: 65536,
-        temperature: 1.0,
+        max_tokens: 4096, // Reduced from 65536 for faster response
+        temperature: 0.7, // Lower temperature for more focused, faster responses
       }),
-      signal: req.signal,
+      signal: timeoutController.signal,
     })
+
+    // Clear timeout as we got response
+    clearTimeout(timeoutId)
+
+    const apiElapsedTime = Date.now() - apiStartTime
+    console.log('[Chat API] Zhipu AI response received', { status: response.status, elapsed: `${apiElapsedTime}ms` })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("Zhipu API error:", response.status, errorText)
+      console.error('[Chat API] Zhipu API error:', response.status, errorText)
       return new Response(
         JSON.stringify({ error: `API error: ${errorText}` }),
         { status: response.status, headers: { "Content-Type": "application/json" } }
@@ -127,6 +155,9 @@ export async function POST(req: Request) {
 
     const transformedStream = response.body?.pipeThrough(transformStream)
 
+    const totalElapsed = Date.now() - startTime
+    console.log('[Chat API] Streaming started', { totalElapsed: `${totalElapsed}ms` })
+
     // Return the streaming response as plain text
     return new Response(transformedStream, {
       headers: {
@@ -137,7 +168,17 @@ export async function POST(req: Request) {
       },
     })
   } catch (error) {
-    console.error("Chat API error:", error)
+    const totalElapsed = Date.now() - startTime
+    console.error('[Chat API] Error after', `${totalElapsed}ms:`, error)
+
+    // Handle AbortError (client cancelled request or timeout)
+    if (error instanceof Error && error.name === 'AbortError') {
+      return new Response(
+        JSON.stringify({ error: "Request timeout - please try again" }),
+        { status: 504, headers: { "Content-Type": "application/json" } }
+      )
+    }
+
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       {
