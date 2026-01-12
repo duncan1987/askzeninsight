@@ -2,6 +2,9 @@ import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { PricingCard } from '@/components/pricing-card'
 
+// Force dynamic rendering because Header uses cookies for authentication
+export const dynamic = 'force-dynamic'
+
 export default function PricingPage() {
   return (
     <div className="min-h-screen">
