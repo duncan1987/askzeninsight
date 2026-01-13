@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is "Ask Priest AI" - a Next.js 16 application providing AI-powered spiritual guidance based on Buddhist and Zen philosophy. The AI, named "空寂" (Emptiness and Stillness), acts as a meditation teacher offering thoughtful, non-judgmental conversations.
+This is "Ask Zen Insight" - a Next.js 16 application providing AI-powered spiritual guidance based on Buddhist and Zen philosophy. The AI, named "koji" (Emptiness and Stillness), acts as a meditation teacher offering thoughtful, non-judgmental conversations.
 
 ## Development Commands
 
@@ -36,7 +36,7 @@ For Windows environments where Node.js is not in PATH, use `start-dev.bat` or:
 - **Language:** TypeScript 5.9.3 with strict mode
 - **Styling:** Tailwind CSS v4 with OKLCH color space
 - **AI SDK:** Vercel AI SDK 6.0.7 (`@ai-sdk/react`, `ai`)
-- **Model:** Zhipu AI's GLM-4-Flash
+- **Model:** Zhipu AI's GLM-4.7
 - **UI Components:** Radix UI primitives with custom styling
 - **Forms:** React Hook Form with Zod validation
 - **Package Manager:** pnpm
@@ -56,7 +56,7 @@ app/
 
 ### Key Files
 
-**`app/api/chat/route.ts`**: Route handler that streams responses from Zhipu AI's GLM-4-Flash model. Uses the Vercel AI SDK's `streamText()` with a custom system prompt defining the AI's persona as a Zen meditation teacher.
+**`app/api/chat/route.ts`**: Route handler that streams responses from Zhipu AI's GLM-4.7 model. Uses the Vercel AI SDK's `streamText()` with a custom system prompt defining the AI's persona as a Zen meditation teacher.
 
 **`components/chat-interface.tsx`**: Client component using `useChat` hook from `@ai-sdk/react`. Manages conversation state, message rendering, and streaming indicators. Initial welcome message sets the spiritual tone.
 
@@ -72,7 +72,7 @@ The chat system uses a streaming architecture:
 2. **Server** (`api/chat/route.ts`): Converts UI messages to model messages, adds system prompt, calls `streamText()` with Zhipu AI
 3. **Streaming**: Real-time response streaming with typing indicators and error handling
 
-**System Prompt**: The AI is configured as "空寂" - gentle, firm, minimal, using Buddhist/Zen metaphors (water, clouds, mirrors, moon). Non-judgmental, heuristic dialogue approach. Responses in English.
+**System Prompt**: The AI is configured as "koji" - gentle, firm, minimal, using Buddhist/Zen metaphors (water, clouds, mirrors, moon). Non-judgmental, heuristic dialogue approach. Responses in English.
 
 ### Styling System
 

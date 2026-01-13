@@ -15,6 +15,7 @@ interface PricingCardProps {
   ctaText: string
   ctaHref: string
   highlighted?: boolean
+  creemPlan?: 'pro'
   paymentLink?: string
 }
 
@@ -27,22 +28,49 @@ export function PricingCard({
   ctaText,
   ctaHref,
   highlighted,
+  creemPlan,
   paymentLink,
 }: PricingCardProps) {
   const handleSubscribe = async () => {
-    if (!paymentLink) {
-      // For free plan, just navigate
-      window.location.href = ctaHref
-      return
-    }
-
     // Check if user is logged in
     const supabase = createClient()
+    if (!supabase) {
+      alert('Auth is not configured.')
+      return
+    }
     const { data: { session } } = await supabase.auth.getSession()
 
     if (!session) {
       // Redirect to home with sign in
       window.location.href = '/?signin=true'
+      return
+    }
+
+    if (creemPlan) {
+      const res = await fetch('/api/creem/checkout', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ plan: creemPlan }),
+      })
+
+      if (!res.ok) {
+        alert('Failed to start checkout. Please try again.')
+        return
+      }
+
+      const data = (await res.json()) as { checkout_url?: string }
+      if (!data.checkout_url) {
+        alert('Checkout URL missing. Please try again.')
+        return
+      }
+
+      window.location.href = data.checkout_url
+      return
+    }
+
+    if (!paymentLink) {
+      // For free plan, just navigate
+      window.location.href = ctaHref
       return
     }
 

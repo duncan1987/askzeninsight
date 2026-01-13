@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { Progress } from '@/components/ui/progress'
-import { useSession } from '@supabase/auth-helpers-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface UsageStats {
@@ -18,6 +17,11 @@ export function UsageMeter() {
   const supabase = createClient()
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false)
+      return
+    }
+
     const fetchUsage = async () => {
       try {
         const {

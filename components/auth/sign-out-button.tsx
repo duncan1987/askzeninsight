@@ -14,6 +14,10 @@ export function SignOutButton({ variant = 'dropdown' }: SignOutButtonProps) {
   const router = useRouter()
   const handleSignOut = async () => {
     const supabase = createClient()
+    if (!supabase) {
+      router.push('/')
+      return
+    }
     await supabase.auth.signOut()
     router.push('/')
   }

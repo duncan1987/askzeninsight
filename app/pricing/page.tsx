@@ -51,7 +51,7 @@ export default function PricingPage() {
               ctaText="Subscribe Now"
               ctaHref="/pricing"
               highlighted
-              paymentLink={process.env.CREEM_PRO_PAYMENT_LINK}
+              creemPlan="pro"
             />
           </div>
 

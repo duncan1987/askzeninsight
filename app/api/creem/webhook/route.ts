@@ -1,15 +1,47 @@
-import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyCreemWebhook } from '@/lib/creem'
 
+export const runtime = 'nodejs'
+
+function toIsoDate(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  // Creem examples commonly use "YYYY-MM-DD HH:mm:ss" (no timezone); treat as UTC.
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(trimmed)) {
+    return `${trimmed.replace(' ', 'T')}Z`
+  }
+
+  const date = new Date(trimmed)
+  if (!Number.isFinite(date.getTime())) return null
+  return date.toISOString()
+}
+
+function getReferenceId(metadata: unknown): string | undefined {
+  if (!metadata || typeof metadata !== 'object') return undefined
+  const record = metadata as Record<string, unknown>
+
+  const candidate =
+    record.referenceId ??
+    record.reference_id ??
+    record.userId ??
+    record.user_id
+
+  return typeof candidate === 'string' ? candidate : undefined
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.text()
-    const signature = headers().get('x-creem-signature') || headers().get('creem-signature')
+    const signature =
+      req.headers.get('creem-signature') ||
+      req.headers.get('x-creem-signature')
 
     // Verify webhook signature
-    if (!signature || !verifyCreemWebhook(body, signature, process.env.CREEM_WEBHOOK_SECRET!)) {
+    const webhookSecret = process.env.CREEM_WEBHOOK_SECRET
+    if (!webhookSecret || !signature || !verifyCreemWebhook(body, signature, webhookSecret)) {
       return NextResponse.json(
         { error: 'Invalid signature' },
         { status: 401 }
@@ -17,6 +49,9 @@ export async function POST(req: Request) {
     }
 
     const event = JSON.parse(body)
+    const eventType = event.eventType || event.type
+    const object = event.object || event.data
+
     const supabase = createAdminClient()
     if (!supabase) {
       return NextResponse.json(
@@ -26,52 +61,111 @@ export async function POST(req: Request) {
     }
 
     // Handle different event types
-    switch (event.type) {
-      case 'payment.succeeded':
-      case 'subscription.created': {
-        const { user_id, user_email, subscription_id, status } = event.data
+    switch (eventType) {
+      // Checkout contains `request_id` and potentially `subscription`.
+      case 'checkout.completed': {
+        const requestId =
+          typeof object?.request_id === 'string'
+            ? object.request_id
+            : typeof object?.checkout?.request_id === 'string'
+              ? object.checkout.request_id
+              : undefined
 
-        // Create or update subscription in database
-        const { error } = await supabase
-          .from('subscriptions')
-          .upsert({
-            user_id: user_id,
-            creem_subscription_id: subscription_id,
-            status: status || 'active',
-            current_period_end: new Date(
-              Date.now() + 30 * 24 * 60 * 60 * 1000 // 30 days from now
-            ).toISOString(),
-          })
+        const subscription = object?.subscription
+        const metadata =
+          object?.metadata ??
+          object?.checkout?.metadata ??
+          subscription?.metadata
 
-        if (error) throw error
+        const userId = requestId || getReferenceId(metadata)
+
+        const subscriptionId = typeof subscription?.id === 'string' ? subscription.id : undefined
+
+        if (!subscriptionId) break
+
+        const currentPeriodEnd =
+          toIsoDate(subscription?.current_period_end_date) ||
+          toIsoDate(subscription?.next_transaction_date) ||
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+        if (userId) {
+          const { error } = await supabase
+            .from('subscriptions')
+            .upsert(
+              {
+                user_id: userId,
+                creem_subscription_id: subscriptionId,
+                status: 'active',
+                current_period_end: currentPeriodEnd,
+              },
+              { onConflict: 'creem_subscription_id' }
+            )
+          if (error) throw error
+        } else {
+          const { error } = await supabase
+            .from('subscriptions')
+            .update({ status: 'active', current_period_end: currentPeriodEnd })
+            .eq('creem_subscription_id', subscriptionId)
+          if (error) throw error
+        }
         break
       }
 
+      case 'subscription.paid':
+      case 'subscription.active':
+      case 'subscription.trialing':
+      case 'subscription.update': {
+        const subscriptionId = typeof object?.id === 'string' ? object.id : undefined
+        if (!subscriptionId) break
+
+        const userId = getReferenceId(object?.metadata)
+
+        const currentPeriodEnd =
+          toIsoDate(object?.current_period_end_date) ||
+          toIsoDate(object?.next_transaction_date) ||
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+        if (userId) {
+          const { error } = await supabase
+            .from('subscriptions')
+            .upsert(
+              {
+                user_id: userId,
+                creem_subscription_id: subscriptionId,
+                status: 'active',
+                current_period_end: currentPeriodEnd,
+              },
+              { onConflict: 'creem_subscription_id' }
+            )
+          if (error) throw error
+        } else {
+          const { error } = await supabase
+            .from('subscriptions')
+            .update({ status: 'active', current_period_end: currentPeriodEnd })
+            .eq('creem_subscription_id', subscriptionId)
+          if (error) throw error
+        }
+        break
+      }
+
+      case 'subscription.canceled':
       case 'subscription.cancelled':
-      case 'subscription.expired': {
-        const { subscription_id } = event.data
+      case 'subscription.expired':
+      case 'subscription.paused': {
+        const subscriptionId = typeof object?.id === 'string' ? object.id : undefined
+        if (!subscriptionId) break
+
+        const status =
+          eventType === 'subscription.expired'
+            ? 'expired'
+            : eventType === 'subscription.paused'
+              ? 'past_due'
+              : 'cancelled'
 
         const { error } = await supabase
           .from('subscriptions')
-          .update({
-            status: 'cancelled',
-          })
-          .eq('creem_subscription_id', subscription_id)
-
-        if (error) throw error
-        break
-      }
-
-      case 'payment.failed': {
-        const { user_id } = event.data
-
-        // Update subscription status to past_due
-        const { error } = await supabase
-          .from('subscriptions')
-          .update({
-            status: 'past_due',
-          })
-          .eq('user_id', user_id)
+          .update({ status })
+          .eq('creem_subscription_id', subscriptionId)
 
         if (error) throw error
         break
