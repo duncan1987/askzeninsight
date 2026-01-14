@@ -121,7 +121,7 @@ export function BlogList() {
           {filteredPosts.map((post, index) => (
             <Card
               key={index}
-              className="group overflow-hidden border border-border bg-card transition-all hover:shadow-lg cursor-pointer"
+              className="group overflow-hidden border border-border bg-card transition-all hover:shadow-lg"
             >
               <div className="relative h-48 overflow-hidden">
                 <Image
@@ -152,9 +152,7 @@ export function BlogList() {
                   {post.title}
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed mb-4">{post.excerpt}</p>
-                <Button variant="link" className="p-0 h-auto font-semibold">
-                  Read More →
-                </Button>
+                <p className="text-xs text-muted-foreground">Full posts coming soon.</p>
               </div>
             </Card>
           ))}

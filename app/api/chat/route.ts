@@ -8,6 +8,9 @@
  * @FilePath: \aibudda\app\api\chat\route.ts
  */
 
+import { createClient } from '@/lib/supabase/server'
+import { checkUsageLimit, recordUsage } from '@/lib/usage-limits'
+
 // Vercel Pro plan supports up to 60s timeout
 // If you're on Hobby plan, this will be limited to 10s
 export const maxDuration = 60
@@ -40,6 +43,51 @@ export async function POST(req: Request) {
 
   console.log('[Chat API] Request started', { apiKeyPresent: !!apiKey })
 
+  // Check authentication and get user
+  const authHeader = req.headers.get("authorization")
+  const cookies = req.headers.get("cookie") || ""
+
+  let userId: string | undefined = undefined
+
+  const supabase = await createClient()
+  if (supabase) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      userId = user.id
+      console.log('[Chat API] Authenticated user:', userId)
+    }
+  }
+
+  if (!userId && (!authHeader && !cookies.includes("sb-"))) {
+    console.warn('[Chat API] Unauthorized request - no auth header or session cookie')
+    return new Response(
+      JSON.stringify({ error: "Authentication required" }),
+      {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      },
+    )
+  }
+
+  // Check usage limit
+  const usageCheck = await checkUsageLimit(userId)
+  console.log('[Chat API] Usage check:', usageCheck)
+
+  if (!usageCheck.canProceed) {
+    console.warn('[Chat API] Usage limit exceeded')
+    return new Response(
+      JSON.stringify({
+        error: `Daily message limit exceeded. You've used ${usageCheck.limit}/${usageCheck.limit} messages. Please upgrade to Pro for more.`,
+        limit: usageCheck.limit,
+        remaining: usageCheck.remaining,
+      }),
+      {
+        status: 429,
+        headers: { "Content-Type": "application/json" },
+      },
+    )
+  }
+
   if (!apiKey) {
     console.error('[Chat API] ZHIPU_API_KEY not configured')
     return new Response(
@@ -58,6 +106,9 @@ export async function POST(req: Request) {
     const messages = body.messages || []
 
     console.log('[Chat API] Messages received:', messages.length)
+
+    // Record user message usage
+    await recordUsage(userId, 'user')
 
     // Convert client message format to OpenAI format
     const openaiMessages = messages.map((msg: any) => {
@@ -157,6 +208,11 @@ export async function POST(req: Request) {
 
     const totalElapsed = Date.now() - startTime
     console.log('[Chat API] Streaming started', { totalElapsed: `${totalElapsed}ms` })
+
+    // Record assistant message usage (async, don't await)
+    recordUsage(userId, 'assistant').catch((err) => {
+      console.error('[Chat API] Failed to record assistant usage:', err)
+    })
 
     // Return the streaming response as plain text
     return new Response(transformedStream, {

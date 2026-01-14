@@ -104,12 +104,23 @@ export async function recordUsage(
 ) {
   const supabase = await createClient()
   if (!supabase) {
+    console.warn('[recordUsage] Supabase client not available')
     return
   }
 
-  await supabase.from('usage_records').insert({
+  const record = {
     user_id: userId || null,
     message_type: messageType,
     timestamp: new Date().toISOString(),
-  })
+  }
+
+  console.log('[recordUsage] Attempting to insert:', record)
+
+  const { data, error } = await supabase.from('usage_records').insert(record)
+
+  if (error) {
+    console.error('[recordUsage] Failed to insert usage record:', error)
+  } else {
+    console.log('[recordUsage] Successfully recorded usage:', data)
+  }
 }

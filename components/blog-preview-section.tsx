@@ -90,7 +90,7 @@ export function BlogPreviewSection() {
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-4">{post.excerpt}</p>
                   <Button asChild variant="link" className="p-0 h-auto font-semibold">
-                    <Link href="/blog">Read More →</Link>
+                    <Link href="/blog">Read More</Link>
                   </Button>
                 </div>
               </Card>

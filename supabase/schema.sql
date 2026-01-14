@@ -143,6 +143,10 @@ CREATE POLICY "Users can view own usage records"
   ON public.usage_records FOR SELECT
   USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can insert own usage records"
+  ON public.usage_records FOR INSERT
+  WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+
 -- Create function to automatically create profile on user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$

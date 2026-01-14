@@ -11,7 +11,11 @@ interface UsageStats {
   percentage: number
 }
 
-export function UsageMeter() {
+interface UsageMeterProps {
+  refreshKey?: number
+}
+
+export function UsageMeter({ refreshKey }: UsageMeterProps = {}) {
   const [stats, setStats] = useState<UsageStats | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -44,7 +48,7 @@ export function UsageMeter() {
     }
 
     fetchUsage()
-  }, [supabase])
+  }, [supabase, refreshKey])
 
   if (loading || !stats) return null
 

@@ -17,7 +17,7 @@ export function SignInButton() {
 
       if (!supabase) {
         console.error('Supabase client is not configured')
-        alert('登录功能未配置，请检查环境变量')
+        alert('Sign-in is not configured. Please check environment variables.')
         setIsLoading(false)
         return
       }
@@ -31,7 +31,7 @@ export function SignInButton() {
 
       if (error) {
         console.error('OAuth error:', error)
-        alert(`登录失败: ${error.message}`)
+        alert("Sign-in failed: ")
         setIsLoading(false)
         return
       }
@@ -43,7 +43,7 @@ export function SignInButton() {
       }
     } catch (error) {
       console.error('Sign in error:', error)
-      alert('登录出错，请查看控制台')
+      alert('Sign-in error. Please try again.')
       setIsLoading(false)
     }
   }

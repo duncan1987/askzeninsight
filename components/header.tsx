@@ -5,8 +5,10 @@ import { createClient } from "@/lib/supabase/server"
 import { UserMenu } from "@/components/auth/user-menu"
 import { SignInButton } from "@/components/auth/sign-in-button"
 import { SubscriptionButton } from "@/components/auth/subscription-button"
+import { getSiteConfig } from "@/lib/site"
 
 export async function Header() {
+  const { siteName } = getSiteConfig()
   let session = null
 
   try {
@@ -24,7 +26,7 @@ export async function Header() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 text-xl font-bold">
           <Sparkles className="h-6 w-6 text-primary" />
-          <span className="text-foreground">Ask Zen Insight</span>
+          <span className="text-foreground">{siteName}</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">
@@ -44,7 +46,19 @@ export async function Header() {
             Blog
           </Link>
           <Link
-            href="#about"
+            href="/pricing"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Pricing
+          </Link>
+          <Link
+            href="/contact"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Contact
+          </Link>
+          <Link
+            href="/about"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             About

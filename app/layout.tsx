@@ -11,8 +11,10 @@ const crimsonText = Crimson_Text({
   variable: "--font-serif",
 })
 
+const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "Ask Zen Insight"
+
 export const metadata: Metadata = {
-  title: "Ask Zen Insight - AI-Powered Spiritual Guidance",
+  title: `${siteName} - AI-Powered Spiritual Guidance`,
   description:
     "Receive thoughtful spiritual guidance and Zen wisdom through AI-powered conversations. Explore mindfulness, meditation, and inner peace.",
   generator: "v0.app",

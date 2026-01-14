@@ -2,34 +2,34 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 const faqs = [
   {
-    question: "What is Nano Banana?",
+    question: "What is Ask Zen Insight?",
     answer:
-      "It's a revolutionary AI image editing model that transforms photos using natural language prompts. Currently the most powerful image editing model available, with exceptional consistency and superior performance compared to Flux Kontext for character editing and scene preservation.",
+      "Ask Zen Insight is an AI-powered spiritual guidance experience. It offers reflective conversations to support mindfulness, clarity, and inner peace.",
   },
   {
     question: "How does it work?",
     answer:
-      'Simply upload an image and describe your desired edits in natural language. The AI understands complex instructions like "place the creature in a snowy mountain" or "imagine the whole face and create it". It processes your text prompt and generates perfectly edited images.',
+      "You sign in and chat with an AI assistant. The service provides thoughtful reflections and practical prompts designed to support your personal practice.",
   },
   {
-    question: "How is it better than Flux Kontext?",
+    question: "Is there a free plan?",
     answer:
-      "This model excels in character consistency, scene blending, and one-shot editing. Users report it completely outperforms Flux Kontext in preserving facial features and seamlessly integrating edits with backgrounds. It also supports multi-image context, making it ideal for creating consistent AI influencers.",
+      "Yes. The free plan includes a limited number of messages per day so you can try the experience before upgrading.",
   },
   {
-    question: "Can I use it for commercial projects?",
+    question: "What does Pro include?",
     answer:
-      "Yes! It's perfect for creating AI UGC content, social media campaigns, and marketing materials. Many users leverage it for creating consistent AI influencers and product photography. The high-quality outputs are suitable for professional use.",
+      "Pro increases your daily usage limit and unlocks subscriber features in your account.",
   },
   {
-    question: "What types of edits can it handle?",
+    question: "How do I cancel my subscription?",
     answer:
-      'The editor handles complex edits including face completion, background changes, object placement, style transfers, and character modifications. It excels at understanding contextual instructions like "place in a blizzard" or "create the whole face" while maintaining photorealistic quality.',
+      "You can manage or cancel your subscription anytime from your dashboard via the billing portal.",
   },
   {
-    question: "Is there a free trial?",
+    question: "How do refunds work?",
     answer:
-      "Yes! You can start using Nano Banana for free. Simply upload your image and try out the AI editing capabilities. Experience the power of advanced image transformation with no commitment required.",
+      "Refunds are handled according to our Refund Policy. If you need help, contact support and include your account email.",
   },
 ]
 
@@ -44,7 +44,7 @@ export function FaqSection() {
               Frequently Asked Questions
             </h2>
             <p className="text-lg text-muted-foreground text-balance leading-relaxed">
-              Everything you need to know about Nano Banana
+              Everything you need to know about Ask Zen Insight
             </p>
           </div>
 
