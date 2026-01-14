@@ -23,10 +23,10 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json().catch(() => ({}))) as Partial<{
-      plan: 'pro'
+      plan: 'pro' | 'annual'
     }>
 
-    if (body.plan !== 'pro') {
+    if (!body.plan || (body.plan !== 'pro' && body.plan !== 'annual')) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
     }
 
@@ -34,15 +34,22 @@ export async function POST(req: Request) {
 
     // Prefer API-based checkout so we can attach metadata for webhooks.
     const proProductId = process.env.CREEM_PRO_PRODUCT_ID
-    if (proProductId) {
+    const annualProductId = process.env.CREEM_ANNUAL_PRODUCT_ID
+
+    const productId = body.plan === 'annual' ? annualProductId : proProductId
+
+    if (productId) {
+      console.log(`Creating checkout for ${body.plan} plan using product ID: ${productId}`)
       const checkout = await createCreemCheckout({
-        productId: proProductId,
+        productId,
         requestId: user.id,
         customerEmail: user.email || undefined,
         successUrl: `${siteUrl}/dashboard?payment=success`,
         metadata: {
           referenceId: user.id,
           userEmail: user.email || undefined,
+          plan: body.plan,
+          interval: body.plan === 'annual' ? 'year' : 'month',
         },
       })
 
@@ -50,8 +57,19 @@ export async function POST(req: Request) {
     }
 
     // Fallback to a static payment link (may not include metadata in webhooks).
-    const url = generatePaymentLink('pro', user.id, user.email || undefined)
-    return NextResponse.json({ checkout_url: url })
+    console.log(`No product ID found for ${body.plan} plan, using static payment link`)
+    try {
+      const url = generatePaymentLink(body.plan, user.id, user.email || undefined)
+      return NextResponse.json({ checkout_url: url })
+    } catch (error) {
+      console.error(`Failed to generate payment link for ${body.plan}:`, error)
+      return NextResponse.json(
+        {
+          error: `Payment configuration missing for ${body.plan} plan. Please contact support.`,
+        },
+        { status: 500 }
+      )
+    }
   } catch (error) {
     console.error('Creem checkout error:', error)
     return NextResponse.json(
