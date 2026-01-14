@@ -5,11 +5,13 @@ import { UsageMeter } from '@/components/usage-meter'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { getSiteConfig } from '@/lib/site'
 
 // Force dynamic rendering because this page uses cookies for authentication
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
+  const { supportEmail } = getSiteConfig()
   const supabase = await createClient()
   if (!supabase) {
     redirect('/?error=supabase_not_configured')
@@ -87,6 +89,17 @@ export default async function DashboardPage() {
                       Active
                     </span>
                   </div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <Button asChild variant="outline">
+                      <Link href="/api/creem/portal">Manage billing</Link>
+                    </Button>
+                    <p className="text-sm text-muted-foreground">
+                      Need help?{' '}
+                      <a className="underline underline-offset-4" href={`mailto:${supportEmail}`}>
+                        {supportEmail}
+                      </a>
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-6">
@@ -96,6 +109,12 @@ export default async function DashboardPage() {
                   <Button asChild>
                     <Link href="/pricing">View Plans</Link>
                   </Button>
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    Questions?{' '}
+                    <a className="underline underline-offset-4" href={`mailto:${supportEmail}`}>
+                      {supportEmail}
+                    </a>
+                  </p>
                 </div>
               )}
             </CardContent>

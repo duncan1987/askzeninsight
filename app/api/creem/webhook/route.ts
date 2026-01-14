@@ -83,10 +83,20 @@ export async function POST(req: Request) {
 
         if (!subscriptionId) break
 
+        // Determine subscription period from metadata or subscription object
+        const planType = typeof metadata?.plan === 'string' ? metadata.plan : 'monthly'
+        const interval = typeof metadata?.interval === 'string' ? metadata.interval : subscription?.interval
+
+        // Calculate period end based on plan type
+        const periodDays =
+          interval === 'year' || planType === 'annual'
+            ? 365
+            : 30
+
         const currentPeriodEnd =
           toIsoDate(subscription?.current_period_end_date) ||
           toIsoDate(subscription?.next_transaction_date) ||
-          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString()
 
         if (userId) {
           const { error } = await supabase
@@ -120,10 +130,21 @@ export async function POST(req: Request) {
 
         const userId = getReferenceId(object?.metadata)
 
+        // Determine subscription period from metadata or subscription object
+        const metadata = object?.metadata
+        const planType = typeof metadata?.plan === 'string' ? metadata.plan : 'monthly'
+        const interval = typeof metadata?.interval === 'string' ? metadata.interval : object?.interval
+
+        // Calculate period end based on plan type
+        const periodDays =
+          interval === 'year' || planType === 'annual'
+            ? 365
+            : 30
+
         const currentPeriodEnd =
           toIsoDate(object?.current_period_end_date) ||
           toIsoDate(object?.next_transaction_date) ||
-          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString()
 
         if (userId) {
           const { error } = await supabase

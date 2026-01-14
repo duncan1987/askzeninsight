@@ -15,7 +15,7 @@ interface PricingCardProps {
   ctaText: string
   ctaHref: string
   highlighted?: boolean
-  creemPlan?: 'pro'
+  creemPlan?: 'pro' | 'annual'
   paymentLink?: string
 }
 

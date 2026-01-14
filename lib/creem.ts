@@ -12,6 +12,7 @@ export interface CreemPaymentLink {
 // Pre-configured payment links from Creem Dashboard
 export const CREEM_PAYMENT_LINKS = {
   pro: process.env.CREEM_PRO_PAYMENT_LINK || '',
+  annual: process.env.CREEM_ANNUAL_PAYMENT_LINK || '',
 }
 
 type CreemEnvironment = 'test' | 'live'
@@ -31,7 +32,7 @@ export function getCreemApiBaseUrl(): string {
 
 // Generate payment link with user metadata
 export function generatePaymentLink(
-  priceId: string,
+  priceId: 'pro' | 'annual',
   userId?: string,
   userEmail?: string
 ): string {
@@ -41,7 +42,7 @@ export function generatePaymentLink(
     throw new Error(`Payment link not found for price: ${priceId}`)
   }
 
-  // Add user metadata to the link for webhook processing
+  // Add user metadata to link for webhook processing
   const url = new URL(baseUrl)
   if (userId) {
     url.searchParams.set('user_id', userId)
@@ -49,6 +50,10 @@ export function generatePaymentLink(
   if (userEmail) {
     url.searchParams.set('user_email', userEmail)
   }
+
+  // Add plan metadata for webhook processing
+  url.searchParams.set('plan', priceId)
+  url.searchParams.set('interval', priceId === 'annual' ? 'year' : 'month')
 
   // Add success and cancel URLs
   url.searchParams.set('success_url', `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dashboard?payment=success`)
@@ -64,8 +69,8 @@ export function verifyCreemWebhook(
   secret: string
 ): boolean {
   try {
-    // Creem signs the raw request body with HMAC-SHA256 (hex) and sends it in `creem-signature`.
-    // Docs also show the header value can contain spaces/newlines when copied; trim and normalize.
+    // Creem signs on raw request body with HMAC-SHA256 (hex) and sends it in `creem-signature`.
+    // Docs also show that header value can contain spaces/newlines when copied; trim and normalize.
     // Additionally support "v1=<hex>" style headers defensively.
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const crypto = require('crypto') as typeof import('crypto')
@@ -103,6 +108,11 @@ export interface CreemCheckout {
   checkout_url: string
 }
 
+export interface CreemCustomer {
+  id: string
+  email: string
+}
+
 export async function createCreemCheckout(
   params: CreateCreemCheckoutParams
 ): Promise<CreemCheckout> {
@@ -138,4 +148,60 @@ export async function createCreemCheckout(
   }
 
   return { id: data.id, checkout_url: data.checkout_url }
+}
+
+export async function getCreemCustomerByEmail(
+  email: string
+): Promise<CreemCustomer | null> {
+  const apiKey = process.env.CREEM_API_KEY
+  if (!apiKey) throw new Error('CREEM_API_KEY is not configured')
+
+  const baseUrl = getCreemApiBaseUrl()
+  const url = new URL(`${baseUrl}/v1/customers`)
+  url.searchParams.set('email', email)
+
+  const res = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'x-api-key': apiKey,
+    },
+  })
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Creem get customer failed (${res.status}): ${body}`)
+  }
+
+  const data = (await res.json()) as Partial<CreemCustomer> | null
+  if (!data?.id || !data.email) return null
+  return { id: data.id, email: data.email }
+}
+
+export async function createCreemCustomerPortalLink(
+  customerId: string
+): Promise<string> {
+  const apiKey = process.env.CREEM_API_KEY
+  if (!apiKey) throw new Error('CREEM_API_KEY is not configured')
+
+  const baseUrl = getCreemApiBaseUrl()
+  const res = await fetch(`${baseUrl}/v1/customers/billing`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify({ customer_id: customerId }),
+  })
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Creem create billing portal failed (${res.status}): ${body}`)
+  }
+
+  const data = (await res.json()) as { customer_portal_link?: string }
+  if (!data.customer_portal_link) {
+    throw new Error('Creem billing portal returned an unexpected response')
+  }
+
+  return data.customer_portal_link
 }

@@ -20,7 +20,7 @@ export default function PricingPage() {
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <PricingCard
               title="Free"
               price="$0"
@@ -38,7 +38,7 @@ export default function PricingPage() {
 
             <PricingCard
               title="Pro"
-              price="$9"
+              price="$1"
               period="/month"
               description="For dedicated practitioners"
               features={[
@@ -53,10 +53,35 @@ export default function PricingPage() {
               highlighted
               creemPlan="pro"
             />
+
+            <PricingCard
+              title="Annual"
+              price="$9"
+              period="/year"
+              description="Best value for serious practitioners"
+              features={[
+                '100 messages per day',
+                'Save chat history',
+                'Advanced AI insights',
+                'Priority support',
+                'Early access to features',
+                'Save 75% vs monthly',
+              ]}
+              ctaText="Subscribe Now"
+              ctaHref="/pricing"
+              highlighted
+              creemPlan="annual"
+            />
           </div>
 
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            Subscriptions renew monthly until canceled. Payments are processed by
+            Creem as merchant of record. Taxes may apply depending on your
+            location.
+          </p>
+
           {/* FAQ */}
-          <div className="mt-20 max-w-3xl mx-auto">
+          <div id="faq" className="mt-20 max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold mb-8 text-center">
               Frequently Asked Questions
             </h2>
@@ -80,8 +105,8 @@ export default function PricingPage() {
               <div>
                 <h3 className="font-semibold mb-2">Can I cancel anytime?</h3>
                 <p className="text-muted-foreground">
-                  Absolutely. Cancel from your dashboard with no questions
-                  asked.
+                  Absolutely. Cancel anytime from your dashboard in the billing
+                  portal.
                 </p>
               </div>
             </div>
