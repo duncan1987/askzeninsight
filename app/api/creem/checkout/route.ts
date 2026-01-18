@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createCreemCheckout, generatePaymentLink } from '@/lib/creem'
 
 export const runtime = 'nodejs'
@@ -28,6 +29,62 @@ export async function POST(req: Request) {
 
     if (!body.plan || (body.plan !== 'pro' && body.plan !== 'annual')) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
+    }
+
+    // Check for existing active subscriptions
+    const adminClient = createAdminClient()
+    if (!adminClient) {
+      return NextResponse.json(
+        { error: 'Database is not configured' },
+        { status: 500 }
+      )
+    }
+
+    const { data: existingSubscriptions, error: subError } = await adminClient
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .in('status', ['active', 'cancelled', 'canceled'])
+      .gte('current_period_end', new Date().toISOString())
+
+    if (subError) {
+      console.error('[Checkout] Error checking existing subscriptions:', subError)
+    }
+
+    // Check if user has an active subscription (not cancelled)
+    const activeSubscription = existingSubscriptions?.find(sub =>
+      sub.status === 'active' && !sub.cancel_at_period_end
+    )
+
+    if (activeSubscription) {
+      const currentPlan = activeSubscription.plan || 'pro'
+      const requestedPlan = body.plan
+
+      // Check if trying to subscribe to the same plan
+      if (currentPlan === requestedPlan) {
+        return NextResponse.json(
+          {
+            error: 'You already have an active subscription to this plan',
+            currentPlan,
+            message: `You already have an active ${currentPlan === 'annual' ? 'Annual' : 'Pro'} subscription.`,
+            hasActiveSubscription: true,
+          },
+          { status: 409 } // Conflict
+        )
+      }
+
+      // Check if trying to subscribe to a different plan
+      return NextResponse.json(
+        {
+          error: 'You already have an active subscription to a different plan',
+          currentPlan,
+          requestedPlan,
+          message: `You already have an active ${currentPlan === 'annual' ? 'Annual' : 'Pro'} subscription. Please cancel it first or use the upgrade option in your dashboard.`,
+          hasActiveSubscription: true,
+          requiresCancellation: true,
+        },
+        { status: 409 } // Conflict
+      )
     }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
