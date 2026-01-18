@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
   plan TEXT, -- 'pro' or 'annual'
   interval TEXT, -- 'month' or 'year'
   current_period_end TIMESTAMP WITH TIME ZONE NOT NULL,
+  cancel_at_period_end BOOLEAN DEFAULT false, -- true if scheduled to cancel at period end
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );

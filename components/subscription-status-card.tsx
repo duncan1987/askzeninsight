@@ -14,6 +14,7 @@ interface SubscriptionStatusCardProps {
     interval: string
     current_period_end: string
     created_at: string
+    cancel_at_period_end?: boolean
   }
   usageCount?: number
 }
@@ -32,8 +33,10 @@ export function SubscriptionStatusCard({ subscription, usageCount = 0 }: Subscri
   const isLowUsage = usageCount < 5
   const eligibleForRefund = isWithinRefundWindow && isLowUsage && subscription.status === 'active'
 
-  // Check if subscription is already cancelled
-  const isCancelled = subscription.status === 'cancelled' || subscription.status === 'canceled'
+  // Check if subscription is already cancelled or scheduled to cancel
+  const isCancelled = subscription.status === 'cancelled' ||
+                      subscription.status === 'canceled' ||
+                      subscription.cancel_at_period_end === true
 
   return (
     <Card>

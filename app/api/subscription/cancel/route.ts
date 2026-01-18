@@ -89,6 +89,7 @@ export async function POST(req: Request) {
       .from('subscriptions')
       .update({
         status: newStatus,
+        cancel_at_period_end: newStatus === 'active', // Mark as scheduled to cancel
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', user.id)
@@ -146,12 +147,13 @@ export async function POST(req: Request) {
         )
       }
 
-      // Update status to 'active' but with a note that it will cancel at period end
+      // Update status to 'active' but mark as scheduled to cancel at period end
       // The subscription will expire automatically when period ends
       const { error: updateError } = await adminClient
         .from('subscriptions')
         .update({
           status: 'active', // Keep as active until period ends
+          cancel_at_period_end: true, // Mark as scheduled to cancel
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id)
