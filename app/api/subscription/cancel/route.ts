@@ -25,18 +25,61 @@ export async function POST(req: Request) {
     }
 
     // Get user's subscription
-    const { data: subscription, error: fetchError } = await supabase
+    // Use the same logic as getUserSubscription() to handle multiple subscriptions
+    const adminClient = createAdminClient()
+    if (!adminClient) {
+      return NextResponse.json(
+        { error: 'Database is not configured' },
+        { status: 500 }
+      )
+    }
+
+    const now = new Date().toISOString()
+
+    // Get ALL subscriptions for the user, ordered by creation date (newest first)
+    const { data: subscriptions, error: fetchError } = await adminClient
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
-      .single()
+      .in('status', ['active', 'cancelled', 'canceled'])
+      .gte('current_period_end', now)
+      .order('created_at', { ascending: false })
+
+    console.log('[Cancel Subscription] User subscriptions query:', {
+      userId: user.id,
+      fetchError,
+      subscriptionsCount: subscriptions?.length || 0,
+      subscriptions: subscriptions
+    })
+
+    // Find the most recent subscription that is actually active (not scheduled to cancel)
+    // If none are fully active, use the first one (might be scheduled to cancel)
+    const subscription = subscriptions?.find(sub =>
+      sub.status === 'active' && !sub.cancel_at_period_end
+    ) || subscriptions?.[0]
 
     if (fetchError || !subscription) {
+      console.error('[Cancel Subscription] No subscription found for user:', {
+        userId: user.id,
+        fetchError,
+        subscriptionsCount: subscriptions?.length || 0
+      })
       return NextResponse.json(
-        { error: 'Subscription not found' },
+        {
+          error: 'Subscription not found',
+          details: fetchError?.message || 'No active subscription found for this user'
+        },
         { status: 404 }
       )
     }
+
+    console.log('[Cancel Subscription] Found subscription to cancel:', {
+      subscriptionId: subscription.id,
+      creemSubscriptionId: subscription.creem_subscription_id,
+      status: subscription.status,
+      cancel_at_period_end: subscription.cancel_at_period_end,
+      current_period_end: subscription.current_period_end
+    })
 
     // Check if subscription is already cancelled
     if (subscription.status === 'cancelled' || subscription.status === 'canceled') {
@@ -92,7 +135,7 @@ export async function POST(req: Request) {
         cancel_at_period_end: newStatus === 'active', // Mark as scheduled to cancel
         updated_at: new Date().toISOString(),
       })
-      .eq('user_id', user.id)
+      .eq('id', subscription.id) // Use subscription ID instead of user_id for precision
 
     if (updateError) {
       console.error('[Cancel Subscription] Update error:', updateError)
@@ -156,7 +199,7 @@ export async function POST(req: Request) {
           cancel_at_period_end: true, // Mark as scheduled to cancel
           updated_at: new Date().toISOString(),
         })
-        .eq('user_id', user.id)
+        .eq('id', subscription.id) // Use subscription ID instead of user_id for precision
 
       if (updateError) {
         console.error('[Cancel Subscription] Update error:', updateError)
