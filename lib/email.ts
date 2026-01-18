@@ -135,8 +135,11 @@ export async function sendCancellationEmail({
               </div>
 
               <div style="text-align: center;">
-                <a href="https://zeninsight.xyz/dashboard" class="button">Visit Dashboard</a>
+                <a href="https://zeninsight.xyz" class="button">Visit Ask Zen Insight</a>
               </div>
+              <p style="text-align: center; color: #6b7280; font-size: 14px; margin-top: 10px;">
+                Once signed in, you can access your dashboard from the menu
+              </p>
 
               <div class="footer">
                 <p>Need help? Contact us at <a href="mailto:support@zeninsight.xyz">support@zeninsight.xyz</a></p>

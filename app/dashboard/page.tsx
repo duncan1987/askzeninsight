@@ -22,7 +22,7 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/api/auth/signin')
+    redirect('/')
   }
 
   // Fetch user data
