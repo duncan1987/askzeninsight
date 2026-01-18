@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyCreemWebhook } from '@/lib/creem'
+import { sendWelcomeEmail } from '@/lib/email'
 
 export const runtime = 'nodejs'
 
@@ -142,6 +143,37 @@ export async function POST(req: Request) {
           console.log('[Webhook] Upsert result:', { error, data })
 
           if (error) throw error
+
+          // Send welcome email for new subscriptions
+          // Check if this is a new subscription (not an update)
+          const isNewSubscription = data && Array.isArray(data) && data.length > 0
+
+          if (isNewSubscription) {
+            // Get user email from profiles or metadata
+            const userEmail = typeof metadata?.userEmail === 'string'
+              ? metadata.userEmail
+              : typeof metadata?.user_email === 'string'
+                ? metadata.user_email
+                : null
+
+            if (userEmail) {
+              try {
+                await sendWelcomeEmail({
+                  userEmail,
+                  userName: typeof metadata?.userName === 'string' ? metadata.userName : undefined,
+                  plan: planType === 'annual' ? 'annual' : 'pro',
+                  currentPeriodEnd,
+                  subscriptionId,
+                })
+                console.log('[Webhook] Welcome email sent successfully')
+              } catch (emailError) {
+                console.error('[Webhook] Failed to send welcome email:', emailError)
+                // Don't throw - email failure shouldn't break the subscription
+              }
+            } else {
+              console.log('[Webhook] No user email found in metadata, skipping welcome email')
+            }
+          }
         } else {
           const { error } = await supabase
             .from('subscriptions')
@@ -183,6 +215,15 @@ export async function POST(req: Request) {
           new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString()
 
         if (userId) {
+          // Check if subscription already exists to determine if this is a new subscription
+          const { data: existingSub } = await supabase
+            .from('subscriptions')
+            .select('id, created_at')
+            .eq('creem_subscription_id', subscriptionId)
+            .single()
+
+          const isNewSubscription = !existingSub
+
           const { error } = await supabase
             .from('subscriptions')
             .upsert(
@@ -197,6 +238,33 @@ export async function POST(req: Request) {
               { onConflict: 'creem_subscription_id' }
             )
           if (error) throw error
+
+          // Send welcome email only for new subscriptions
+          if (isNewSubscription) {
+            const userEmail = typeof metadata?.userEmail === 'string'
+              ? metadata.userEmail
+              : typeof metadata?.user_email === 'string'
+                ? metadata.user_email
+                : null
+
+            if (userEmail) {
+              try {
+                await sendWelcomeEmail({
+                  userEmail,
+                  userName: typeof metadata?.userName === 'string' ? metadata.userName : undefined,
+                  plan: planType === 'annual' ? 'annual' : 'pro',
+                  currentPeriodEnd,
+                  subscriptionId,
+                })
+                console.log('[Webhook] Welcome email sent successfully for subscription.active')
+              } catch (emailError) {
+                console.error('[Webhook] Failed to send welcome email:', emailError)
+                // Don't throw - email failure shouldn't break the subscription
+              }
+            } else {
+              console.log('[Webhook] No user email found in metadata, skipping welcome email')
+            }
+          }
         } else {
           const { error } = await supabase
             .from('subscriptions')
