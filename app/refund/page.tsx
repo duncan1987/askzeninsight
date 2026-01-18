@@ -32,7 +32,8 @@ export default function RefundPolicyPage() {
           <section className="space-y-2">
             <h2 className="text-xl font-semibold">How to Request a Refund</h2>
             <p className="text-muted-foreground">
-              To request a refund, contact us at{' '}
+              Refund requests must be submitted within 7 days of purchase. To
+              request a refund, contact us at{' '}
               <a
                 className="underline underline-offset-4"
                 href={`mailto:${supportEmail}`}
@@ -47,6 +48,18 @@ export default function RefundPolicyPage() {
           </section>
 
           <section className="space-y-2">
+            <h2 className="text-xl font-semibold">Refund Eligibility</h2>
+            <p className="text-muted-foreground">
+              Refunds without reason are only available for orders purchased within
+              48 hours and with message usage less than 5.
+            </p>
+            <p className="text-muted-foreground">
+              Once digital content services have incurred significant consumption,
+              refunds are generally not granted.
+            </p>
+          </section>
+
+          <section className="space-y-2">
             <h2 className="text-xl font-semibold">Cancellations</h2>
             <p className="text-muted-foreground">
               You can cancel your subscription at any time from your dashboard
@@ -55,6 +68,14 @@ export default function RefundPolicyPage() {
                 Terms of Service
               </Link>{' '}
               for details.
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-xl font-semibold">Important Note</h2>
+            <p className="text-muted-foreground">
+              Refund requests cannot be based solely on personal subjective
+              preferences about AI-generated content.
             </p>
           </section>
         </div>

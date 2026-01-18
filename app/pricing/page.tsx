@@ -27,8 +27,8 @@ export default function PricingPage() {
               period="/month"
               description="Perfect for exploring spiritual guidance"
               features={[
-                '10 messages per day',
-                'Anonymous access',
+                '5 messages per day',
+                'Sign up to get started',
                 'Basic AI guidance',
                 'No credit card required',
               ]}
@@ -38,11 +38,11 @@ export default function PricingPage() {
 
             <PricingCard
               title="Pro"
-              price="$1"
+              price="$2.99"
               period="/month"
               description="For dedicated practitioners"
               features={[
-                '100 messages per day',
+                '6 messages per day',
                 'Save chat history',
                 'Advanced AI insights',
                 'Priority support',
@@ -56,16 +56,16 @@ export default function PricingPage() {
 
             <PricingCard
               title="Annual"
-              price="$9"
+              price="$19.9"
               period="/year"
               description="Best value for serious practitioners"
               features={[
-                '100 messages per day',
+                '6 messages per day',
                 'Save chat history',
                 'Advanced AI insights',
                 'Priority support',
                 'Early access to features',
-                'Save 75% vs monthly',
+                'Save 45% vs monthly',
               ]}
               ctaText="Subscribe Now"
               ctaHref="/pricing"
@@ -75,9 +75,12 @@ export default function PricingPage() {
           </div>
 
           <p className="mt-8 text-center text-sm text-muted-foreground">
-            Subscriptions renew monthly until canceled. Payments are processed by
-            Creem as merchant of record. Taxes may apply depending on your
+            Subscriptions renew monthly until canceled. Taxes may apply depending on your
             location.
+          </p>
+
+          <p className="mt-2 text-center text-sm font-medium text-primary">
+            Payments processed by Creem
           </p>
 
           {/* FAQ */}
@@ -89,7 +92,7 @@ export default function PricingPage() {
               <div>
                 <h3 className="font-semibold mb-2">Can I try before subscribing?</h3>
                 <p className="text-muted-foreground">
-                  Yes! The free plan gives you 10 messages per day to explore
+                  Yes! The free plan gives you 5 messages per day to explore
                   the service.
                 </p>
               </div>

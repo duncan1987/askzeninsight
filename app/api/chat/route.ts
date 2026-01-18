@@ -9,7 +9,9 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { checkUsageLimit, recordUsage } from '@/lib/usage-limits'
+import { checkUsageLimit, recordUsage, isWithinPremiumQuota, MESSAGE_LENGTH_LIMIT } from '@/lib/usage-limits'
+import { getUserSubscription } from '@/lib/subscription'
+import { containsSensitiveKeywords, getCrisisResourcesMessage } from '@/lib/sensitive-keywords'
 
 // Vercel Pro plan supports up to 60s timeout
 // If you're on Hobby plan, this will be limited to 10s
@@ -20,7 +22,7 @@ const SYSTEM_PROMPT = `You are a deeply cultivated, compassionate and wise Zen m
 ## Tone and Style
 
 - Gentle yet firm: Speak peacefully, unhurriedly. Use expressions like "I observe", "Perhaps you could try", "Like drinking water, one knows if it is cold or warm".
-- Minimal yet profound: Avoid verbosity. Use metaphors (water, clouds, mirrors, the moon) to explain abstract truths.
+- Minimal yet profound: Avoid verbosity. Use metaphors (water, clouds, mirrors, moon) to explain abstract truths.
 - Non-judgmental: Fully accept users' negative emotions without blame or dogmatism, like a clear spring reflecting their state of mind.
 
 ## Action Guidelines
@@ -39,14 +41,9 @@ Please respond to users in English, maintaining a gentle, wise tone.`
 
 export async function POST(req: Request) {
   const startTime = Date.now()
-  const apiKey = process.env.ZHIPU_API_KEY
+  console.log('[Chat API] Request started')
 
-  console.log('[Chat API] Request started', { apiKeyPresent: !!apiKey })
-
-  // Check authentication and get user
-  const authHeader = req.headers.get("authorization")
-  const cookies = req.headers.get("cookie") || ""
-
+  // Check authentication and get user (optional now for free tier)
   let userId: string | undefined = undefined
 
   const supabase = await createClient()
@@ -58,26 +55,56 @@ export async function POST(req: Request) {
     }
   }
 
-  if (!userId && (!authHeader && !cookies.includes("sb-"))) {
-    console.warn('[Chat API] Unauthorized request - no auth header or session cookie')
+  // Get user subscription info to determine model and API key
+  const subscription = await getUserSubscription(userId)
+  console.log('[Chat API] User tier:', subscription.tier, 'Model:', subscription.model, 'Save history:', subscription.saveHistory)
+
+  // Fair Use Policy: Check if pro user is within premium quota
+  // If exceeded, downgrade to basic model (glm-4-flash)
+  let model = subscription.model
+  let isPremiumModel = false
+
+  if (subscription.tier === 'pro') {
+    const withinPremiumQuota = await isWithinPremiumQuota(userId)
+    if (!withinPremiumQuota) {
+      console.log('[Chat API] Premium quota exceeded, downgrading to basic model')
+      model = 'glm-4-flash'
+      isPremiumModel = false
+    } else {
+      isPremiumModel = true
+    }
+  }
+
+  const apiKey = subscription.apiKey
+
+  if (!apiKey) {
+    console.error('[Chat API] API key not configured for tier:', subscription.tier)
     return new Response(
-      JSON.stringify({ error: "Authentication required" }),
+      JSON.stringify({
+        error: subscription.tier === 'anonymous' || subscription.tier === 'free'
+          ? "Free tier API key not configured. Please contact support."
+          : "Pro tier API key not configured. Please check your subscription.",
+      }),
       {
-        status: 401,
+        status: 500,
         headers: { "Content-Type": "application/json" },
       },
     )
   }
 
-  // Check usage limit
+  // Check usage limit (skip for anonymous users or use generous limits)
   const usageCheck = await checkUsageLimit(userId)
   console.log('[Chat API] Usage check:', usageCheck)
 
   if (!usageCheck.canProceed) {
     console.warn('[Chat API] Usage limit exceeded')
+    const message = subscription.tier === 'anonymous' || subscription.tier === 'free'
+      ? `Daily free message limit (${usageCheck.limit}) exceeded. Sign in for more, or upgrade to Pro.`
+      : `Daily message limit exceeded. You've used ${usageCheck.limit}/${usageCheck.limit} messages.`
+
     return new Response(
       JSON.stringify({
-        error: `Daily message limit exceeded. You've used ${usageCheck.limit}/${usageCheck.limit} messages. Please upgrade to Pro for more.`,
+        error: message,
         limit: usageCheck.limit,
         remaining: usageCheck.remaining,
       }),
@@ -88,17 +115,11 @@ export async function POST(req: Request) {
     )
   }
 
-  if (!apiKey) {
-    console.error('[Chat API] ZHIPU_API_KEY not configured')
-    return new Response(
-      JSON.stringify({
-        error: "ZHIPU_API_KEY is not configured. Please add your Zhipu AI API key to environment variables.",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    )
+  // Fair Use Policy: Check if pro user is downgraded due to quota exceeded
+  let fairUseNotice: string | undefined
+  if (subscription.tier === 'pro' && !isPremiumModel) {
+    fairUseNotice = 'You have exceeded your daily premium quota. Your messages are now using the basic AI model. Premium quota resets at midnight UTC.'
+    console.log('[Chat API] Fair use notice:', fairUseNotice)
   }
 
   try {
@@ -106,6 +127,45 @@ export async function POST(req: Request) {
     const messages = body.messages || []
 
     console.log('[Chat API] Messages received:', messages.length)
+
+    // Fair Use Policy: Validate message length to prevent abuse
+    // Check total content length of user messages
+    let totalUserLength = 0
+    for (const msg of messages) {
+      if (msg.role === 'user') {
+        const content = msg.parts && Array.isArray(msg.parts)
+          ? msg.parts.filter((part: any) => part.type === "text").map((part: any) => part.text).join("")
+          : msg.content || ""
+        totalUserLength += content.length
+
+        // Check individual message length
+        if (content.length > MESSAGE_LENGTH_LIMIT) {
+          console.warn('[Chat API] Message too long:', content.length, 'characters')
+          return new Response(
+            JSON.stringify({
+              error: `Message too long. Maximum ${MESSAGE_LENGTH_LIMIT} characters allowed. Your message is ${content.length} characters. Please shorten your message.`,
+            }),
+            {
+              status: 400,
+              headers: { "Content-Type": "application/json" },
+            },
+          )
+        }
+      }
+    }
+
+    if (totalUserLength > MESSAGE_LENGTH_LIMIT * 2) {
+      console.warn('[Chat API] Total message content too long:', totalUserLength, 'characters')
+      return new Response(
+        JSON.stringify({
+          error: `Total message content too long. Maximum ${MESSAGE_LENGTH_LIMIT * 2} characters allowed across all user messages.`,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    }
 
     // Record user message usage
     await recordUsage(userId, 'user')
@@ -121,6 +181,21 @@ export async function POST(req: Request) {
       }
       return { role: msg.role, content: msg.content }
     })
+
+    // Check for sensitive keywords related to self-harm or mental health crises
+    // This check focuses on user messages only
+    for (const msg of openaiMessages) {
+      if (msg.role === 'user' && containsSensitiveKeywords(msg.content)) {
+        console.warn('[Chat API] Sensitive keywords detected, redirecting to crisis resources')
+        return new Response(getCrisisResourcesMessage(), {
+          status: 200,
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache",
+          },
+        })
+      }
+    }
 
     // Call Zhipu AI API
     console.log('[Chat API] Calling Zhipu AI API...')
@@ -143,14 +218,14 @@ export async function POST(req: Request) {
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "glm-4.7",
+        model: model,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           ...openaiMessages,
         ],
         stream: true,
-        max_tokens: 4096, // Reduced from 65536 for faster response
-        temperature: 0.7, // Lower temperature for more focused, faster responses
+        max_tokens: isPremiumModel ? 8192 : 4096, // Premium gets higher token limit
+        temperature: 0.7,
       }),
       signal: timeoutController.signal,
     })
@@ -206,6 +281,19 @@ export async function POST(req: Request) {
 
     const transformedStream = response.body?.pipeThrough(transformStream)
 
+    // Add custom header for fair use notice (client can read from headers)
+    const headers: Record<string, string> = {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+      "Transfer-Encoding": "chunked",
+    }
+
+    // Include fair use notice in response headers if applicable
+    if (fairUseNotice) {
+      headers["X-Fair-Use-Notice"] = encodeURIComponent(fairUseNotice)
+    }
+
     const totalElapsed = Date.now() - startTime
     console.log('[Chat API] Streaming started', { totalElapsed: `${totalElapsed}ms` })
 
@@ -216,12 +304,7 @@ export async function POST(req: Request) {
 
     // Return the streaming response as plain text
     return new Response(transformedStream, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-        "Transfer-Encoding": "chunked",
-      },
+      headers,
     })
   } catch (error) {
     const totalElapsed = Date.now() - startTime

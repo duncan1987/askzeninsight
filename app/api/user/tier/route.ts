@@ -1,15 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
-import { checkUsageLimit, getUsageStats } from '@/lib/usage-limits'
 import { getUserSubscription } from '@/lib/subscription'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
   if (!supabase) {
-    const check = await checkUsageLimit(undefined)
-    const stats = await getUsageStats(undefined)
-    const subscription = await getUserSubscription(undefined)
-    return NextResponse.json({ ...stats, ...check, tier: subscription.tier })
+    return NextResponse.json({
+      tier: 'anonymous',
+      model: 'glm-4-flash',
+      saveHistory: false,
+      authenticated: false,
+    })
   }
 
   // First try cookie-based auth
@@ -28,9 +29,20 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const check = await checkUsageLimit(user?.id)
-  const stats = await getUsageStats(user?.id)
-  const subscription = await getUserSubscription(user?.id)
+  if (!user) {
+    return NextResponse.json({
+      tier: 'anonymous',
+      model: 'glm-4-flash',
+      saveHistory: false,
+      authenticated: false,
+    })
+  }
 
-  return NextResponse.json({ ...stats, ...check, tier: subscription.tier })
+  const subscription = await getUserSubscription(user.id)
+
+  return NextResponse.json({
+    ...subscription,
+    authenticated: true,
+    email: user.email,
+  })
 }

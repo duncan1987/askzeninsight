@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   creem_subscription_id TEXT UNIQUE,
   status TEXT NOT NULL DEFAULT 'active', -- active, cancelled, past_due, expired
+  plan TEXT, -- 'pro' or 'annual'
+  interval TEXT, -- 'month' or 'year'
   current_period_end TIMESTAMP WITH TIME ZONE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
@@ -117,6 +119,10 @@ CREATE POLICY "Users can update own conversations"
   ON public.conversations FOR UPDATE
   USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can delete own conversations"
+  ON public.conversations FOR DELETE
+  USING (auth.uid() = user_id);
+
 -- Create RLS policies for messages
 CREATE POLICY "Users can view messages of own conversations"
   ON public.messages FOR SELECT
@@ -131,6 +137,16 @@ CREATE POLICY "Users can view messages of own conversations"
 CREATE POLICY "Users can insert messages to own conversations"
   ON public.messages FOR INSERT
   WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.conversations
+      WHERE conversations.id = messages.conversation_id
+      AND conversations.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can delete messages of own conversations"
+  ON public.messages FOR DELETE
+  USING (
     EXISTS (
       SELECT 1 FROM public.conversations
       WHERE conversations.id = messages.conversation_id

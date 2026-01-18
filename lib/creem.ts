@@ -205,3 +205,52 @@ export async function createCreemCustomerPortalLink(
 
   return data.customer_portal_link
 }
+
+export interface CancelSubscriptionParams {
+  subscriptionId: string
+  mode?: 'immediate' | 'scheduled'
+}
+
+export interface CreemSubscription {
+  id: string
+  status: string
+  current_period_end_date: string
+  canceled_at?: string | null
+}
+
+export async function cancelSubscription(
+  params: CancelSubscriptionParams
+): Promise<CreemSubscription> {
+  const apiKey = process.env.CREEM_API_KEY
+  if (!apiKey) throw new Error('CREEM_API_KEY is not configured')
+
+  const baseUrl = getCreemApiBaseUrl()
+  const res = await fetch(`${baseUrl}/v1/subscriptions/${params.subscriptionId}/cancel`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify({
+      mode: params.mode || 'scheduled', // scheduled: cancel at period end, immediate: cancel now
+      onExecute: 'cancel',
+    }),
+  })
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Creem cancel subscription failed (${res.status}): ${body}`)
+  }
+
+  const data = (await res.json()) as Partial<CreemSubscription>
+  if (!data.id || !data.status) {
+    throw new Error('Creem cancel subscription returned an unexpected response')
+  }
+
+  return {
+    id: data.id,
+    status: data.status,
+    current_period_end_date: data.current_period_end_date || '',
+    canceled_at: data.canceled_at,
+  }
+}

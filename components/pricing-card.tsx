@@ -93,7 +93,7 @@ export function PricingCard({
       {highlighted && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
           <span className="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
-            Most Popular
+            {title}
           </span>
         </div>
       )}

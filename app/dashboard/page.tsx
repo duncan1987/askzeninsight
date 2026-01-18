@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/header'
 import { UsageMeter } from '@/components/usage-meter'
+import { BillingPortalButton } from '@/components/billing-portal-button'
+import { CancelSubscriptionButton } from '@/components/cancel-subscription-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -75,9 +77,13 @@ export default async function DashboardPage() {
             <CardContent>
               {subscription.data ? (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-medium">Pro Plan Active</p>
+                      <p className="font-medium">
+                        {subscription.data.plan === 'annual' || subscription.data.interval === 'year'
+                          ? 'Pro Annual Plan Active'
+                          : 'Pro Monthly Plan Active'}
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         Renews on{' '}
                         {new Date(
@@ -90,16 +96,36 @@ export default async function DashboardPage() {
                     </span>
                   </div>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <Button asChild variant="outline">
-                      <Link href="/api/creem/portal">Manage billing</Link>
-                    </Button>
-                    <p className="text-sm text-muted-foreground">
-                      Need help?{' '}
-                      <a className="underline underline-offset-4" href={`mailto:${supportEmail}`}>
-                        {supportEmail}
-                      </a>
-                    </p>
+                    <div className="flex gap-2">
+                      <BillingPortalButton />
+                      <CancelSubscriptionButton
+                        subscriptionId={subscription.data.creem_subscription_id}
+                        currentPeriodEnd={subscription.data.current_period_end}
+                      />
+                    </div>
                   </div>
+                  {/* Debug: Show Creem subscription ID */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="space-y-2 pt-2 border-t">
+                      <p className="text-xs text-muted-foreground">
+                        Creem Subscription ID: {subscription.data.creem_subscription_id}
+                      </p>
+                      <a
+                        href="/api/debug/subscriptions"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-500 hover:underline"
+                      >
+                        Debug: View all subscriptions →
+                      </a>
+                    </div>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Need help?{' '}
+                    <a className="underline underline-offset-4" href={`mailto:${supportEmail}`}>
+                      {supportEmail}
+                    </a>
+                  </p>
                 </div>
               ) : (
                 <div className="text-center py-6">

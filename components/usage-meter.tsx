@@ -9,6 +9,7 @@ interface UsageStats {
   limit: number
   remaining: number
   percentage: number
+  tier: 'anonymous' | 'free' | 'pro'
 }
 
 interface UsageMeterProps {
@@ -53,22 +54,31 @@ export function UsageMeter({ refreshKey }: UsageMeterProps = {}) {
   if (loading || !stats) return null
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Today&apos;s usage</span>
-        <span className="font-medium">
-          {stats.used} / {stats.limit} messages
-        </span>
+    <div className="space-y-3">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Today&apos;s usage</span>
+          <span className="font-medium">
+            {stats.used} / {stats.limit} messages
+          </span>
+        </div>
+        <Progress value={stats.percentage} className="h-2" />
+        {stats.remaining === 0 && (
+          <p className="text-xs text-destructive">
+            {stats.tier === 'pro' ? (
+              <>The day&apos;s conversations find their rest. Return tomorrow with renewed presence.</>
+            ) : (
+              <>
+                The day&apos;s vessel is full. To continue your journey,{' '}
+                <a href="/pricing" className="underline font-medium">
+                  upgrade to Pro or Annual
+                </a>
+              </>
+            )}
+          </p>
+        )}
       </div>
-      <Progress value={stats.percentage} className="h-2" />
-      {stats.remaining === 0 && (
-        <p className="text-xs text-destructive">
-          Daily limit reached.{' '}
-          <a href="/pricing" className="underline font-medium">
-            Upgrade to Pro
-          </a>
-        </p>
-      )}
+
     </div>
   )
 }

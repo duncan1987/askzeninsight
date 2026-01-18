@@ -1,5 +1,6 @@
 import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
+import { ZenWisdomSection } from "@/components/zen-wisdom-section"
 import { FeaturesSection } from "@/components/features-section"
 import { BlogPreviewSection } from "@/components/blog-preview-section"
 import { CtaSection } from "@/components/cta-section"
@@ -14,6 +15,7 @@ export default function HomePage() {
       <Header />
       <main>
         <HeroSection />
+        <ZenWisdomSection />
         <FeaturesSection />
         <BlogPreviewSection />
         <CtaSection />

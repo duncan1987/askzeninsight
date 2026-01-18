@@ -12,6 +12,22 @@ export const dynamic = 'force-dynamic'
 
 export default async function ChatPage() {
   const supabase = await createClient()
+  if (!supabase) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-16 max-w-4xl">
+          <div className="text-center space-y-6">
+            <h1 className="text-3xl font-bold text-foreground">Service Unavailable</h1>
+            <p className="text-muted-foreground text-lg">
+              Please try again later.
+            </p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
   const { data: { session } } = await supabase.auth.getSession()
 
   // Redirect to home if not authenticated

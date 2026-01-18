@@ -50,7 +50,7 @@ export async function GET() {
 
       // User has a subscription record but no customer found
       // Try to redirect to pricing page instead
-      return NextResponse.redirect(new URL('/pricing', req.url))
+      return NextResponse.redirect(new URL('/pricing', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'))
     }
 
     console.log(`Found Creem customer: ${customer.id}`)
