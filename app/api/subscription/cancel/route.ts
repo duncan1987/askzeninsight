@@ -110,8 +110,47 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('[Cancel Subscription] Error:', error)
 
-    // Extract more details from the error if it's from Creem API
     const errorMessage = error instanceof Error ? error.message : 'Failed to cancel subscription'
+
+    // Check if subscription is already cancelled/scheduled in Creem
+    if (errorMessage.includes('already scheduled') ||
+        errorMessage.includes('already cancelled') ||
+        errorMessage.includes('Subscription is already')) {
+
+      console.log('[Cancel Subscription] Subscription already cancelled in Creem, updating database')
+
+      // Update database to reflect the actual status
+      const adminClient = createAdminClient()
+      if (!adminClient) {
+        return NextResponse.json(
+          { error: 'Failed to create admin client' },
+          { status: 500 }
+        )
+      }
+
+      // Update status to 'active' but with a note that it will cancel at period end
+      // The subscription will expire automatically when period ends
+      const { error: updateError } = await adminClient
+        .from('subscriptions')
+        .update({
+          status: 'active', // Keep as active until period ends
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+
+      if (updateError) {
+        console.error('[Cancel Subscription] Update error:', updateError)
+      }
+
+      // Return success - subscription is already scheduled for cancellation
+      return NextResponse.json({
+        success: true,
+        status: 'active',
+        current_period_end: subscription.current_period_end,
+        message: 'Subscription will be cancelled at the end of the current billing period',
+        note: 'Cancellation was already scheduled',
+      })
+    }
 
     return NextResponse.json(
       {

@@ -43,6 +43,18 @@ export function CancelSubscriptionButton({
         throw new Error(errorMsg)
       }
 
+      // Handle success response
+      if (data.success) {
+        // Show success message
+        if (data.note) {
+          alert(data.message + '\n\n(' + data.note + ')')
+        } else {
+          alert(data.message)
+        }
+        router.refresh()
+        return
+      }
+
       // Refresh the page to show updated status
       router.refresh()
     } catch (error) {
