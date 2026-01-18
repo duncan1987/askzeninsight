@@ -159,7 +159,7 @@ export async function sendWelcomeEmail({
                 <h2>What You Can Now Enjoy</h2>
                 <div class="feature-list">
                   <ul>
-                    <li><strong>✨ Expanded Daily Messages:</strong> ${plan === 'annual' ? '6' : '6'} messages per day to explore your spiritual questions</li>
+                    <li><strong>✨ Expanded Daily Messages:</strong> ${plan === 'annual' ? '100' : '100'} messages per day to explore your spiritual questions</li>
                     <li><strong>💾 Chat History Saved:</strong> Your conversations are preserved for future reflection</li>
                     <li><strong>🧘 Advanced AI Insights:</strong> Deeper, more personalized guidance tailored to your journey</li>
                     <li><strong>⭐ Priority Support:</strong> Get help when you need it with our dedicated support team</li>

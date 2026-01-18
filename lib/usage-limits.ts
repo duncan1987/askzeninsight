@@ -2,9 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { getUserSubscription } from '@/lib/subscription'
 
 export const USAGE_LIMITS = {
-  ANONYMOUS_DAILY: 100, // 100 messages per day for anonymous users
-  FREE_DAILY: 5, // 5 messages per day for free authenticated users
-  PRO_DAILY: 6, // 6 messages per day for pro users (premium quota)
+  ANONYMOUS_DAILY: 20, // 20 messages per day for anonymous users
+  FREE_DAILY: 20, // 20 messages per day for free authenticated users
+  PRO_DAILY: 100, // 100 messages per day for pro users (premium quota)
 }
 
 export const MESSAGE_LENGTH_LIMIT = 10000 // Max characters per message to prevent abuse
