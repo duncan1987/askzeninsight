@@ -39,6 +39,19 @@ export async function POST(req: Request) {
       req.headers.get('creem-signature') ||
       req.headers.get('x-creem-signature')
 
+    // Log incoming webhook for debugging
+    console.log('[Creem Webhook] Received webhook')
+    console.log('[Creem Webhook] Signature present:', !!signature)
+    console.log('[Creem Webhook] Body length:', body.length)
+
+    try {
+      const parsedBody = JSON.parse(body)
+      console.log('[Creem Webhook] Event type:', parsedBody.eventType || parsedBody.type)
+      console.log('[Creem Webhook] Full payload:', JSON.stringify(parsedBody, null, 2))
+    } catch {
+      console.log('[Creem Webhook] Failed to parse body as JSON')
+    }
+
     // Verify webhook signature
     const webhookSecret = process.env.CREEM_WEBHOOK_SECRET
     // Skip signature verification in test mode
