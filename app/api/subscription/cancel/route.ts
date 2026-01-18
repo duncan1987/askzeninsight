@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { cancelSubscription } from '@/lib/creem'
+import { sendCancellationEmail } from '@/lib/email'
 
 export const runtime = 'nodejs'
 
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
     // Get user's subscription
     const { data: subscription, error: fetchError } = await supabase
       .from('subscriptions')
-      .select('creem_subscription_id, status, current_period_end')
+      .select('*')
       .eq('user_id', user.id)
       .single()
 
@@ -98,6 +99,23 @@ export async function POST(req: Request) {
     }
 
     console.log('[Cancel Subscription] Subscription cancelled successfully')
+
+    // Send cancellation email
+    if (user.email) {
+      try {
+        await sendCancellationEmail({
+          userEmail: user.email,
+          userName: user.user_metadata?.name || user.user_metadata?.full_name,
+          plan: subscription.plan || 'pro',
+          currentPeriodEnd: subscription.current_period_end,
+          subscriptionId: subscription.creem_subscription_id,
+        })
+        console.log('[Cancel Subscription] Cancellation email sent successfully')
+      } catch (emailError) {
+        console.error('[Cancel Subscription] Failed to send cancellation email:', emailError)
+        // Don't fail the request if email fails
+      }
+    }
 
     return NextResponse.json({
       success: true,
