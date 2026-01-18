@@ -110,15 +110,6 @@ export async function POST(req: Request) {
 
     console.log('[Cancel Subscription] Creem response:', creemSubscription)
 
-    // Update database status
-    const adminClient = createAdminClient()
-    if (!adminClient) {
-      return NextResponse.json(
-        { error: 'Failed to create admin client' },
-        { status: 500 }
-      )
-    }
-
     // Map Creem status to our database status
     // scheduled_cancel -> active (user still has access until period end)
     // canceled -> cancelled
@@ -180,15 +171,6 @@ export async function POST(req: Request) {
         errorMessage.includes('Subscription is already')) {
 
       console.log('[Cancel Subscription] Subscription already cancelled in Creem, updating database')
-
-      // Update database to reflect the actual status
-      const adminClient = createAdminClient()
-      if (!adminClient) {
-        return NextResponse.json(
-          { error: 'Failed to create admin client' },
-          { status: 500 }
-        )
-      }
 
       // Update status to 'active' but mark as scheduled to cancel at period end
       // The subscription will expire automatically when period ends
