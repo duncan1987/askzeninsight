@@ -51,11 +51,17 @@ export function CancelSubscriptionButton({
         } else {
           alert(data.message)
         }
+        // Reset loading state before refresh
+        setLoading(false)
+        setShowConfirm(false)
+        // Refresh the page to show updated status
         router.refresh()
         return
       }
 
       // Refresh the page to show updated status
+      setLoading(false)
+      setShowConfirm(false)
       router.refresh()
     } catch (error) {
       console.error('Failed to cancel subscription:', error)
