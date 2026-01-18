@@ -43,20 +43,39 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
 
   // Check if user has active subscription
   // Note: We include 'cancelled' status because users keep access until period ends
-  const { data: subscription, error } = await supabase
+  // Also check that cancel_at_period_end is not true (unless we want to include scheduled cancellations)
+  const now = new Date().toISOString()
+
+  const { data: subscriptions, error } = await supabase
     .from('subscriptions')
-    .select('status, current_period_end, plan')
+    .select('status, current_period_end, plan, cancel_at_period_end')
     .eq('user_id', userId)
     .in('status', ['active', 'cancelled', 'canceled']) // Include cancelled subscriptions
-    .gte('current_period_end', new Date().toISOString())
-    .maybeSingle() // Use maybeSingle instead of single to avoid error when no rows
+    .gte('current_period_end', now)
+    .order('created_at', { ascending: false })
 
   // Debug logging
   console.log('[getUserSubscription] userId:', userId)
-  console.log('[getUserSubscription] subscription error:', error)
-  console.log('[getUserSubscription] subscription data:', subscription)
+  console.log('[getUserSubscription] query time:', now)
+  console.log('[getUserSubscription] subscriptions error:', error)
+  console.log('[getUserSubscription] subscriptions data:', subscriptions)
 
-  const isPro = subscription && ['active', 'cancelled', 'canceled'].includes(subscription.status)
+  // Get the most recent subscription that is actually active (not scheduled to cancel)
+  const subscription = subscriptions?.find(sub =>
+    sub.status === 'active' && !sub.cancel_at_period_end
+  ) || subscriptions?.[0] // Fallback to first subscription if none are fully active
+
+  console.log('[getUserSubscription] selected subscription:', subscription)
+  console.log('[getUserSubscription] isPro check:', {
+    hasSubscription: !!subscription,
+    status: subscription?.status,
+    cancelAtPeriodEnd: subscription?.cancel_at_period_end,
+    periodEnd: subscription?.current_period_end,
+    now: now,
+    periodEndAfterNow: subscription ? new Date(subscription.current_period_end) >= new Date(now) : false
+  })
+
+  const isPro = subscription && ['active', 'cancelled', 'canceled'].includes(subscription.status) && new Date(subscription.current_period_end) >= new Date(now)
   const plan = subscription?.plan as PlanType | null | undefined
 
   return {
