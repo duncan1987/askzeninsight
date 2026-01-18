@@ -47,16 +47,33 @@ export default function RefundPolicyPage() {
             </p>
           </section>
 
-          <section className="space-y-2">
+          <section className="space-y-3">
             <h2 className="text-xl font-semibold">Refund Eligibility</h2>
-            <p className="text-muted-foreground">
-              Refunds without reason are only available for orders purchased within
-              48 hours and with message usage less than 5.
-            </p>
-            <p className="text-muted-foreground">
-              Once digital content services have incurred significant consumption,
-              refunds are generally not granted.
-            </p>
+            <div className="space-y-2 text-muted-foreground">
+              <p>
+                <strong className="text-foreground">48-Hour Refund Window:</strong> You
+                can request a full refund within 48 hours of purchase if you have used
+                fewer than 5 messages. No explanation required.
+              </p>
+              <p>
+                <strong className="text-foreground">7-Day Refund Requests:</strong> For
+                purchases between 48 hours and 7 days, you may request a refund by
+                contacting support. Refunds are evaluated on a case-by-case basis.
+              </p>
+              <p>
+                <strong className="text-foreground">After 7 Days:</strong> Refunds are
+                generally not granted except in cases of technical issues or service
+                failures.
+              </p>
+            </div>
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm font-medium mb-1">Quick Summary:</p>
+              <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                <li>&lt; 48 hours and &lt; 5 messages: Automatic refund eligibility</li>
+                <li>48 hours - 7 days: Contact support for review</li>
+                <li>&gt; 7 days: No refund (unless technical issue)</li>
+              </ul>
+            </div>
           </section>
 
           <section className="space-y-2">

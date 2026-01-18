@@ -2,8 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Header } from '@/components/header'
 import { UsageMeter } from '@/components/usage-meter'
-import { BillingPortalButton } from '@/components/billing-portal-button'
-import { CancelSubscriptionButton } from '@/components/cancel-subscription-button'
+import { SubscriptionStatusCard } from '@/components/subscription-status-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -27,7 +26,10 @@ export default async function DashboardPage() {
   }
 
   // Fetch user data
-  const [conversations, subscription] = await Promise.all([
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const [conversations, subscription, usageRecords] = await Promise.all([
     supabase
       .from('conversations')
       .select('*')
@@ -35,14 +37,27 @@ export default async function DashboardPage() {
       .order('updated_at', { ascending: false })
       .limit(10),
 
+    // Get subscription (including cancelled ones that are still active)
     supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
-      .eq('status', 'active')
+      .in('status', ['active', 'cancelled', 'canceled'])
       .gte('current_period_end', new Date().toISOString())
-      .single(),
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+
+    // Get today's message count
+    supabase
+      .from('usage_records')
+      .select('id')
+      .eq('user_id', user.id)
+      .gte('timestamp', today.toISOString())
   ])
+
+  // Calculate usage count for refund eligibility
+  const usageCount = usageRecords.data?.length || 0
 
   return (
     <div className="min-h-screen bg-background">
@@ -70,64 +85,17 @@ export default async function DashboardPage() {
           </Card>
 
           {/* Subscription Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Subscription</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {subscription.data ? (
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium">
-                        {subscription.data.plan === 'annual' || subscription.data.interval === 'year'
-                          ? 'Pro Annual Plan Active'
-                          : 'Pro Monthly Plan Active'}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Renews on{' '}
-                        {new Date(
-                          subscription.data.current_period_end
-                        ).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                      Active
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex gap-2">
-                      <BillingPortalButton />
-                      <CancelSubscriptionButton
-                        subscriptionId={subscription.data.creem_subscription_id}
-                        currentPeriodEnd={subscription.data.current_period_end}
-                      />
-                    </div>
-                  </div>
-                  {/* Debug: Show Creem subscription ID */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <div className="space-y-2 pt-2 border-t">
-                      <p className="text-xs text-muted-foreground">
-                        Creem Subscription ID: {subscription.data.creem_subscription_id}
-                      </p>
-                      <a
-                        href="/api/debug/subscriptions"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-500 hover:underline"
-                      >
-                        Debug: View all subscriptions →
-                      </a>
-                    </div>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    Need help?{' '}
-                    <a className="underline underline-offset-4" href={`mailto:${supportEmail}`}>
-                      {supportEmail}
-                    </a>
-                  </p>
-                </div>
-              ) : (
+          {subscription.data ? (
+            <SubscriptionStatusCard
+              subscription={subscription.data}
+              usageCount={usageCount}
+            />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="text-center py-6">
                   <p className="text-muted-foreground mb-4">
                     You&apos;re on the free plan. Upgrade for more features.
@@ -142,9 +110,9 @@ export default async function DashboardPage() {
                     </a>
                   </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Recent Conversations */}
           <Card>
