@@ -81,6 +81,120 @@ export async function POST(req: Request) {
       current_period_end: subscription.current_period_end
     })
 
+    const now = new Date()
+    const createdAt = new Date(subscription.created_at)
+    const hoursSinceSubscription = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60))
+    const daysSinceSubscription = Math.floor(hoursSinceSubscription / 24)
+
+    console.log('[Cancel Subscription] Checking subscription eligibility:', {
+      hoursSinceSubscription,
+      daysSinceSubscription,
+      usageCount,
+      createdAt: subscription.created_at,
+    })
+
+    // RULE 1: Block cancellation after 7 days
+    if (daysSinceSubscription > 7) {
+      return NextResponse.json(
+        {
+          error: 'Cancellation period expired',
+          message: `According to our refund policy, subscription cancellation and refund requests must be submitted within 7 days of purchase. Your subscription was created ${daysSinceSubscription} days ago.`,
+          daysSinceSubscription,
+          policyUrl: '/refund',
+          canContactSupport: true,
+        },
+        { status: 403 } // Forbidden
+      )
+    }
+
+    // RULE 2: Within 48 hours AND ≤5 messages → Immediate cancellation and downgrade
+    if (hoursSinceSubscription <= 48 && usageCount <= 5) {
+      console.log('[Cancel Subscription] Eligible for immediate cancellation and refund')
+
+      // Cancel in Creem immediately (not scheduled)
+      try {
+        await cancelSubscription({
+          subscriptionId: subscription.creem_subscription_id,
+          mode: 'immediate', // Cancel immediately
+        })
+      } catch (creemError) {
+        console.error('[Cancel Subscription] Creem immediate cancel failed:', creemError)
+        // Continue with database deletion even if Creem fails
+      }
+
+      // DELETE subscription from database
+      const { error: deleteError } = await adminClient
+        .from('subscriptions')
+        .delete()
+        .eq('id', subscription.id)
+
+      if (deleteError) {
+        console.error('[Cancel Subscription] Failed to delete subscription:', deleteError)
+        return NextResponse.json(
+          { error: 'Failed to process cancellation' },
+          { status: 500 }
+        )
+      }
+
+      // Send cancellation email with immediate refund notice
+      if (user.email) {
+        try {
+          await sendCancellationEmail({
+            userEmail: user.email,
+            userName: user.user_metadata?.name || user.user_metadata?.full_name,
+            plan: subscription.plan || 'pro',
+            currentPeriodEnd: subscription.current_period_end,
+            subscriptionId: subscription.creem_subscription_id,
+          })
+          console.log('[Cancel Subscription] Cancellation email sent successfully')
+        } catch (emailError) {
+          console.error('[Cancel Subscription] Failed to send cancellation email:', emailError)
+        }
+      }
+
+      console.log('[Cancel Subscription] Immediate cancellation completed, user downgraded to free')
+
+      return NextResponse.json({
+        success: true,
+        immediateCancellation: true,
+        fullyRefundable: true,
+        message: 'Your subscription has been cancelled immediately. You have been downgraded to the free tier and can continue using our service with 20 messages per day.',
+        newTier: 'free',
+        newModel: 'glm-4-flash',
+        dailyLimit: 20,
+      })
+    }
+
+    // RULE 3: Within 48 hours BUT >5 messages → Calculate refund, then scheduled cancellation
+    let refundInfo = null
+    if (hoursSinceSubscription <= 48 && usageCount > 5) {
+      console.log('[Cancel Subscription] Within 48h but used >5 messages - refund calculation needed')
+
+      // Calculate refund percentage based on usage
+      // Pro plan: 100 messages/day, Annual: $19.9 for 365 days or $2.99 for 30 days
+      const messagesPerDay = 100
+      const daysOfQuotaUsed = Math.ceil(usageCount / messagesPerDay)
+      const planDays = subscription.plan === 'annual' ? 365 : 30
+      const refundPercentage = Math.max(0, ((planDays - daysOfQuotaUsed) / planDays) * 100)
+      const estimatedRefund = (refundPercentage / 100) * (subscription.plan === 'annual' ? 19.9 : 2.99)
+
+      refundInfo = {
+        usageCount,
+        daysOfQuotaUsed,
+        planDays,
+        refundPercentage: refundPercentage.toFixed(2) + '%',
+        estimatedRefund: '$' + estimatedRefund.toFixed(2),
+        needEmailSupport: true,
+      }
+
+      console.log('[Cancel Subscription] Refund calculation:', refundInfo)
+
+      // Fall through to normal scheduled cancellation flow
+    }
+
+    // RULE 4: 48h-7 days → Normal scheduled cancellation, contact support for refund consideration
+    // This is the default flow for users between 48h and 7 days
+
     // Check if subscription is already cancelled
     if (subscription.status === 'cancelled' || subscription.status === 'canceled') {
       return NextResponse.json(
@@ -177,9 +291,13 @@ export async function POST(req: Request) {
       success: true,
       status: newStatus,
       current_period_end: subscription.current_period_end,
+      immediateCancellation: false,
       message: newStatus === 'active'
-        ? 'Subscription will be cancelled at the end of the current billing period'
+        ? `Your subscription will be cancelled at the end of your billing period on ${new Date(subscription.current_period_end).toLocaleDateString()}. You can continue using all features until then.`
         : 'Subscription cancelled successfully',
+      refundInfo,
+      accessUntil: subscription.current_period_end,
+      supportEmail: 'support@zeninsight.xyz',
     })
   } catch (error) {
     console.error('[Cancel Subscription] Error:', error)
