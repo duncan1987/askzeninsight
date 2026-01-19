@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
   current_period_end TIMESTAMP WITH TIME ZONE NOT NULL,
   cancel_at_period_end BOOLEAN DEFAULT false, -- true if scheduled to cancel at period end
   refund_status TEXT DEFAULT 'none', -- Tracks refund request status: 'none', 'requested', 'approved', 'rejected', 'processed'
+  replaced_by_new_plan BOOLEAN DEFAULT false, -- true if this subscription was replaced by a plan change
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );

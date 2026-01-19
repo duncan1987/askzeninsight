@@ -86,49 +86,50 @@ export async function POST(req: Request) {
       )
     }
 
-    // Cancel current subscription in Creem, then delete from database
+    // Cancel current subscription in Creem and mark as replaced in database
     if (activeSubscription.creem_subscription_id) {
       try {
         // First, cancel in Creem to stop future charges
+        // Using 'immediate' mode to be consistent with our immediate cancellation logic
+        // This ensures the old subscription is cancelled right away
         await cancelSubscription({
           subscriptionId: activeSubscription.creem_subscription_id,
-          mode: 'scheduled', // Cancel at period end
+          mode: 'immediate', // Cancel immediately in Creem
         })
 
-        // Then, DELETE the old subscription from database to keep it clean
-        const { error: deleteError } = await adminClient
-          .from('subscriptions')
-          .delete()
-          .eq('id', activeSubscription.id)
-
-        if (deleteError) {
-          console.error('[Change Plan] Error deleting old subscription:', deleteError)
-        } else {
-          console.log('[Change Plan] Old subscription deleted successfully from database')
-        }
+        console.log('[Change Plan] Subscription cancelled in Creem')
       } catch (cancelError) {
-        console.error('[Change Plan] Error cancelling subscription:', cancelError)
-        return NextResponse.json(
-          {
-            error: 'Failed to cancel current subscription',
-            details: cancelError instanceof Error ? cancelError.message : 'Unknown error',
-          },
-          { status: 500 }
-        )
-      }
-    } else {
-      // If no Creem subscription ID, just delete from database
-      const { error: deleteError } = await adminClient
-        .from('subscriptions')
-        .delete()
-        .eq('id', activeSubscription.id)
-
-      if (deleteError) {
-        console.error('[Change Plan] Error deleting old subscription:', deleteError)
-      } else {
-        console.log('[Change Plan] Old subscription deleted successfully from database')
+        console.error('[Change Plan] Error cancelling subscription in Creem:', cancelError)
+        // Continue with database update even if Creem cancel fails
+        // User will still have access until period ends based on database record
       }
     }
+
+    // CRITICAL: Update the subscription status instead of deleting it
+    // This preserves the user's access until their current period ends
+    // The new subscription (created after checkout) will override this one
+    const { error: updateError } = await adminClient
+      .from('subscriptions')
+      .update({
+        status: 'cancelled',
+        cancel_at_period_end: true,
+        replaced_by_new_plan: true, // Mark as being replaced
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', activeSubscription.id)
+
+    if (updateError) {
+      console.error('[Change Plan] Error updating subscription status:', updateError)
+      return NextResponse.json(
+        {
+          error: 'Failed to update subscription status',
+          details: updateError.message,
+        },
+        { status: 500 }
+      )
+    }
+
+    console.log('[Change Plan] Subscription marked as cancelled and replaced')
 
     // Return success with information about the new plan
     const periodEndDate = new Date(activeSubscription.current_period_end)
