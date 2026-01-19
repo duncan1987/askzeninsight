@@ -135,6 +135,27 @@ export async function POST(req: Request) {
 
     console.log('[Cancel Subscription] Subscription cancelled successfully')
 
+    // Clean up old subscriptions that are already marked with cancel_at_period_end=true
+    // This keeps the database clean - only the current subscription remains
+    const { error: cleanupError } = await adminClient
+      .from('subscriptions')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('cancel_at_period_end', true)
+      .neq('id', subscription.id) // Don't delete the subscription we just updated
+
+    if (cleanupError) {
+      console.warn('[Cancel Subscription] Failed to cleanup old subscriptions:', cleanupError)
+      // Don't throw - cleanup is optional
+    } else {
+      const { count } = await adminClient
+        .from('subscriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+
+      console.log('[Cancel Subscription] Cleaned up old subscriptions. Remaining subscriptions:', count || 0)
+    }
+
     // Send cancellation email
     if (user.email) {
       try {
@@ -185,6 +206,20 @@ export async function POST(req: Request) {
 
       if (updateError) {
         console.error('[Cancel Subscription] Update error:', updateError)
+      }
+
+      // Clean up old subscriptions that are already marked with cancel_at_period_end=true
+      const { error: cleanupError } = await adminClient
+        .from('subscriptions')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('cancel_at_period_end', true)
+        .neq('id', subscription.id) // Don't delete the subscription we just updated
+
+      if (cleanupError) {
+        console.warn('[Cancel Subscription] Failed to cleanup old subscriptions:', cleanupError)
+      } else {
+        console.log('[Cancel Subscription] Cleaned up old subscriptions in error handler')
       }
 
       // Return success - subscription is already scheduled for cancellation

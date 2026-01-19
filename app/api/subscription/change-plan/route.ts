@@ -86,28 +86,26 @@ export async function POST(req: Request) {
       )
     }
 
-    // Cancel current subscription
+    // Cancel current subscription in Creem, then delete from database
     if (activeSubscription.creem_subscription_id) {
       try {
+        // First, cancel in Creem to stop future charges
         await cancelSubscription({
           subscriptionId: activeSubscription.creem_subscription_id,
           mode: 'scheduled', // Cancel at period end
         })
 
-        // Update database to mark as scheduled for cancellation
-        const { error: updateError } = await adminClient
+        // Then, DELETE the old subscription from database to keep it clean
+        const { error: deleteError } = await adminClient
           .from('subscriptions')
-          .update({
-            cancel_at_period_end: true,
-            updated_at: new Date().toISOString(),
-          })
+          .delete()
           .eq('id', activeSubscription.id)
 
-        if (updateError) {
-          console.error('[Change Plan] Error updating subscription:', updateError)
+        if (deleteError) {
+          console.error('[Change Plan] Error deleting old subscription:', deleteError)
+        } else {
+          console.log('[Change Plan] Old subscription deleted successfully from database')
         }
-
-        console.log('[Change Plan] Current subscription cancelled successfully')
       } catch (cancelError) {
         console.error('[Change Plan] Error cancelling subscription:', cancelError)
         return NextResponse.json(
@@ -117,6 +115,18 @@ export async function POST(req: Request) {
           },
           { status: 500 }
         )
+      }
+    } else {
+      // If no Creem subscription ID, just delete from database
+      const { error: deleteError } = await adminClient
+        .from('subscriptions')
+        .delete()
+        .eq('id', activeSubscription.id)
+
+      if (deleteError) {
+        console.error('[Change Plan] Error deleting old subscription:', deleteError)
+      } else {
+        console.log('[Change Plan] Old subscription deleted successfully from database')
       }
     }
 
