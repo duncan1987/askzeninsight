@@ -44,11 +44,12 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
   // Check if user has active subscription
   // Note: We include 'cancelled' status because users keep access until period ends
   // Also check that cancel_at_period_end is not true (unless we want to include scheduled cancellations)
+  // IMPORTANT: If refund_status is 'requested', the subscription is considered cancelled
   const now = new Date().toISOString()
 
   const { data: subscriptions, error } = await supabase
     .from('subscriptions')
-    .select('status, current_period_end, plan, cancel_at_period_end')
+    .select('status, current_period_end, plan, cancel_at_period_end, refund_status')
     .eq('user_id', userId)
     .in('status', ['active', 'cancelled', 'canceled']) // Include cancelled subscriptions
     .gte('current_period_end', now)
@@ -60,22 +61,20 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
   console.log('[getUserSubscription] subscriptions error:', error)
   console.log('[getUserSubscription] subscriptions data:', subscriptions)
 
-  // Get the most recent subscription that is actually active (not scheduled to cancel)
-  const subscription = subscriptions?.find(sub =>
-    sub.status === 'active' && !sub.cancel_at_period_end
-  ) || subscriptions?.[0] // Fallback to first subscription if none are fully active
+  // Get the most recent subscription
+  const subscription = subscriptions?.[0]
+
+  // Check if subscription has a refund request
+  // If refund_status is 'requested', the subscription is considered cancelled for our system
+  const hasRefundRequest = subscription && subscription.refund_status && subscription.refund_status !== 'none'
 
   console.log('[getUserSubscription] selected subscription:', subscription)
-  console.log('[getUserSubscription] isPro check:', {
-    hasSubscription: !!subscription,
-    status: subscription?.status,
-    cancelAtPeriodEnd: subscription?.cancel_at_period_end,
-    periodEnd: subscription?.current_period_end,
-    now: now,
-    periodEndAfterNow: subscription ? new Date(subscription.current_period_end) >= new Date(now) : false
+  console.log('[getUserSubscription] refund_status check:', {
+    hasRefundRequest,
+    refundStatus: subscription?.refund_status,
   })
 
-  const isPro = subscription && ['active', 'cancelled', 'canceled'].includes(subscription.status) && new Date(subscription.current_period_end) >= new Date(now)
+  const isPro = subscription && !hasRefundRequest && ['active', 'cancelled', 'canceled'].includes(subscription.status) && new Date(subscription.current_period_end) >= new Date(now)
   const plan = subscription?.plan as PlanType | null | undefined
 
   return {

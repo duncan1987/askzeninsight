@@ -209,12 +209,7 @@ export function SubscriptionStatusCard({ subscription, usageCount = 0 }: Subscri
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex gap-2">
                 <BillingPortalButton />
-                <CancelSubscriptionButton
-                  subscriptionId={subscription.id}
-                  currentPeriodEnd={subscription.current_period_end}
-                  isCancelled={false}
-                  hoursSinceSubscription={Math.floor((new Date().getTime() - new Date(subscription.created_at).getTime()) / (1000 * 60 * 60))}
-                />
+                <CancelSubscriptionButton isCancelled={false} />
               </div>
             </div>
 

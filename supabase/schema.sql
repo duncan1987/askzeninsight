@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
   interval TEXT, -- 'month' or 'year'
   current_period_end TIMESTAMP WITH TIME ZONE NOT NULL,
   cancel_at_period_end BOOLEAN DEFAULT false, -- true if scheduled to cancel at period end
+  refund_status TEXT DEFAULT 'none', -- Tracks refund request status: 'none', 'requested', 'approved', 'rejected', 'processed'
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );
