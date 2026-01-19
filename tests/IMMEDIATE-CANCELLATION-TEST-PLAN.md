@@ -45,7 +45,7 @@ WHERE table_name = 'subscriptions' AND column_name = 'refund_status';
     - `usageCount: ≤5`
     - `fullyRefundable: true`
     - `refundPercentage: '100%'`
-    - `estimatedRefund: '$2.99'` or `'$19.90'`
+    - `estimatedRefund: '$2.99'` or `'$24.90'`
   - `newTier: 'free'`
   - `newModel: 'glm-4-flash'`
   - `dailyLimit: 20`

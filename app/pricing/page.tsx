@@ -27,7 +27,7 @@ export default function PricingPage() {
               period="/month"
               description="Perfect for exploring spiritual guidance"
               features={[
-                '20 messages per day',
+                '10 messages per day',
                 'Sign up to get started',
                 'Basic AI guidance',
                 'No credit card required',
@@ -42,7 +42,7 @@ export default function PricingPage() {
               period="/month"
               description="For dedicated practitioners"
               features={[
-                '100 messages per day',
+                '30 messages per day',
                 'Save chat history',
                 'Advanced AI insights',
                 'Priority support',
@@ -56,16 +56,16 @@ export default function PricingPage() {
 
             <PricingCard
               title="Annual"
-              price="$19.9"
+              price="$24.9"
               period="/year"
               description="Best value for serious practitioners"
               features={[
-                '100 messages per day',
+                '30 messages per day',
                 'Save chat history',
                 'Advanced AI insights',
                 'Priority support',
                 'Early access to features',
-                'Save 45% vs monthly',
+                'Save 30% vs monthly',
               ]}
               ctaText="Subscribe Now"
               ctaHref="/pricing"
@@ -92,7 +92,7 @@ export default function PricingPage() {
               <div>
                 <h3 className="font-semibold mb-2">Can I try before subscribing?</h3>
                 <p className="text-muted-foreground">
-                  Yes! The free plan gives you 20 messages per day to explore
+                  Yes! The free plan gives you 10 messages per day to explore
                   the service.
                 </p>
               </div>

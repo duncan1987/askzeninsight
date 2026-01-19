@@ -109,21 +109,21 @@ export default function TermsPage() {
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>
-                <strong>Free Plan:</strong> 50 messages per day, no chat history
+                <strong>Free Plan:</strong> 10 messages per day, no chat history
                 storage
               </li>
               <li>
-                <strong>Pro Plan ($1/month):</strong> 100 premium messages per day, chat
+                <strong>Pro Plan ($2.99/month):</strong> 30 premium messages per day, chat
                 history saved, advanced AI model
               </li>
               <li>
-                <strong>Annual Plan ($9/year):</strong> 100 premium messages per day,
+                <strong>Annual Plan ($24.9/year):</strong> 30 premium messages per day,
                 chat history saved, advanced AI model, best value
               </li>
             </ul>
             <p className="text-muted-foreground">
               <strong>Fair Use Policy:</strong> To prevent abuse and ensure service
-              stability, premium messages (first 100 per day) use advanced AI models.
+              stability, premium messages (first 30 per day) use advanced AI models.
               After exceeding the premium quota, messages will use a basic AI model.
             </p>
           </section>
@@ -187,10 +187,10 @@ export default function TermsPage() {
             </p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>
-                <strong>Free Plan:</strong> 50 messages per day
+                <strong>Free Plan:</strong> 10 messages per day
               </li>
               <li>
-                <strong>Pro & Annual Plans:</strong> 100 premium messages per day
+                <strong>Pro & Annual Plans:</strong> 30 premium messages per day
               </li>
             </ul>
             <p className="text-muted-foreground">

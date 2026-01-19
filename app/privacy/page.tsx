@@ -61,7 +61,7 @@ export default function PrivacyPage() {
               <li>Provide AI-powered spiritual guidance conversations</li>
               <li>Save and retrieve your chat history</li>
               <li>Authenticate your account and maintain your session</li>
-              <li>Enforce usage limits (50 messages/day for free users)</li>
+              <li>Enforce usage limits (10 messages/day for free users)</li>
               <li>Process subscription payments and billing</li>
               <li>Provide customer support</li>
               <li>Improve our AI model and Service quality</li>

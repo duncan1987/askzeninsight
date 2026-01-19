@@ -2,9 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { getUserSubscription } from '@/lib/subscription'
 
 export const USAGE_LIMITS = {
-  ANONYMOUS_DAILY: 20, // 20 messages per day for anonymous users
-  FREE_DAILY: 20, // 20 messages per day for free authenticated users
-  PRO_DAILY: 100, // 100 messages per day for pro users (premium quota)
+  ANONYMOUS_DAILY: 10, // 10 messages per day for anonymous users
+  FREE_DAILY: 10, // 10 messages per day for free authenticated users
+  PRO_DAILY: 30, // 30 messages per day for pro users (premium quota)
 }
 
 export const MESSAGE_LENGTH_LIMIT = 10000 // Max characters per message to prevent abuse
@@ -34,7 +34,7 @@ export async function getUserUsageLimit(userId: string): Promise<number> {
 
 /**
  * Check if user is within premium quota (fair use policy)
- * Pro/Annual users get premium model for first 100 messages per day
+ * Pro/Annual users get premium model for first 30 messages per day
  * After that, they get downgraded to basic model
  */
 export async function isWithinPremiumQuota(userId?: string): Promise<boolean> {

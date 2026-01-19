@@ -5,7 +5,7 @@
 ### Problem Scenario
 
 **User Action:**
-1. Free user subscribes to **Annual plan** ($19.9/year, 365 days)
+1. Free user subscribes to **Annual plan** ($24.9/year, 365 days)
 2. Sends **5 messages** as Pro user (5/100 used)
 3. Clicks **"Switch to Monthly"** to change to **Monthly plan** ($2.99/month)
 
