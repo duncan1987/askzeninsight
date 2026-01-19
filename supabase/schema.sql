@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS public.usage_records (
   user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   message_type TEXT NOT NULL CHECK (message_type IN ('user', 'assistant')),
   user_tier TEXT NOT NULL CHECK (user_tier IN ('anonymous', 'free', 'pro')),
+  subscription_id UUID REFERENCES public.subscriptions(id) ON DELETE SET NULL,
   timestamp TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );
 

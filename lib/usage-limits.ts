@@ -55,8 +55,11 @@ export async function isWithinPremiumQuota(userId?: string): Promise<boolean> {
 /**
  * Check if user can send more messages
  *
- * IMPORTANT: We only count messages that were sent while the user was on the SAME tier.
- * This prevents free-tier usage from counting against pro-tier quota and vice versa.
+ * IMPORTANT: We count messages based on BOTH tier AND subscription ID.
+ * This ensures:
+ * - Free-tier usage doesn't count against Pro-tier quota
+ * - When user changes plans (monthly <-> annual), usage counter resets
+ * - Each subscription has its own independent usage tracking
  */
 export async function checkUsageLimit(
   userId?: string
@@ -66,6 +69,7 @@ export async function checkUsageLimit(
   // Determine limit based on tier
   let limit: number
   let currentTier: 'anonymous' | 'free' | 'pro'
+  let currentSubscriptionId: string | undefined
 
   if (!userId || subscription.tier === 'anonymous') {
     limit = USAGE_LIMITS.ANONYMOUS_DAILY
@@ -73,6 +77,27 @@ export async function checkUsageLimit(
   } else if (subscription.tier === 'pro') {
     limit = USAGE_LIMITS.PRO_DAILY
     currentTier = 'pro'
+
+    // Get current subscription ID for Pro users
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const adminClient = createAdminClient()
+
+      if (adminClient) {
+        const { data: subRecords } = await adminClient
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', userId)
+          .in('status', ['active', 'cancelled', 'canceled'])
+          .gte('current_period_end', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        currentSubscriptionId = subRecords?.[0]?.id
+      }
+    } catch (error) {
+      console.error('[checkUsageLimit] Failed to fetch subscription ID:', error)
+    }
   } else {
     limit = USAGE_LIMITS.FREE_DAILY
     currentTier = 'free'
@@ -89,14 +114,23 @@ export async function checkUsageLimit(
     return { canProceed: true, limit, remaining: limit }
   }
 
-  // CRITICAL: Filter by user_tier to only count messages sent at current tier level
-  const { count } = await supabase
+  // CRITICAL: Filter by BOTH user_tier AND subscription_id
+  // - For anonymous/free: filter by tier only (subscription_id is NULL)
+  // - For pro: filter by BOTH tier AND subscription_id (ensures counter resets on plan change)
+  let query = supabase
     .from('usage_records')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId || null)
     .eq('message_type', 'user')
-    .eq('user_tier', currentTier)  // Only count messages sent at this tier level
+    .eq('user_tier', currentTier)
     .gte('timestamp', twentyFourHoursAgo.toISOString())
+
+  // For Pro users, also filter by subscription_id
+  if (currentTier === 'pro' && currentSubscriptionId) {
+    query = query.eq('subscription_id', currentSubscriptionId)
+  }
+
+  const { count } = await query
 
   const used = count || 0
   const remaining = Math.max(0, limit - used)
@@ -105,6 +139,7 @@ export async function checkUsageLimit(
   console.log('[checkUsageLimit]', {
     userId,
     currentTier,
+    currentSubscriptionId,
     limit,
     used,
     remaining,
@@ -117,8 +152,11 @@ export async function checkUsageLimit(
 /**
  * Get user's usage statistics
  *
- * IMPORTANT: Only counts messages sent while user was on the current tier.
- * This ensures free-tier usage doesn't count against pro-tier quota.
+ * IMPORTANT: Counts messages based on BOTH tier AND subscription ID.
+ * This ensures:
+ * - Free-tier usage doesn't count against Pro-tier quota
+ * - When user changes plans (monthly <-> annual), usage counter resets
+ * - Each subscription has its own independent usage tracking
  */
 export async function getUsageStats(userId?: string) {
   const subscription = await getUserSubscription(userId)
@@ -126,6 +164,7 @@ export async function getUsageStats(userId?: string) {
   // Determine limit based on tier
   let limit: number
   let currentTier: 'anonymous' | 'free' | 'pro'
+  let currentSubscriptionId: string | undefined
 
   if (!userId || subscription.tier === 'anonymous') {
     limit = USAGE_LIMITS.ANONYMOUS_DAILY
@@ -133,6 +172,27 @@ export async function getUsageStats(userId?: string) {
   } else if (subscription.tier === 'pro') {
     limit = USAGE_LIMITS.PRO_DAILY
     currentTier = 'pro'
+
+    // Get current subscription ID for Pro users
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const adminClient = createAdminClient()
+
+      if (adminClient) {
+        const { data: subRecords } = await adminClient
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', userId)
+          .in('status', ['active', 'cancelled', 'canceled'])
+          .gte('current_period_end', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        currentSubscriptionId = subRecords?.[0]?.id
+      }
+    } catch (error) {
+      console.error('[getUsageStats] Failed to fetch subscription ID:', error)
+    }
   } else {
     limit = USAGE_LIMITS.FREE_DAILY
     currentTier = 'free'
@@ -153,14 +213,23 @@ export async function getUsageStats(userId?: string) {
     }
   }
 
-  // CRITICAL: Filter by user_tier to only count messages sent at current tier level
-  const { count } = await supabase
+  // CRITICAL: Filter by BOTH user_tier AND subscription_id
+  // - For anonymous/free: filter by tier only (subscription_id is NULL)
+  // - For pro: filter by BOTH tier AND subscription_id (ensures counter resets on plan change)
+  let query = supabase
     .from('usage_records')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId || null)
     .eq('message_type', 'user')
-    .eq('user_tier', currentTier)  // Only count messages sent at this tier level
+    .eq('user_tier', currentTier)
     .gte('timestamp', twentyFourHoursAgo.toISOString())
+
+  // For Pro users, also filter by subscription_id
+  if (currentTier === 'pro' && currentSubscriptionId) {
+    query = query.eq('subscription_id', currentSubscriptionId)
+  }
+
+  const { count } = await query
 
   const used = count || 0
   const remaining = Math.max(0, limit - used)
@@ -169,6 +238,7 @@ export async function getUsageStats(userId?: string) {
   console.log('[getUsageStats]', {
     userId,
     currentTier,
+    currentSubscriptionId,
     limit,
     used,
     remaining,
@@ -184,13 +254,14 @@ export async function getUsageStats(userId?: string) {
 }
 
 /**
- * Record a message usage with user tier
+ * Record a message usage with user tier and subscription ID
  *
- * IMPORTANT: We record the user's tier at the time of message sending.
+ * IMPORTANT: We record both the user's tier AND the subscription ID at the time of message sending.
  * This ensures that:
  * - Free tier messages don't count against Pro tier quota
  * - When user upgrades from free to pro, their usage counter resets
  * - When user downgrades from pro to free, only free-tier usage counts
+ * - When user changes plans (monthly <-> annual), usage counter resets for each subscription
  */
 export async function recordUsage(
   userId: string | undefined,
@@ -204,15 +275,42 @@ export async function recordUsage(
 
   // Get user's current tier
   let userTier: 'anonymous' | 'free' | 'pro' = 'anonymous'
+  let subscriptionId: string | undefined
+
   if (userId) {
     const subscription = await getUserSubscription(userId)
     userTier = subscription.tier
+
+    // For Pro users, get the actual subscription record ID
+    if (subscription.tier === 'pro' && userId) {
+      try {
+        const { createAdminClient } = await import('@/lib/supabase/admin')
+        const adminClient = createAdminClient()
+
+        if (adminClient) {
+          const { data: subRecords } = await adminClient
+            .from('subscriptions')
+            .select('id')
+            .eq('user_id', userId)
+            .in('status', ['active', 'cancelled', 'canceled'])
+            .gte('current_period_end', new Date().toISOString())
+            .order('created_at', { ascending: false })
+            .limit(1)
+
+          subscriptionId = subRecords?.[0]?.id
+        }
+      } catch (error) {
+        console.error('[recordUsage] Failed to fetch subscription ID:', error)
+        // Continue without subscription_id - this is okay for anonymous/free users
+      }
+    }
   }
 
   const record = {
     user_id: userId || null,
     message_type: messageType,
     user_tier: userTier,
+    subscription_id: subscriptionId || null,
     timestamp: new Date().toISOString(),
   }
 
