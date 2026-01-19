@@ -91,85 +91,30 @@ export function PricingCard({
     }
 
     // If trying to subscribe but already has active subscription
-    if (subscriptionStatus?.hasActiveSubscription && creemPlan) {
+    if (subscriptionStatus?.hasActiveSubscription) {
       const currentPlan = subscriptionStatus.activeSubscription?.plan
 
-      // Check if trying to subscribe to same plan
-      if (currentPlan === creemPlan) {
-        alert(`You already have an active ${creemPlan === 'annual' ? 'Annual' : 'Pro'} subscription. Please go to your dashboard to manage your subscription.`)
-        window.location.href = '/dashboard'
-        return
-      }
-
-      // Different plan - offer to upgrade
-      const confirmChange = confirm(
-        `You currently have a ${currentPlan === 'annual' ? 'Annual' : 'Pro'} subscription.\n\n` +
-        `Would you like to:\n` +
-        `1. Cancel your current subscription and subscribe to ${creemPlan === 'annual' ? 'Annual' : 'Pro'}\n` +
-        `2. Keep your current subscription\n\n` +
-        `If you choose to cancel, you'll have access until the end of your current billing period.`
+      alert(
+        `You currently have an active ${currentPlan === 'annual' ? 'Annual' : 'Monthly'} subscription.\n\n` +
+        `To subscribe to a different plan, please:\n` +
+        `1. Go to your Dashboard\n` +
+        `2. Cancel your current subscription\n` +
+        `3. Then subscribe to the new plan\n\n` +
+        `You'll continue to have access until your current billing period ends.`
       )
-
-      if (!confirmChange) {
-        return
-      }
-
-      // Proceed with cancellation and new subscription
-      setActionLoading(true)
-      try {
-        const changeRes = await fetch('/api/subscription/change-plan', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ newPlan: creemPlan }),
-        })
-
-        if (!changeRes.ok) {
-          const errorData = await changeRes.json()
-          alert(errorData.error || 'Failed to change subscription. Please try again.')
-          setActionLoading(false)
-          return
-        }
-
-        const changeData = await changeRes.json()
-        alert(changeData.message + '\n\nRedirecting to checkout...')
-
-        // Now proceed with new subscription
-        const res = await fetch('/api/creem/checkout', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ plan: creemPlan }),
-        })
-
-        if (!res.ok) {
-          alert('Failed to start checkout. Please try again.')
-          setActionLoading(false)
-          return
-        }
-
-        const data = (await res.json()) as { checkout_url?: string }
-        if (!data.checkout_url) {
-          alert('Checkout URL missing. Please try again.')
-          setActionLoading(false)
-          return
-        }
-
-        setActionLoading(false)
-        window.location.href = data.checkout_url
-        return
-      } catch (error) {
-        console.error('Error changing subscription:', error)
-        alert('Failed to change subscription. Please try again.')
-        setActionLoading(false)
-        return
-      }
+      window.location.href = '/dashboard'
+      return
     }
 
     if (creemPlan) {
+      setActionLoading(true)
       const res = await fetch('/api/creem/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ plan: creemPlan }),
       })
+
+      setActionLoading(false)
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}))
@@ -226,22 +171,11 @@ export function PricingCard({
     }
 
     if (subscriptionStatus?.hasActiveSubscription) {
-      const currentPlan = subscriptionStatus.activeSubscription?.plan
-
-      if (currentPlan === creemPlan) {
-        // Already subscribed to this plan
-        return {
-          disabled: true,
-          text: 'Current Plan',
-          variant: 'secondary' as const,
-        }
-      } else {
-        // Different plan - can upgrade/downgrade
-        return {
-          disabled: actionLoading,
-          text: actionLoading ? 'Processing...' : ctaText,
-          variant: highlighted ? 'default' : 'outline' as const,
-        }
+      // Already has a subscription - go to dashboard
+      return {
+        disabled: false,
+        text: 'Manage Subscription',
+        variant: 'secondary' as const,
       }
     }
 
@@ -254,8 +188,7 @@ export function PricingCard({
   }
 
   const buttonState = getButtonState()
-  const isCurrentPlan = subscriptionStatus?.hasActiveSubscription &&
-                       subscriptionStatus.activeSubscription?.plan === creemPlan
+  const hasActiveSubscription = subscriptionStatus?.hasActiveSubscription
 
   return (
     <Card
@@ -290,14 +223,14 @@ export function PricingCard({
         ))}
       </ul>
 
-      {/* Show message if already subscribed to this plan */}
-      {isCurrentPlan && (
+      {/* Show message if already has any subscription */}
+      {hasActiveSubscription && creemPlan && (
         <div className="mb-4 flex items-start gap-2 p-3 bg-primary/10 border border-primary/20 rounded-lg">
           <AlertCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
           <div className="text-sm">
-            <p className="font-medium">You're on this plan</p>
+            <p className="font-medium">Active Subscription</p>
             <p className="text-muted-foreground text-xs">
-              Go to your dashboard to manage your subscription
+              You already have an active subscription. Go to your dashboard to manage it.
             </p>
           </div>
         </div>

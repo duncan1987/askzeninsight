@@ -4,9 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { BillingPortalButton } from './billing-portal-button'
 import { CancelSubscriptionButton } from './cancel-subscription-button'
-import { AlertCircle, Info, Loader2, ArrowRight } from 'lucide-react'
+import { AlertCircle, Info } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
 
 interface SubscriptionStatusCardProps {
   subscription: {
@@ -23,7 +22,6 @@ interface SubscriptionStatusCardProps {
 }
 
 export function SubscriptionStatusCard({ subscription, usageCount = 0 }: SubscriptionStatusCardProps) {
-  const [changingPlan, setChangingPlan] = useState(false)
   const now = new Date()
   const createdAt = new Date(subscription.created_at)
   const periodEnd = new Date(subscription.current_period_end)
@@ -45,63 +43,6 @@ export function SubscriptionStatusCard({ subscription, usageCount = 0 }: Subscri
   // Determine current plan
   const currentPlan = subscription.plan || 'pro'
   const isAnnual = currentPlan === 'annual' || subscription.interval === 'year'
-
-  // Handle plan change
-  const handlePlanChange = async (newPlan: 'pro' | 'annual') => {
-    if (changingPlan) return
-
-    const planName = newPlan === 'annual' ? 'Annual' : 'Pro'
-    const currentPlanName = isAnnual ? 'Annual' : 'Pro'
-
-    const confirm = window.confirm(
-      `You are currently on the ${currentPlanName} plan.\n\n` +
-      `Would you like to switch to the ${planName} plan?\n\n` +
-      `Your current subscription will be cancelled and you'll have access until ${periodEnd.toLocaleDateString()}.\n\n` +
-      `After confirmation, you'll be redirected to complete the new subscription.`
-    )
-
-    if (!confirm) return
-
-    setChangingPlan(true)
-    try {
-      const res = await fetch('/api/subscription/change-plan', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ newPlan }),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: 'Failed to change subscription' }))
-        alert(errorData.error || 'Failed to change subscription. Please try again.')
-        setChangingPlan(false)
-        return
-      }
-
-      const data = await res.json()
-
-      // Redirect to checkout for new plan
-      const checkoutRes = await fetch('/api/creem/checkout', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ plan: newPlan }),
-      })
-
-      if (!checkoutRes.ok) {
-        alert('Your subscription was cancelled, but we could not redirect to checkout. Please go to the pricing page to complete your new subscription.')
-        window.location.href = '/pricing'
-        return
-      }
-
-      const checkoutData = await checkoutRes.json()
-      if (checkoutData.checkout_url) {
-        window.location.href = checkoutData.checkout_url
-      }
-    } catch (error) {
-      console.error('Error changing plan:', error)
-      alert('Failed to change subscription. Please try again.')
-      setChangingPlan(false)
-    }
-  }
 
   return (
     <Card>
@@ -210,42 +151,6 @@ export function SubscriptionStatusCard({ subscription, usageCount = 0 }: Subscri
               <div className="flex gap-2">
                 <BillingPortalButton />
                 <CancelSubscriptionButton isCancelled={false} />
-              </div>
-            </div>
-
-            {/* Plan Change Options */}
-            <div className="border-t pt-4">
-              <p className="text-sm font-medium mb-3">Want to switch plans?</p>
-              <div className="flex flex-col gap-2">
-                {isAnnual ? (
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between"
-                    onClick={() => handlePlanChange('pro')}
-                    disabled={changingPlan}
-                  >
-                    <span>Switch to Monthly Pro</span>
-                    <span className="text-muted-foreground">$2.99/month</span>
-                    {changingPlan && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-                    {!changingPlan && <ArrowRight className="h-4 w-4 ml-2" />}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between"
-                    onClick={() => handlePlanChange('annual')}
-                    disabled={changingPlan}
-                  >
-                    <span>Upgrade to Annual</span>
-                    <span className="text-muted-foreground">$19.9/year (Save 45%)</span>
-                    {changingPlan && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-                    {!changingPlan && <ArrowRight className="h-4 w-4 ml-2" />}
-                  </Button>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Your current plan will be cancelled and you'll keep access until {periodEnd.toLocaleDateString()}.
-                  The new subscription will start immediately after checkout.
-                </p>
               </div>
             </div>
 
