@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS public.usage_records (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   message_type TEXT NOT NULL CHECK (message_type IN ('user', 'assistant')),
+  user_tier TEXT NOT NULL CHECK (user_tier IN ('anonymous', 'free', 'pro')),
   timestamp TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );
 
