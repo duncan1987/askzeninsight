@@ -8,7 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export async function GET() {
   const results = {
     webhook: {
-      endpoint: 'https://zeninsight.xyz/api/creem/webhook',
+      endpoint: 'https://ask.zeninsight.xyz/api/creem/webhook',
       reachable: false,
       method: 'POST',
     },
@@ -86,7 +86,7 @@ export async function GET() {
     ...results,
     nextSteps: results.database.subscriptions === 0
       ? [
-          '1. Complete a test subscription at https://zeninsight.xyz/pricing',
+          '1. Complete a test subscription at https://ask.zeninsight.xyz/pricing',
           '2. Check Vercel logs for webhook activity',
           '3. Verify subscription appears in this check endpoint',
         ]

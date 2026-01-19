@@ -179,7 +179,7 @@ export async function sendWelcomeEmail({
                 <p>Ready to begin? Your dashboard awaits, where you can start a new conversation, explore previous insights, and manage your subscription.</p>
 
                 <div style="text-align: center;">
-                  <a href="https://zeninsight.xyz/chat" class="button">Start Chatting Now</a>
+                  <a href="https://ask.zeninsight.xyz/chat" class="button">Start Chatting Now</a>
                 </div>
 
                 <h2>Questions or Need Help?</h2>
@@ -197,9 +197,9 @@ export async function sendWelcomeEmail({
               <div class="footer">
                 <p>May your journey be filled with clarity and peace. 🌸</p>
                 <p style="margin-top: 20px;">
-                  <a href="https://zeninsight.xyz/dashboard">Dashboard</a> •
-                  <a href="https://zeninsight.xyz/refund">Refund Policy</a> •
-                  <a href="https://zeninsight.xyz/terms">Terms of Service</a>
+                  <a href="https://ask.zeninsight.xyz/dashboard">Dashboard</a> •
+                  <a href="https://ask.zeninsight.xyz/refund">Refund Policy</a> •
+                  <a href="https://ask.zeninsight.xyz/terms">Terms of Service</a>
                 </p>
                 <p style="margin-top: 10px;">
                   Ask Zen Insight • <a href="mailto:support@zeninsight.xyz">support@zeninsight.xyz</a>
@@ -354,7 +354,7 @@ export async function sendCancellationEmail({
               </div>
 
               <div style="text-align: center;">
-                <a href="https://zeninsight.xyz" class="button">Visit Ask Zen Insight</a>
+                <a href="https://ask.zeninsight.xyz" class="button">Visit Ask Zen Insight</a>
               </div>
               <p style="text-align: center; color: #6b7280; font-size: 14px; margin-top: 10px;">
                 Once signed in, you can access your dashboard from the menu
@@ -362,7 +362,7 @@ export async function sendCancellationEmail({
 
               <div class="footer">
                 <p>Need help? Contact us at <a href="mailto:support@zeninsight.xyz">support@zeninsight.xyz</a></p>
-                <p>Ask Zen Insight • <a href="https://zeninsight.xyz/refund">Refund Policy</a> • <a href="https://zeninsight.xyz/terms">Terms of Service</a></p>
+                <p>Ask Zen Insight • <a href="https://ask.zeninsight.xyz/refund">Refund Policy</a> • <a href="https://ask.zeninsight.xyz/terms">Terms of Service</a></p>
               </div>
             </div>
           </body>
