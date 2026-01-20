@@ -159,7 +159,7 @@ export function ChatInterface() {
     }
   }
 
-  const saveMessage = async (role: "user" | "assistant", content: string) => {
+  const saveMessage = async (role: "user" | "assistant", content: string, explicitConversationId?: string) => {
     // Only save messages for authenticated users with history enabled
     if (!userTier.saveHistory) {
       console.log("Not saving message - history not enabled")
@@ -168,18 +168,24 @@ export function ChatInterface() {
 
     try {
       setIsSaving(true)
-      console.log("Saving message:", { role, content: content.substring(0, 50) + "...", conversationId: currentConversationId })
+      // Use explicit conversationId if provided (to avoid async state issues)
+      const convId = explicitConversationId !== undefined ? explicitConversationId : currentConversationId
+      console.log("Saving message:", { role, content: content.substring(0, 50) + "...", conversationId: convId })
       const response = await fetch("/api/conversations/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: currentConversationId, role, content }),
+        body: JSON.stringify({ conversationId: convId, role, content }),
       })
       if (response.ok) {
         const data = await response.json()
         console.log("Message saved successfully:", data)
-        setCurrentConversationId(data.conversationId)
+        // Only update state if we got a new conversation ID
+        if (data.conversationId && data.conversationId !== currentConversationId) {
+          setCurrentConversationId(data.conversationId)
+        }
         // Refresh conversation list
         loadConversations()
+        return data.conversationId
       } else {
         console.error("Failed to save message:", response.status, response.statusText)
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
@@ -206,8 +212,8 @@ export function ChatInterface() {
     setInput("")
     setIsLoading(true)
 
-    // Save user message to database (wait for it to complete to ensure conversationId is set)
-    await saveMessage("user", userInput)
+    // Save user message to database and get the conversation ID
+    const conversationId = await saveMessage("user", userInput)
 
     // Create empty assistant message for streaming
     const assistantMessageId = (Date.now() + 1).toString()
@@ -269,9 +275,9 @@ export function ChatInterface() {
         )
       }
 
-      // Save assistant message to database
-      if (fullResponse) {
-        await saveMessage("assistant", fullResponse)
+      // Save assistant message to database using the conversation ID we got earlier
+      if (fullResponse && conversationId) {
+        await saveMessage("assistant", fullResponse, conversationId)
       }
     } catch (error) {
       console.error("Chat error:", error)

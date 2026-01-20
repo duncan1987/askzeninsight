@@ -150,6 +150,19 @@ export default function TermsPage() {
                 before any price change takes effect.
               </li>
               <li>
+                <strong>AI Model Cost Adjustment:</strong> Subscription fees are
+                subject to adjustment in response to changes in third-party AI model
+                pricing and infrastructure costs. As our service relies on external
+                AI providers (including but not limited to Zhipu AI, OpenAI, Anthropic,
+                and other LLM providers), significant fluctuations in their pricing
+                or the introduction of new cost structures may necessitate corresponding
+                adjustments to our subscription fees. Any such adjustments will be made
+                with reasonable notice (minimum 30 days) to existing subscribers, and
+                you will have the opportunity to cancel your subscription before the
+                new pricing takes effect. We strive to maintain price stability while
+                ensuring sustainable service delivery.
+              </li>
+              <li>
                 <strong>Dispute Resolution:</strong> You agree to contact us via
                 support@zeninsight.xyz before initiating any disputes with the
                 payment platform. Direct disputes or chargebacks with Creem without
