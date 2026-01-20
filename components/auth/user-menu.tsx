@@ -54,12 +54,6 @@ export function UserMenu({ user }: UserMenuProps) {
         >
           Dashboard
         </a>
-        <a
-          href="/pricing"
-          className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          Subscription
-        </a>
         <DropdownMenuSeparator />
         <SignOutButton variant="dropdown" />
       </DropdownMenuContent>

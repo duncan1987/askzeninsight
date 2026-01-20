@@ -77,6 +77,7 @@ export async function POST(req: Request) {
     }
 
     // Get today's message count for refund calculation
+    // IMPORTANT: Only count user messages, not assistant messages
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
@@ -84,11 +85,12 @@ export async function POST(req: Request) {
       .from('usage_records')
       .select('id')
       .eq('user_id', user.id)
+      .eq('message_type', 'user')  // Only count user messages for refund calculation
       .gte('timestamp', today.toISOString())
 
     const usageCount = usageRecords?.length || 0
 
-    console.log('[Cancel Subscription] Usage count:', usageCount)
+    console.log('[Cancel Subscription] Usage count (user messages only):', usageCount)
 
     // Calculate refund info
     const isRefundEligible = hoursSinceSubscription <= 48

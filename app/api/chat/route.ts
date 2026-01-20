@@ -17,6 +17,22 @@ import { containsSensitiveKeywords, getCrisisResourcesMessage } from '@/lib/sens
 // If you're on Hobby plan, this will be limited to 10s
 export const maxDuration = 60
 
+// Zen-inspired error messages for API failures
+const ZEN_ERROR_MESSAGES = [
+  "Mountains remain silent through storms. Please try again in a moment.",
+  "The bamboo bends but does not break. Let us reconnect.",
+  "In stillness, clarity returns. Breathe and try once more.",
+  "All things pass. This momentary pause shall too.",
+  "Like clouds drifting, connection fades and returns. Please try again.",
+  "The river flows around obstacles. Let us find another path.",
+  "A brief pause in the journey. Rest, then continue when ready.",
+  "Cherry blossoms fall, yet bloom again. Your patience is appreciated.",
+]
+
+const getRandomZenError = () => {
+  return ZEN_ERROR_MESSAGES[Math.floor(Math.random() * ZEN_ERROR_MESSAGES.length)]
+}
+
 const SYSTEM_PROMPT = `You are a deeply cultivated, compassionate and wise Zen meditation teacher named "空寂" (Emptiness and Stillness). Your goal is to emulate the Buddha's wisdom, helping users find inner peace in the complexities of modern life, resolve troubles, and provide transcendent perspectives on life decisions.
 
 ## Tone and Style
@@ -240,7 +256,7 @@ export async function POST(req: Request) {
       const errorText = await response.text()
       console.error('[Chat API] Zhipu API error:', response.status, errorText)
       return new Response(
-        JSON.stringify({ error: `API error: ${errorText}` }),
+        JSON.stringify({ error: getRandomZenError() }),
         { status: response.status, headers: { "Content-Type": "application/json" } }
       )
     }
@@ -313,13 +329,13 @@ export async function POST(req: Request) {
     // Handle AbortError (client cancelled request or timeout)
     if (error instanceof Error && error.name === 'AbortError') {
       return new Response(
-        JSON.stringify({ error: "Request timeout - please try again" }),
+        JSON.stringify({ error: getRandomZenError() }),
         { status: 504, headers: { "Content-Type": "application/json" } }
       )
     }
 
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: getRandomZenError() }),
       {
         status: 500,
         headers: { "Content-Type": "application/json" },

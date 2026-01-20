@@ -35,6 +35,22 @@ interface ChatError {
   remaining?: number
 }
 
+// Zen-inspired error messages for API failures
+const ZEN_ERROR_MESSAGES = [
+  "Mountains remain silent through storms. Please try again in a moment.",
+  "The bamboo bends but does not break. Let us reconnect.",
+  "In stillness, clarity returns. Breathe and try once more.",
+  "All things pass. This momentary pause shall too.",
+  "Like clouds drifting, connection fades and returns. Please try again.",
+  "The river flows around obstacles. Let us find another path.",
+  "A brief pause in the journey. Rest, then continue when ready.",
+  "Cherry blossoms fall, yet bloom again. Your patience is appreciated.",
+]
+
+const getRandomZenError = () => {
+  return ZEN_ERROR_MESSAGES[Math.floor(Math.random() * ZEN_ERROR_MESSAGES.length)]
+}
+
 export function ChatInterface() {
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<Message[]>([
@@ -281,7 +297,14 @@ export function ChatInterface() {
       }
     } catch (error) {
       console.error("Chat error:", error)
-      const errorMessage = error instanceof Error ? error.message : "I apologize, but I'm having trouble connecting right now. Please try again."
+      // Use zen-inspired error message for API errors, or show specific error message for limits
+      let errorMessage = getRandomZenError()
+      if (error instanceof Error) {
+        // For usage limit errors (429), show the specific message
+        if (error.message.includes("Daily message limit")) {
+          errorMessage = error.message
+        }
+      }
       setMessages((prev) => [
         ...prev,
         {

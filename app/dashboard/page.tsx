@@ -48,11 +48,12 @@ export default async function DashboardPage() {
       .limit(1)
       .maybeSingle(),
 
-    // Get today's message count
+    // Get today's message count (user messages only for accurate refund calculation)
     supabase
       .from('usage_records')
       .select('id')
       .eq('user_id', user.id)
+      .eq('message_type', 'user')  // Only count user messages
       .gte('timestamp', today.toISOString())
   ])
 

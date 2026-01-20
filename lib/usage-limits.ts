@@ -86,14 +86,24 @@ export async function checkUsageLimit(
       if (adminClient) {
         const { data: subRecords } = await adminClient
           .from('subscriptions')
-          .select('id')
+          .select('id, status, current_period_end, replaced_by_new_plan')
           .eq('user_id', userId)
-          .in('status', ['active', 'cancelled', 'canceled'])
-          .gte('current_period_end', new Date().toISOString())
           .order('created_at', { ascending: false })
           .limit(1)
 
-        currentSubscriptionId = subRecords?.[0]?.id
+        // Get the most recent subscription that is NOT replaced by a new plan
+        const activeSub = subRecords?.find((sub: any) =>
+          sub.status === 'active' && !sub.replaced_by_new_plan
+        )
+
+        currentSubscriptionId = activeSub?.id
+
+        console.log('[checkUsageLimit] Subscription lookup:', {
+          userId,
+          foundSubscriptions: subRecords?.length || 0,
+          activeSubscriptionId: currentSubscriptionId,
+          subscriptionDetails: subRecords,
+        })
       }
     } catch (error) {
       console.error('[checkUsageLimit] Failed to fetch subscription ID:', error)
@@ -181,14 +191,24 @@ export async function getUsageStats(userId?: string) {
       if (adminClient) {
         const { data: subRecords } = await adminClient
           .from('subscriptions')
-          .select('id')
+          .select('id, status, current_period_end, replaced_by_new_plan')
           .eq('user_id', userId)
-          .in('status', ['active', 'cancelled', 'canceled'])
-          .gte('current_period_end', new Date().toISOString())
           .order('created_at', { ascending: false })
           .limit(1)
 
-        currentSubscriptionId = subRecords?.[0]?.id
+        // Get the most recent subscription that is NOT replaced by a new plan
+        const activeSub = subRecords?.find((sub: any) =>
+          sub.status === 'active' && !sub.replaced_by_new_plan
+        )
+
+        currentSubscriptionId = activeSub?.id
+
+        console.log('[getUsageStats] Subscription lookup:', {
+          userId,
+          foundSubscriptions: subRecords?.length || 0,
+          activeSubscriptionId: currentSubscriptionId,
+          subscriptionDetails: subRecords,
+        })
       }
     } catch (error) {
       console.error('[getUsageStats] Failed to fetch subscription ID:', error)
@@ -290,14 +310,24 @@ export async function recordUsage(
         if (adminClient) {
           const { data: subRecords } = await adminClient
             .from('subscriptions')
-            .select('id')
+            .select('id, status, current_period_end, replaced_by_new_plan')
             .eq('user_id', userId)
-            .in('status', ['active', 'cancelled', 'canceled'])
-            .gte('current_period_end', new Date().toISOString())
             .order('created_at', { ascending: false })
             .limit(1)
 
-          subscriptionId = subRecords?.[0]?.id
+          // Get the most recent subscription that is NOT replaced by a new plan
+          const activeSub = subRecords?.find((sub: any) =>
+            sub.status === 'active' && !sub.replaced_by_new_plan
+          )
+
+          subscriptionId = activeSub?.id
+
+          console.log('[recordUsage] Subscription lookup:', {
+            userId,
+            foundSubscriptions: subRecords?.length || 0,
+            subscriptionId,
+            subscriptionDetails: subRecords,
+          })
         }
       } catch (error) {
         console.error('[recordUsage] Failed to fetch subscription ID:', error)
