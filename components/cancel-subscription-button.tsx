@@ -50,7 +50,7 @@ export function CancelSubscriptionButton({
       }
 
       // Handle success - all cancellations are now immediate
-      alert(data.message + '\n\n• You are now on the free tier (20 messages/day)\n• Chat model: glm-4-flash\n• Chat history will no longer be saved')
+      alert(data.message + '\n\n• You are now on the free tier (10 messages/day)\n• Chat model: glm-4-flash\n• Chat history will no longer be saved')
 
       // Reset loading state before refresh
       setLoading(false)

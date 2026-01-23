@@ -34,7 +34,8 @@ export function getCreemApiBaseUrl(): string {
 export function generatePaymentLink(
   priceId: 'pro' | 'annual',
   userId?: string,
-  userEmail?: string
+  userEmail?: string,
+  siteUrl?: string
 ): string {
   const baseUrl = CREEM_PAYMENT_LINKS[priceId as keyof typeof CREEM_PAYMENT_LINKS]
 
@@ -56,8 +57,9 @@ export function generatePaymentLink(
   url.searchParams.set('interval', priceId === 'annual' ? 'year' : 'month')
 
   // Add success and cancel URLs
-  url.searchParams.set('success_url', `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dashboard?payment=success`)
-  url.searchParams.set('cancel_url', `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/pricing?payment=cancelled`)
+  const baseUrl = siteUrl || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  url.searchParams.set('success_url', `${baseUrl}/dashboard?payment=success`)
+  url.searchParams.set('cancel_url', `${baseUrl}/pricing?payment=cancelled`)
 
   return url.toString()
 }

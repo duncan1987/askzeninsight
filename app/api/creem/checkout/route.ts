@@ -88,7 +88,10 @@ export async function POST(req: Request) {
       )
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    // Use the request host to ensure redirects go back to the same domain the user came from
+    const requestHost = req.headers.get('host') || 'localhost:3000'
+    const requestProtocol = req.headers.get('x-forwarded-proto') || 'http'
+    const siteUrl = `${requestProtocol}://${requestHost}`
 
     // Prefer API-based checkout so we can attach metadata for webhooks.
     const proProductId = process.env.CREEM_PRO_PRODUCT_ID
@@ -117,7 +120,7 @@ export async function POST(req: Request) {
     // Fallback to a static payment link (may not include metadata in webhooks).
     console.log(`No product ID found for ${body.plan} plan, using static payment link`)
     try {
-      const url = generatePaymentLink(body.plan, user.id, user.email || undefined)
+      const url = generatePaymentLink(body.plan, user.id, user.email || undefined, siteUrl)
       return NextResponse.json({ checkout_url: url })
     } catch (error) {
       console.error(`Failed to generate payment link for ${body.plan}:`, error)
