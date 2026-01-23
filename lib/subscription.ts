@@ -51,7 +51,7 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
     .from('subscriptions')
     .select('status, current_period_end, plan, cancel_at_period_end, refund_status')
     .eq('user_id', userId)
-    .in('status', ['active', 'cancelled', 'canceled']) // Include cancelled subscriptions
+    .in('status', ['active', 'cancelled', 'canceled', 'queued']) // Include queued subscriptions
     .gte('current_period_end', now)
     .order('created_at', { ascending: false })
 
@@ -63,6 +63,27 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
 
   // Get the most recent subscription
   const subscription = subscriptions?.[0]
+
+  // Handle queued subscriptions - activate if previous subscription expired
+  if (subscription?.status === 'queued') {
+    const currentPeriodEnd = new Date(subscription.current_period_end)
+
+    // Activate if previous subscription period has ended
+    if (now >= currentPeriodEnd.toISOString()) {
+      console.log('[getUserSubscription] Activating queued subscription:', subscription)
+      await supabase
+        .from('subscriptions')
+        .update({
+          status: 'active',
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .eq('status', 'queued')
+
+      // Update the subscription object
+      subscription.status = 'active'
+    }
+  }
 
   // Check if subscription has a refund request
   // If refund_status is 'requested', the subscription is considered cancelled for our system

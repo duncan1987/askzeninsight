@@ -59,6 +59,11 @@ CREATE TABLE IF NOT EXISTS public.usage_records (
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS subscriptions_user_id_idx ON public.subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS subscriptions_status_idx ON public.subscriptions(status);
+CREATE INDEX IF NOT EXISTS subscriptions_user_status_replaced_idx
+  ON public.subscriptions(user_id, status, replaced_by_new_plan, current_period_end);
+CREATE INDEX IF NOT EXISTS subscriptions_active_lookup_idx
+  ON public.subscriptions(user_id)
+  WHERE (status = 'active' AND replaced_by_new_plan = false);
 CREATE INDEX IF NOT EXISTS conversations_user_id_idx ON public.conversations(user_id);
 CREATE INDEX IF NOT EXISTS conversations_updated_at_idx ON public.conversations(updated_at DESC);
 CREATE INDEX IF NOT EXISTS messages_conversation_id_idx ON public.messages(conversation_id);
@@ -97,6 +102,11 @@ ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.usage_records ENABLE ROW LEVEL SECURITY;
 
+-- Ensure INSERT policy exists for the trigger
+CREATE POLICY IF NOT EXISTS "Users can insert own profile"
+  ON public.profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+  
 -- Create RLS policies for profiles
 CREATE POLICY "Users can view own profile"
   ON public.profiles FOR SELECT

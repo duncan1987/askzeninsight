@@ -117,11 +117,50 @@ export async function POST(req: Request) {
           new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString()
 
         if (userId) {
+          // Check for existing active subscriptions to ensure single active subscription
+          const { data: existingSubs } = await supabase
+            .from('subscriptions')
+            .select('id, status, current_period_end, creem_subscription_id, plan, replaced_by_new_plan')
+            .eq('user_id', userId)
+            .in('status', ['active', 'cancelled', 'queued'])
+            .gte('current_period_end', new Date().toISOString())
+            .order('created_at', { ascending: false })
+
+          const currentActiveSub = existingSubs?.find(
+            (sub: any) => sub.status === 'active' && !sub.replaced_by_new_plan
+          )
+
+          // Determine subscription status and period end based on whether we're queuing
+          let subscriptionStatus = 'active'
+          let subscriptionPeriodEnd = currentPeriodEnd
+
+          // If there's an active subscription, queue the new one
+          if (currentActiveSub && currentActiveSub.creem_subscription_id !== subscriptionId) {
+            console.log('[Webhook] Found existing active subscription, queuing new subscription:', currentActiveSub.id)
+
+            // Mark existing as replaced
+            await supabase
+              .from('subscriptions')
+              .update({
+                replaced_by_new_plan: true,
+                status: 'cancelled',
+                cancel_at_period_end: true,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', currentActiveSub.id)
+
+            // Set new subscription to queued
+            subscriptionStatus = 'queued'
+            subscriptionPeriodEnd = currentActiveSub.current_period_end
+
+            console.log('[Webhook] Queued new subscription - will activate on:', subscriptionPeriodEnd)
+          }
+
           console.log('[Webhook] Creating subscription:', {
             user_id: userId,
             creem_subscription_id: subscriptionId,
-            status: 'active',
-            current_period_end: currentPeriodEnd,
+            status: subscriptionStatus,
+            current_period_end: subscriptionPeriodEnd,
             plan: planType === 'annual' ? 'annual' : 'pro',
             interval: interval === 'year' ? 'year' : 'month',
           })
@@ -132,8 +171,8 @@ export async function POST(req: Request) {
               {
                 user_id: userId,
                 creem_subscription_id: subscriptionId,
-                status: 'active',
-                current_period_end: currentPeriodEnd,
+                status: subscriptionStatus,
+                current_period_end: subscriptionPeriodEnd,
                 plan: planType === 'annual' ? 'annual' : 'pro',
                 interval: interval === 'year' ? 'year' : 'month',
               },
@@ -215,6 +254,45 @@ export async function POST(req: Request) {
           new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString()
 
         if (userId) {
+          // Check for existing active subscriptions to ensure single active subscription
+          const { data: existingSubs } = await supabase
+            .from('subscriptions')
+            .select('id, status, current_period_end, creem_subscription_id, plan, replaced_by_new_plan')
+            .eq('user_id', userId)
+            .in('status', ['active', 'cancelled', 'queued'])
+            .gte('current_period_end', new Date().toISOString())
+            .order('created_at', { ascending: false })
+
+          const currentActiveSub = existingSubs?.find(
+            (sub: any) => sub.status === 'active' && !sub.replaced_by_new_plan
+          )
+
+          // Determine subscription status and period end based on whether we're queuing
+          let subscriptionStatus = 'active'
+          let subscriptionPeriodEnd = currentPeriodEnd
+
+          // If there's an active subscription, queue the new one
+          if (currentActiveSub && currentActiveSub.creem_subscription_id !== subscriptionId) {
+            console.log('[Webhook] Found existing active subscription, queuing new subscription:', currentActiveSub.id)
+
+            // Mark existing as replaced
+            await supabase
+              .from('subscriptions')
+              .update({
+                replaced_by_new_plan: true,
+                status: 'cancelled',
+                cancel_at_period_end: true,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', currentActiveSub.id)
+
+            // Set new subscription to queued
+            subscriptionStatus = 'queued'
+            subscriptionPeriodEnd = currentActiveSub.current_period_end
+
+            console.log('[Webhook] Queued new subscription - will activate on:', subscriptionPeriodEnd)
+          }
+
           // Check if subscription already exists to determine if this is a new subscription
           const { data: existingSub } = await supabase
             .from('subscriptions')
@@ -230,8 +308,8 @@ export async function POST(req: Request) {
               {
                 user_id: userId,
                 creem_subscription_id: subscriptionId,
-                status: 'active',
-                current_period_end: currentPeriodEnd,
+                status: subscriptionStatus,
+                current_period_end: subscriptionPeriodEnd,
                 plan: planType === 'annual' ? 'annual' : 'pro',
                 interval: interval === 'year' ? 'year' : 'month',
               },

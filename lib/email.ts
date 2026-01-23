@@ -377,3 +377,350 @@ export async function sendCancellationEmail({
     return { success: false, error }
   }
 }
+
+
+export async function sendQueuedSubscriptionEmail({
+  userEmail,
+  userName,
+  plan,
+  queuedActivationDate,
+  subscriptionId,
+}: {
+  userEmail: string
+  userName?: string
+  plan: string
+  queuedActivationDate: string
+  subscriptionId: string
+}) {
+  try {
+    const displayName = userName || userEmail.split('@')[0]
+    const activationDate = new Date(queuedActivationDate).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+
+    await resend.emails.send({
+      from: 'Ask Zen Insight <support@zeninsight.xyz>',
+      to: userEmail,
+      subject: 'New Subscription Queued - Ask Zen Insight',
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>New Subscription Queued</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f9fafb;
+              }
+              .container {
+                background-color: #ffffff;
+                border-radius: 12px;
+                padding: 40px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+              }
+              .header {
+                text-align: center;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 1px solid #e5e7eb;
+              }
+              .logo {
+                font-size: 24px;
+                font-weight: bold;
+                color: #1f2937;
+                margin-bottom: 10px;
+              }
+              .content {
+                margin-bottom: 30px;
+              }
+              .highlight {
+                background: linear-gradient(135deg, #f6f8ff 0%, #f0f4ff 100%);
+                border-left: 4px solid #667eea;
+                padding: 20px;
+                margin: 25px 0;
+                border-radius: 8px;
+              }
+              .details {
+                background-color: #f3f4f6;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+              }
+              .details p {
+                margin: 8px 0;
+              }
+              .details strong {
+                color: #1f2937;
+              }
+              .footer {
+                text-align: center;
+                color: #6b7280;
+                font-size: 14px;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #e5e7eb;
+              }
+              .badge {
+                display: inline-block;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: #ffffff;
+                padding: 8px 20px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 20px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <div class="logo">Ask Zen Insight</div>
+                <p>Your Spiritual Journey Companion</p>
+              </div>
+
+              <div class="content">
+                <div class="badge">
+                  🔄 Subscription Queued
+                </div>
+
+                <h1>New Subscription Activates Soon, ${displayName}!</h1>
+                <p>Your new subscription has been successfully queued and will activate automatically after your current plan ends.</p>
+
+                <div class="highlight">
+                  <p style="margin: 0; color: #4338ca;">
+                    <strong>What happens next:</strong><br>
+                    You'll continue enjoying your current plan until <strong>${activationDate}</strong>.
+                    On that date, your new ${plan === 'annual' ? 'Pro Annual' : 'Pro Monthly'} plan will automatically activate.
+                  </p>
+                </div>
+
+                <div class="details">
+                  <p><strong>📋 Your New Subscription Details:</strong></p>
+                  <p><strong>New Plan:</strong> ${plan === 'annual' ? 'Pro Annual' : 'Pro Monthly'}</p>
+                  <p><strong>Activation Date:</strong> ${activationDate}</p>
+                  <p><strong>Subscription ID:</strong> ${subscriptionId}</p>
+                </div>
+
+                <h2>What You Need to Do</h2>
+                <p><strong>Nothing!</strong> Your new subscription will activate automatically. You'll receive another email confirmation when it becomes active.</p>
+
+                <p>In the meantime, continue using all your current features as usual. Your message history and settings will be preserved when the new plan activates.</p>
+              </div>
+
+              <div class="footer">
+                <p>Questions? Contact us at <a href="mailto:support@zeninsight.xyz">support@zeninsight.xyz</a></p>
+                <p>Ask Zen Insight • <a href="https://ask.zeninsight.xyz/refund">Refund Policy</a> • <a href="https://ask.zeninsight.xyz/terms">Terms of Service</a></p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+    })
+
+    console.log('[Email] Queued subscription email sent to:', userEmail)
+    return { success: true }
+  } catch (error) {
+    console.error('[Email] Failed to send queued subscription email:', error)
+    return { success: false, error }
+  }
+}
+
+
+export async function sendExpiryReminderEmail({
+  userEmail,
+  userName,
+  plan,
+  currentPeriodEnd,
+  subscriptionId,
+}: {
+  userEmail: string
+  userName?: string
+  plan: string
+  currentPeriodEnd: string
+  subscriptionId: string
+}) {
+  try {
+    const displayName = userName || userEmail.split('@')[0]
+    const periodEndDate = new Date(currentPeriodEnd).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+
+    // Calculate days until expiry
+    const today = new Date()
+    const expiryDate = new Date(currentPeriodEnd)
+    const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+    await resend.emails.send({
+      from: 'Ask Zen Insight <support@zeninsight.xyz>',
+      to: userEmail,
+      subject: daysUntilExpiry === 1
+        ? 'Your Subscription Expires Tomorrow'
+        : `Your Subscription Expires in ${daysUntilExpiry} Days`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Subscription Expiry Reminder</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f9fafb;
+              }
+              .container {
+                background-color: #ffffff;
+                border-radius: 12px;
+                padding: 40px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+              }
+              .header {
+                text-align: center;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 1px solid #e5e7eb;
+              }
+              .logo {
+                font-size: 24px;
+                font-weight: bold;
+                color: #1f2937;
+                margin-bottom: 10px;
+              }
+              .alert {
+                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                border-left: 4px solid #f59e0b;
+                padding: 20px;
+                margin: 25px 0;
+                border-radius: 8px;
+              }
+              .content {
+                margin-bottom: 30px;
+              }
+              .details {
+                background-color: #f3f4f6;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+              }
+              .details p {
+                margin: 8px 0;
+              }
+              .details strong {
+                color: #1f2937;
+              }
+              .footer {
+                text-align: center;
+                color: #6b7280;
+                font-size: 14px;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #e5e7eb;
+              }
+              .button {
+                display: inline-block;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: #ffffff;
+                padding: 14px 28px;
+                border-radius: 8px;
+                text-decoration: none;
+                font-weight: 600;
+                margin: 20px 0;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              }
+              .warning-badge {
+                display: inline-block;
+                background-color: #f59e0b;
+                color: #ffffff;
+                padding: 8px 20px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 20px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <div class="logo">Ask Zen Insight</div>
+                <p>Your Spiritual Journey Companion</p>
+              </div>
+
+              <div class="content">
+                <div class="warning-badge">
+                  ⚠️ Action Required
+                </div>
+
+                <h1>Your Subscription Expires Soon, ${displayName}</h1>
+                <p>We're writing to remind you that your ${plan === 'annual' ? 'Annual' : 'Monthly'} subscription will expire on <strong>${periodEndDate}</strong>.</p>
+
+                <div class="alert">
+                  <p style="margin: 0; color: #92400e;">
+                    <strong>What happens when your subscription expires:</strong><br>
+                    Your account will revert to the free tier, which includes 20 messages per day
+                    and the glm-4-flash model. Your chat history will be preserved, but you'll lose
+                    access to premium features.
+                  </p>
+                </div>
+
+                <div class="details">
+                  <p><strong>📋 Your Subscription Details:</strong></p>
+                  <p><strong>Plan:</strong> ${plan === 'annual' ? 'Pro Annual' : 'Pro Monthly'}</p>
+                  <p><strong>Expiry Date:</strong> ${periodEndDate}</p>
+                  <p><strong>Days Remaining:</strong> ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}</p>
+                  <p><strong>Subscription ID:</strong> ${subscriptionId}</p>
+                </div>
+
+                <h2>Renew Now to Continue Your Journey</h2>
+                <p>Don't lose access to your premium features. Renew your subscription to continue enjoying:</p>
+                <ul>
+                  <li>100 messages per day</li>
+                  <li>Advanced AI model (glm-4.7)</li>
+                  <li>Chat history preservation</li>
+                  <li>Priority support</li>
+                </ul>
+
+                <div style="text-align: center;">
+                  <a href="https://ask.zeninsight.xyz/pricing" class="button">Renew Your Subscription</a>
+                </div>
+
+                <p style="text-align: center; color: #6b7280; font-size: 14px; margin-top: 20px;">
+                  Or manage your subscription from your dashboard
+                </p>
+              </div>
+
+              <div class="footer">
+                <p>Questions? We're here to help.</p>
+                <p><strong>📧 Email:</strong> <a href="mailto:support@zeninsight.xyz">support@zeninsight.xyz</a></p>
+                <p>Ask Zen Insight • <a href="https://ask.zeninsight.xyz/dashboard">Dashboard</a> • <a href="https://ask.zeninsight.xyz/pricing">Pricing</a></p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+    })
+
+    console.log('[Email] Expiry reminder email sent to:', userEmail)
+    return { success: true }
+  } catch (error) {
+    console.error('[Email] Failed to send expiry reminder email:', error)
+    return { success: false, error }
+  }
+}

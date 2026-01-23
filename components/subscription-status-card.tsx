@@ -110,6 +110,26 @@ export function SubscriptionStatusCard({ subscription, usageCount = 0 }: Subscri
               </span>
             </div>
 
+            {/* Expiry warning banner (7 days or less) */}
+            {daysUntilRenewal <= 7 && daysUntilRenewal > 0 && (
+              <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm space-y-1">
+                  <p className="font-medium text-amber-900 dark:text-amber-100">
+                    {daysUntilRenewal === 1 ? 'Expires Tomorrow' :
+                     daysUntilRenewal === 7 ? 'Expires in 7 Days' :
+                     `Expires in ${daysUntilRenewal} Days`}
+                  </p>
+                  <p className="text-amber-700 dark:text-amber-300">
+                    Your subscription expires on {periodEnd.toLocaleDateString()}. Renew now to continue enjoying premium features.
+                  </p>
+                  <Button size="sm" variant="outline" className="mt-2" asChild>
+                    <Link href="/pricing">Renew Now</Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Refund eligibility notice */}
             {eligibleForRefund && (
               <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">

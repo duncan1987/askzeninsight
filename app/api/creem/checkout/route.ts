@@ -74,16 +74,17 @@ export async function POST(req: Request) {
       }
 
       // Check if trying to subscribe to a different plan
+      // Allow queuing - new plan will activate after current plan ends
       return NextResponse.json(
         {
-          error: 'You already have an active subscription to a different plan',
+          message: 'Your new subscription will be queued and activate after your current plan ends',
           currentPlan,
           requestedPlan,
-          message: `You already have an active ${currentPlan === 'annual' ? 'Annual' : 'Pro'} subscription. Please cancel it first or use the upgrade option in your dashboard.`,
+          queuedActivationDate: activeSubscription.current_period_end,
+          allowCheckout: true,
           hasActiveSubscription: true,
-          requiresCancellation: true,
         },
-        { status: 409 } // Conflict
+        { status: 200 } // OK - allow checkout to proceed
       )
     }
 

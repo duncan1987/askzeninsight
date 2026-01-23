@@ -77,7 +77,8 @@ export async function POST(req: Request) {
     }
 
     // Get today's message count for refund calculation
-    // IMPORTANT: Only count user messages, not assistant messages
+    // CRITICAL: Only count PRO-tier messages for THIS subscription
+    // Free-tier usage should NOT affect refund calculation
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
@@ -86,11 +87,23 @@ export async function POST(req: Request) {
       .select('id')
       .eq('user_id', user.id)
       .eq('message_type', 'user')  // Only count user messages for refund calculation
+      .eq('user_tier', 'pro')      // Only count PRO-tier usage, NOT free-tier
+      .eq('subscription_id', subscription.id)  // Only count messages for THIS subscription
       .gte('timestamp', today.toISOString())
 
     const usageCount = usageRecords?.length || 0
 
-    console.log('[Cancel Subscription] Usage count (user messages only):', usageCount)
+    console.log('[Cancel Subscription] Usage count (PRO-tier messages for this subscription only):', {
+      subscriptionId: subscription.id,
+      usageCount,
+      filterDetails: {
+        userId: user.id,
+        messageType: 'user',
+        userTier: 'pro',
+        subscriptionId: subscription.id,
+        since: today.toISOString(),
+      }
+    })
 
     // Calculate refund info
     const isRefundEligible = hoursSinceSubscription <= 48
@@ -140,21 +153,26 @@ export async function POST(req: Request) {
       // Continue with database deletion even if Creem fails
     }
 
-    // DELETE subscription from database (IMMEDIATE)
-    const { error: deleteError } = await adminClient
+    // SOFT CANCELLATION: Mark subscription as cancelled instead of deleting
+    // This preserves the record for audit trail
+    const { error: cancelUpdateError } = await adminClient
       .from('subscriptions')
-      .delete()
+      .update({
+        status: 'cancelled',
+        cancel_at_period_end: true,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', subscription.id)
 
-    if (deleteError) {
-      console.error('[Cancel Subscription] Failed to delete subscription:', deleteError)
+    if (cancelUpdateError) {
+      console.error('[Cancel Subscription] Failed to update subscription:', cancelUpdateError)
       return NextResponse.json(
         { error: 'Failed to process cancellation' },
         { status: 500 }
       )
     }
 
-    console.log('[Cancel Subscription] Subscription deleted from database')
+    console.log('[Cancel Subscription] Subscription marked as cancelled (soft delete)')
 
     // Send cancellation email
     if (user.email) {
