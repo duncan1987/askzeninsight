@@ -37,14 +37,14 @@ export function generatePaymentLink(
   userEmail?: string,
   siteUrl?: string
 ): string {
-  const baseUrl = CREEM_PAYMENT_LINKS[priceId as keyof typeof CREEM_PAYMENT_LINKS]
+  const paymentLink = CREEM_PAYMENT_LINKS[priceId as keyof typeof CREEM_PAYMENT_LINKS]
 
-  if (!baseUrl) {
+  if (!paymentLink) {
     throw new Error(`Payment link not found for price: ${priceId}`)
   }
 
   // Add user metadata to link for webhook processing
-  const url = new URL(baseUrl)
+  const url = new URL(paymentLink)
   if (userId) {
     url.searchParams.set('user_id', userId)
   }
