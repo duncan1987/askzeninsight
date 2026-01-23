@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
@@ -11,6 +12,7 @@ export async function GET(request: Request) {
     const cookieStore = await cookies()
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Supabase environment variables are not configured')
@@ -38,7 +40,34 @@ export async function GET(request: Request) {
       }
     )
 
-    await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (!error && data?.user) {
+      // Create profile if it doesn't exist using service role key
+      if (supabaseServiceKey) {
+        const serviceSupabase = createServiceClient(supabaseUrl, supabaseServiceKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        })
+
+        const metadata = data.user.user_metadata || {}
+
+        // Use upsert to handle both new and existing users
+        await serviceSupabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            email: data.user.email,
+            full_name: metadata.full_name || metadata.name || '',
+            avatar_url: metadata.avatar_url || metadata.picture || ''
+          }, {
+            onConflict: 'id',
+            ignoreDuplicates: false
+          })
+      }
+    }
   }
 
   // URL to redirect to after sign in process completes
