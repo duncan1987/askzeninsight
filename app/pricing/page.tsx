@@ -47,6 +47,7 @@ export default function PricingPage() {
                 'Unlimited basic model after quota',
                 'Save chat history permanently',
                 'Multiple conversation management',
+                'Export and share spiritual conversations',
                 'Best for daily practice',
               ]}
               ctaText="Subscribe Now"
@@ -65,6 +66,7 @@ export default function PricingPage() {
                 'Save 30% vs monthly',
                 'Advanced AI (GLM-4) for first 30 messages/day',
                 'Unlimited basic model after quota',
+                'Export and share spiritual conversations',
                 'Perfect for long-term spiritual journey',
               ]}
               ctaText="Subscribe Now"
@@ -143,6 +145,20 @@ export default function PricingPage() {
                 <h3 className="font-semibold mb-2">3x Daily Limit</h3>
                 <p className="text-sm text-muted-foreground">
                   30 premium messages per day vs 10 for free users. Perfect for daily practice and deep exploration
+                </p>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-6">
+                <div className="text-2xl mb-3">📤</div>
+                <h3 className="font-semibold mb-2">Export & Share Conversations</h3>
+                <p className="text-sm text-muted-foreground">
+                  Download your spiritual conversations as markdown or share insights with friends and community
+                </p>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-6">
+                <div className="text-2xl mb-3">🌙</div>
+                <h3 className="font-semibold mb-2">Continuous Journey</h3>
+                <p className="text-sm text-muted-foreground">
+                  Build a lasting spiritual practice with tools that grow with you over time
                 </p>
               </div>
             </div>

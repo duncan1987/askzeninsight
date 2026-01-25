@@ -16,7 +16,7 @@ export default function TermsPage() {
           <header className="space-y-3">
             <h1 className="text-3xl font-bold">Terms of Service</h1>
             <p className="text-muted-foreground">
-              Last updated: {new Date().toLocaleDateString()}
+              Last updated: 1/20/2026
             </p>
             <p className="text-muted-foreground">
               These Terms of Service (&quot;Terms&quot;) govern your use of {siteName}
@@ -48,6 +48,7 @@ export default function TermsPage() {
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>Conversational AI responses from a Zen meditation teacher persona</li>
               <li>Chat history storage for subscribed users</li>
+              <li>Export and share spiritual conversations (subscribed users)</li>
               <li>Usage limits and subscription plans</li>
               <li>Customer support</li>
             </ul>
@@ -114,11 +115,11 @@ export default function TermsPage() {
               </li>
               <li>
                 <strong>Pro Plan ($2.99/month):</strong> 30 premium messages per day, chat
-                history saved, advanced AI model
+                history saved, advanced AI model, export and share conversations
               </li>
               <li>
                 <strong>Annual Plan ($24.9/year):</strong> 30 premium messages per day,
-                chat history saved, advanced AI model, best value
+                chat history saved, advanced AI model, export and share conversations, best value
               </li>
             </ul>
             <p className="text-muted-foreground">
