@@ -53,7 +53,7 @@ export default function RefundPolicyPage() {
               <p>
                 <strong className="text-foreground">48-Hour Refund Window:</strong> You
                 can request a full refund within 48 hours of purchase if you have used
-                fewer than 5 messages. No explanation required.
+                5 or fewer messages. No explanation required.
               </p>
               <p>
                 <strong className="text-foreground">7-Day Refund Requests:</strong> For
@@ -69,7 +69,7 @@ export default function RefundPolicyPage() {
             <div className="p-4 bg-muted rounded-lg">
               <p className="text-sm font-medium mb-1">Quick Summary:</p>
               <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                <li>&lt; 48 hours and &lt; 5 messages: Automatic refund eligibility</li>
+                <li>&lt; 48 hours and ≤ 5 messages: Automatic refund eligibility</li>
                 <li>48 hours - 7 days: Contact support for review</li>
                 <li>&gt; 7 days: No refund (unless technical issue)</li>
               </ul>

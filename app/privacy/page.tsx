@@ -15,7 +15,7 @@ export default function PrivacyPage() {
           <header className="space-y-3">
             <h1 className="text-3xl font-bold">Privacy Policy</h1>
             <p className="text-muted-foreground">
-              Last updated: {new Date().toLocaleDateString()}
+              Last updated: 1/20/2026
             </p>
             <p className="text-muted-foreground">
               This Privacy Policy explains how {legalName} (&quot;we&quot;, &quot;our&quot;,
@@ -111,7 +111,7 @@ export default function PrivacyPage() {
                 session
               </li>
               <li>
-                Your chat content is stored in our database, not used to train the
+                Your chat content is stored in supabase database, not used to train the
                 AI model
               </li>
             </ul>
@@ -201,7 +201,7 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          <section className="space-y-3">
+          <section id="cookies" className="space-y-3">
             <h2 className="text-xl font-semibold">Cookies & Tracking</h2>
             <p className="text-muted-foreground">
               We use essential cookies for authentication and session management. We do

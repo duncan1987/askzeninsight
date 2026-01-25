@@ -40,9 +40,18 @@ export async function GET(req: NextRequest) {
 
   const subscription = await getUserSubscription(user.id)
 
+  // Get user profile for avatar
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('avatar_url, full_name')
+    .eq('id', user.id)
+    .single()
+
   return NextResponse.json({
     ...subscription,
     authenticated: true,
     email: user.email,
+    avatar_url: profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
+    full_name: profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '',
   })
 }

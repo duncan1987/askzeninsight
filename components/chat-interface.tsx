@@ -5,15 +5,20 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Send, Sparkles, RefreshCw, MessageSquare, Trash2, X, Zap } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Send, Sparkles, RefreshCw, MessageSquare, Trash2, X, Zap, Brain, Flower2, Download, Share2, CheckSquare, Square, Image as ImageIcon, AlertTriangle, Check, Crown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { UsageMeter } from "@/components/usage-meter"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ShareCard } from "@/components/share-card"
 
 interface UserTier {
   tier: 'anonymous' | 'free' | 'pro'
   model: string
   saveHistory: boolean
   authenticated: boolean
+  avatar_url?: string
+  full_name?: string
 }
 
 interface Message {
@@ -51,6 +56,28 @@ const getRandomZenError = () => {
   return ZEN_ERROR_MESSAGES[Math.floor(Math.random() * ZEN_ERROR_MESSAGES.length)]
 }
 
+// Example questions to guide users
+const EXAMPLE_QUESTIONS = [
+  {
+    icon: Brain,
+    text: "I'm feeling stressed about work. How can I find peace?",
+  },
+  {
+    icon: Flower2,
+    text: "Can you guide me through a simple meditation?",
+  },
+]
+
+// Helper function to get user initials from full name
+const getUserInitials = (fullName?: string) => {
+  if (!fullName) return 'U'
+  return fullName
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase()
+}
+
 export function ChatInterface() {
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<Message[]>([
@@ -61,6 +88,8 @@ export function ChatInterface() {
     },
   ])
   const [isLoading, setIsLoading] = useState(false)
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
+  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set())
   const [shouldShowUsageMeter, setShouldShowUsageMeter] = useState(false)
   const [usageRefreshKey, setUsageRefreshKey] = useState(0)
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(undefined)
@@ -72,8 +101,17 @@ export function ChatInterface() {
     model: 'glm-4-flash',
     saveHistory: false,
     authenticated: false,
+    avatar_url: '',
+    full_name: '',
   })
   const [fairUseNotice, setFairUseNotice] = useState<string | undefined>(undefined)
+  const [showPrivacyWarning, setShowPrivacyWarning] = useState(false)
+  const [isGeneratingCard, setIsGeneratingCard] = useState(false)
+  const [shareCardPreview, setShareCardPreview] = useState<string | null>(null)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgradeFeature, setUpgradeFeature] = useState<string>("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Scroll to bottom when messages change
@@ -327,6 +365,14 @@ export function ChatInterface() {
     }
   }
 
+  const handleExampleQuestion = (question: string) => {
+    setInput(question)
+    // Auto-send after a brief delay for better UX
+    setTimeout(() => {
+      handleSend()
+    }, 100)
+  }
+
   const handleNewConversation = () => {
     if (isLoading) return
     setCurrentConversationId(undefined)
@@ -339,6 +385,206 @@ export function ChatInterface() {
     ])
     setInput("")
     setShowHistory(false)
+    setIsSelectionMode(false)
+    setSelectedMessageIds(new Set())
+  }
+
+  // Selection mode functions
+  const toggleMessageSelection = (messageId: string) => {
+    const newSelection = new Set(selectedMessageIds)
+    if (newSelection.has(messageId)) {
+      newSelection.delete(messageId)
+    } else {
+      newSelection.add(messageId)
+    }
+    setSelectedMessageIds(newSelection)
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedMessageIds.size === messages.length) {
+      setSelectedMessageIds(new Set())
+    } else {
+      setSelectedMessageIds(new Set(messages.map((m) => m.id)))
+    }
+  }
+
+  const clearSelection = () => {
+    setSelectedMessageIds(new Set())
+  }
+
+  const exitSelectionMode = () => {
+    setIsSelectionMode(false)
+    setSelectedMessageIds(new Set())
+  }
+
+  // Export functions
+  const exportToTxt = () => {
+    if (!checkExportPermission("TXT Export")) return
+
+    const selectedMessages = messages.filter((m) => selectedMessageIds.has(m.id))
+    if (selectedMessages.length === 0) return
+
+    const timestamp = new Date().toLocaleString()
+    let content = `═══════════════════════════════════════════════════════\n`
+    content += `           Spiritual Conversation with koji\n`
+    content += `═══════════════════════════════════════════════════════\n\n`
+    content += `Date: ${timestamp}\n`
+    content += `Messages: ${selectedMessages.length}\n\n`
+    content += `───────────────────────────────────────────────────────\n\n`
+
+    selectedMessages.forEach((msg, idx) => {
+      const role = msg.role === "user" ? "You" : "koji"
+      content += `[${role}]\n${msg.content}\n\n`
+      content += `───────────────────────────────────────────────────────\n\n`
+    })
+
+    content += `\n═══════════════════════════════════════════════════════\n`
+    content += `Generated by Ask Zen Insight\n`
+    content += `https://ask.zeninsight.xyz\n`
+    content += `═══════════════════════════════════════════════════════\n`
+
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `zen-conversation-${Date.now()}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const exportToMarkdown = () => {
+    if (!checkExportPermission("Markdown Export")) return
+
+    const selectedMessages = messages.filter((m) => selectedMessageIds.has(m.id))
+    if (selectedMessages.length === 0) return
+
+    const timestamp = new Date().toLocaleString()
+    let content = `# 🧘 Spiritual Conversation with koji\n\n`
+    content += `> *Emptiness and Stillness*\n\n`
+    content += `**Date:** ${timestamp}  \n`
+    content += `**Messages:** ${selectedMessages.length}\n\n`
+    content += `---\n\n`
+
+    selectedMessages.forEach((msg) => {
+      const role = msg.role === "user" ? "🙏 **You**" : "🌸 **koji**"
+      content += `### ${role}\n\n${msg.content}\n\n---\n\n`
+    })
+
+    content += `\n<div align="center">\n\n`
+    content += `***\n\n`
+    content += `_Generated by **Ask Zen Insight**_\n\n`
+    content += `[https://ask.zeninsight.xyz](https://ask.zeninsight.xyz)\n\n`
+    content += `</div>\n`
+
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `zen-conversation-${Date.now()}.md`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleGenerateShareCard = async () => {
+    if (!checkExportPermission("Share Card")) return
+
+    const selectedMessages = messages.filter((m) => selectedMessageIds.has(m.id))
+    if (selectedMessages.length === 0) return
+
+    // Show privacy warning first
+    setShowPrivacyWarning(true)
+  }
+
+  const confirmGenerateShareCard = async () => {
+    setShowPrivacyWarning(false)
+    setIsGeneratingCard(true)
+
+    try {
+      // Dynamic import to avoid SSR issues
+      const html2canvas = (await import("html2canvas")).default
+
+      const cardElement = document.getElementById("zen-share-card")
+      if (!cardElement) {
+        throw new Error("Share card element not found")
+      }
+
+      const canvas = await html2canvas(cardElement, {
+        scale: 2, // Higher quality
+        backgroundColor: null,
+        logging: false,
+        onclone: (clonedDoc) => {
+          // Replace oklch CSS variables with hex equivalents for html2canvas compatibility
+          const root = clonedDoc.documentElement
+          root.style.setProperty("--background", "#ffffff")
+          root.style.setProperty("--foreground", "#1e293b")
+          root.style.setProperty("--card", "#ffffff")
+          root.style.setProperty("--card-foreground", "#1e293b")
+          root.style.setProperty("--popover", "#ffffff")
+          root.style.setProperty("--popover-foreground", "#1e293b")
+          root.style.setProperty("--primary", "#1e293b")
+          root.style.setProperty("--primary-foreground", "#fafafa")
+          root.style.setProperty("--secondary", "#f1f5f9")
+          root.style.setProperty("--secondary-foreground", "#1e293b")
+          root.style.setProperty("--muted", "#f1f5f9")
+          root.style.setProperty("--muted-foreground", "#64748b")
+          root.style.setProperty("--accent", "#f1f5f9")
+          root.style.setProperty("--accent-foreground", "#1e293b")
+          root.style.setProperty("--border", "#e2e8f0")
+          root.style.setProperty("--input", "#e2e8f0")
+          root.style.setProperty("--ring", "#94a3b8")
+        },
+      })
+
+      // Convert canvas to data URL and show preview modal
+      const dataUrl = canvas.toDataURL("image/png")
+      setShareCardPreview(dataUrl)
+      setShowPreviewModal(true)
+      setIsGeneratingCard(false)
+    } catch (error) {
+      console.error("Failed to generate share card:", error)
+      setIsGeneratingCard(false)
+    }
+  }
+
+  const handleCopyShareLink = () => {
+    // Create a share link (in a real app, this would upload to a server and get a URL)
+    const shareUrl = `${window.location.origin}?share=${Date.now()}`
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopiedLink(true)
+      setTimeout(() => setCopiedLink(false), 2000)
+    })
+  }
+
+  const handleDownloadCard = () => {
+    if (!shareCardPreview) return
+
+    const a = document.createElement("a")
+    a.href = shareCardPreview
+    a.download = `zen-conversation-${Date.now()}.png`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
+  const closePreviewModal = () => {
+    setShowPreviewModal(false)
+    setShareCardPreview(null)
+    setCopiedLink(false)
+  }
+
+  // Check if user has access to export and sharing features
+  const checkExportPermission = (featureName: string): boolean => {
+    // Only Pro tier (authenticated with saveHistory) can export
+    if (userTier.tier !== 'pro') {
+      setUpgradeFeature(featureName)
+      setShowUpgradeModal(true)
+      return false
+    }
+    return true
   }
 
   return (
@@ -388,15 +634,23 @@ export function ChatInterface() {
                   </p>
                 ) : (
                   conversations.map((conv) => (
-                    <button
+                    <div
                       key={conv.id}
                       onClick={() => loadConversation(conv.id)}
                       className={cn(
-                        "w-full text-left p-3 rounded-lg text-sm transition-colors relative group",
+                        "w-full text-left p-3 rounded-lg text-sm transition-colors relative group cursor-pointer",
                         currentConversationId === conv.id
                           ? "bg-primary/10 border border-primary/20"
                           : "bg-muted/50 hover:bg-muted/80"
                       )}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          loadConversation(conv.id)
+                        }
+                      }}
                     >
                       <div className="flex items-start gap-2">
                         <MessageSquare className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
@@ -415,7 +669,7 @@ export function ChatInterface() {
                       >
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
-                    </button>
+                    </div>
                   ))
                 )}
               </div>
@@ -444,6 +698,18 @@ export function ChatInterface() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                {/* Selection Mode Toggle */}
+                {messages.length > 1 && !isSelectionMode && (
+                  <Button
+                    onClick={() => setIsSelectionMode(true)}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <CheckSquare className="h-4 w-4" />
+                    <span className="hidden sm:inline">Select Messages</span>
+                  </Button>
+                )}
                 {/* Tier Badge */}
                 <div className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium",
@@ -515,37 +781,72 @@ export function ChatInterface() {
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={cn("flex gap-3", message.role === "user" ? "justify-end" : "justify-start")}
-            >
-              {message.role === "assistant" && (
-                <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                </div>
-              )}
+          {messages.map((message) => {
+            const isSelected = selectedMessageIds.has(message.id)
+            return (
               <div
+                key={message.id}
                 className={cn(
-                  "rounded-lg px-4 py-3",
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground max-w-[75%]"
-                    : "bg-muted text-foreground max-w-[85%]"
+                  "flex gap-3 group transition-all duration-200",
+                  message.role === "user" ? "justify-end" : "justify-start",
+                  isSelectionMode && "hover:bg-muted/30 -mx-2 px-2 py-2 rounded-lg"
                 )}
               >
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-              </div>
-              {message.role === "user" && (
-                <div className="flex-shrink-0 h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
-                  <span className="text-sm font-medium">You</span>
+                {/* Selection Checkbox */}
+                {isSelectionMode && (
+                  <div className="flex items-center">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleMessageSelection(message.id)}
+                      className={cn(
+                        "transition-all duration-200",
+                        isSelected && "border-primary bg-primary text-primary-foreground"
+                      )}
+                    />
+                  </div>
+                )}
+                {message.role === "assistant" && (
+                  <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center overflow-hidden">
+                    <img
+                      src="/peaceful-prayer-meditation.jpg"
+                      alt="koji"
+                      className="h-8 w-8 object-cover"
+                    />
+                  </div>
+                )}
+                <div
+                  className={cn(
+                    "rounded-lg px-4 py-3 transition-all duration-200",
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground max-w-[75%]"
+                      : "bg-muted text-foreground max-w-[85%]",
+                    isSelected && "ring-2 ring-primary ring-offset-2"
+                  )}
+                >
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                 </div>
-              )}
-            </div>
-          ))}
+                {message.role === "user" && (
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage
+                      src={userTier.avatar_url || undefined}
+                      alt={userTier.full_name || "You"}
+                    />
+                    <AvatarFallback className="bg-primary/20 text-primary text-xs font-medium">
+                      {getUserInitials(userTier.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            )
+          })}
           {isLoading && messages[messages.length - 1]?.role === "assistant" && messages[messages.length - 1]?.content === "" && (
             <div className="flex gap-3 justify-start">
-              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-primary" />
+              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center overflow-hidden">
+                <img
+                  src="/peaceful-prayer-meditation.jpg"
+                  alt="koji"
+                  className="h-8 w-8 object-cover"
+                />
               </div>
               <div className="bg-muted rounded-lg px-4 py-3">
                 <div className="flex gap-1">
@@ -568,8 +869,141 @@ export function ChatInterface() {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Selection Mode Toolbar */}
+        {isSelectionMode && (
+          <div className="border-t border-border bg-muted/30 backdrop-blur-sm">
+            <div className="container mx-auto px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={toggleSelectAll}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {selectedMessageIds.size === messages.length ? (
+                      <>
+                        <Square className="h-4 w-4" />
+                        <span className="hidden sm:inline">Deselect All</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckSquare className="h-4 w-4" />
+                        <span className="hidden sm:inline">Select All</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={clearSelection}
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="hidden sm:inline">Clear</span>
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    {selectedMessageIds.size > 0 && (
+                      <span className="font-medium text-foreground">{selectedMessageIds.size}</span>
+                    )}{" "}
+                    selected
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={exitSelectionMode}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    Cancel
+                  </Button>
+                  {selectedMessageIds.size > 0 && (
+                    <>
+                      <Button
+                        onClick={exportToTxt}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span className="hidden sm:inline">TXT</span>
+                      </Button>
+                      <Button
+                        onClick={exportToMarkdown}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span className="hidden sm:inline">Markdown</span>
+                      </Button>
+                      <Button
+                        onClick={handleGenerateShareCard}
+                        variant="default"
+                        size="sm"
+                        className="gap-2"
+                        disabled={isGeneratingCard}
+                      >
+                        {isGeneratingCard ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            <span className="hidden sm:inline">Generating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon className="h-4 w-4" />
+                            <span className="hidden sm:inline">Share Card</span>
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Input Area */}
         <div className="border-t border-border bg-background p-4">
+          {/* Example Questions - Only show on initial state */}
+          {messages.length === 1 && (
+            <div className="mb-4">
+              <p className="text-xs text-muted-foreground mb-3 text-center">
+                Not sure where to start? Try one of these:
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
+                {EXAMPLE_QUESTIONS.map((question, index) => {
+                  const IconComponent = question.icon
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleExampleQuestion(question.text)}
+                      disabled={isLoading}
+                      className={cn(
+                        "flex items-start gap-3 p-4 rounded-lg border border-border bg-muted/50 hover:bg-muted/80 hover:border-primary/30 transition-all duration-200 text-left group disabled:opacity-50 disabled:cursor-not-allowed",
+                        "hover:shadow-md hover:shadow-primary/5"
+                      )}
+                    >
+                      <div className="shrink-0 mt-0.5">
+                        <div className={cn(
+                          "h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center",
+                          "group-hover:bg-primary/20 transition-colors"
+                        )}>
+                          <IconComponent className="h-4 w-4 text-primary" />
+                        </div>
+                      </div>
+                      <p className="text-sm text-foreground leading-relaxed">
+                        {question.text}
+                      </p>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3">
             <Input
               value={input}
@@ -594,6 +1028,180 @@ export function ChatInterface() {
       </Card>
       </div>
       </div>
+
+      {/* Privacy Warning Dialog */}
+      {showPrivacyWarning && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="max-w-md w-full p-6 border-border bg-card">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-2">Privacy Notice</h3>
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <p>
+                    You are about to create a shareable image of your spiritual conversation.
+                  </p>
+                  <p className="font-medium text-foreground">
+                    Please consider:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li>This image will contain your personal reflections</li>
+                    <li>Once shared online, it cannot be fully removed</li>
+                    <li>Others may see, save, or reshare this content</li>
+                    <li>Review the selected messages carefully</li>
+                  </ul>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    onClick={() => setShowPrivacyWarning(false)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Go Back
+                  </Button>
+                  <Button
+                    onClick={confirmGenerateShareCard}
+                    variant="default"
+                    className="flex-1"
+                  >
+                    I Understand, Generate
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Share Card Preview Modal */}
+      {showPreviewModal && shareCardPreview && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="max-w-2xl w-full border-border bg-card overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div>
+                <h3 className="text-lg font-semibold">Share Card Preview</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Review your spiritual conversation card</p>
+              </div>
+              <Button
+                onClick={closePreviewModal}
+                variant="ghost"
+                size="icon"
+                className="shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Preview Image */}
+            <div className="p-6 bg-muted/30 flex items-center justify-center">
+              <div className="rounded-lg overflow-hidden shadow-2xl">
+                <img
+                  src={shareCardPreview}
+                  alt="Share Card Preview"
+                  className="max-w-full h-auto"
+                  style={{ maxHeight: "500px" }}
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="p-4 border-t border-border bg-muted/20">
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleCopyShareLink}
+                  variant="outline"
+                  className="flex-1 gap-2"
+                >
+                  {copiedLink ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="h-4 w-4" />
+                      Copy Share Link
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleDownloadCard}
+                  variant="default"
+                  className="flex-1 gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Card
+                </Button>
+              </div>
+              <p className="text-xs text-center text-muted-foreground mt-3">
+                The image will be downloaded as a PNG file
+              </p>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Upgrade Required Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="max-w-md w-full p-6 border-border bg-card">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center">
+                <Crown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-2">Pro Feature</h3>
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <p>
+                    <span className="font-medium text-foreground">{upgradeFeature}</span> is available exclusively for Pro subscribers.
+                  </p>
+                  <p className="text-xs">
+                    Upgrade to Pro to unlock:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li>Export conversations to TXT and Markdown</li>
+                    <li>Generate beautiful share cards</li>
+                    <li>Save chat history</li>
+                    <li>Access to advanced AI models</li>
+                  </ul>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    onClick={() => setShowUpgradeModal(false)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Maybe Later
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      window.location.href = "/pricing"
+                    }}
+                    variant="default"
+                    className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                  >
+                    <Crown className="h-4 w-4 mr-1" />
+                    Upgrade to Pro
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Hidden Share Card Component for Generation */}
+      {selectedMessageIds.size > 0 && (
+        <div className="fixed -left-[9999px] top-0">
+          <ShareCard
+            messages={messages.filter((m) => selectedMessageIds.has(m.id))}
+            username={userTier.full_name}
+          />
+        </div>
+      )}
     </div>
   )
 }

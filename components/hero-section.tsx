@@ -26,8 +26,7 @@ export function HeroSection() {
 
           {/* Description */}
           <p className="mb-10 text-lg text-muted-foreground md:text-xl max-w-3xl mx-auto text-balance leading-relaxed">
-            Experience thoughtful spiritual guidance through compassionate AI conversations. Explore faith, prayer, and
-            religious teachings in a safe and welcoming space.
+            Experience thoughtful spiritual guidance through compassionate AI conversations. Spiritual practice is life's essential journey—a continuous exploration of human nature and refinement of character. Explore faith, prayer, and religious teachings in a safe and welcoming space.
           </p>
 
           {/* CTA Buttons */}

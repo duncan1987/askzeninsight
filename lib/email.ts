@@ -189,7 +189,7 @@ export async function sendWelcomeEmail({
 
                 <div class="highlight">
                   <p style="margin: 0; font-size: 14px; color: #6b7280;">
-                    <strong>💡 Reminder:</strong> You can cancel anytime from your dashboard. If you cancel within 48 hours and have used fewer than 5 messages, you may be eligible for a full refund.
+                    <strong>💡 Reminder:</strong> You can cancel anytime from your dashboard. If you cancel within 48 hours and have used 5 or fewer messages, you may be eligible for a full refund.
                   </p>
                 </div>
               </div>
@@ -349,7 +349,7 @@ export async function sendCancellationEmail({
                 <p>If you changed your mind, you can resubscribe anytime from your dashboard.</p>
 
                 <h2>Refund Information</h2>
-                <p>If you cancelled within 48 hours of your initial subscription and have used fewer than 5 messages, you may be eligible for a full refund.</p>
+                <p>If you cancelled within 48 hours of your initial subscription and have used 5 or fewer messages, you may be eligible for a full refund.</p>
                 <p>To request a refund, simply reply to this email with your refund request, and we'll process it within 3 business days.</p>
               </div>
 

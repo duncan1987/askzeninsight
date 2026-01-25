@@ -26,10 +26,7 @@ export default async function DashboardPage() {
   }
 
   // Fetch user data
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  const [conversations, subscription, usageRecords] = await Promise.all([
+  const [conversations, subscription] = await Promise.all([
     supabase
       .from('conversations')
       .select('*')
@@ -47,18 +44,23 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+  ])
 
-    // Get today's message count (user messages only for accurate refund calculation)
-    supabase
+  // Calculate usage count for refund eligibility
+  // Count messages from subscription start (not just today)
+  let usageCount = 0
+  if (subscription.data) {
+    const subscriptionStart = new Date(subscription.data.created_at)
+    const { data: usageRecords } = await supabase
       .from('usage_records')
       .select('id')
       .eq('user_id', user.id)
       .eq('message_type', 'user')  // Only count user messages
-      .gte('timestamp', today.toISOString())
-  ])
+      .eq('subscription_id', subscription.data.id)  // Only count for this subscription
+      .gte('timestamp', subscriptionStart.toISOString())
 
-  // Calculate usage count for refund eligibility
-  const usageCount = usageRecords.data?.length || 0
+    usageCount = usageRecords?.length || 0
+  }
 
   return (
     <div className="min-h-screen bg-background">

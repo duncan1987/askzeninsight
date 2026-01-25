@@ -47,6 +47,47 @@ export default function AboutPage() {
             </div>
           </section>
 
+          {/* Zen History in China */}
+          <section className="space-y-4">
+            <div className="bg-gradient-to-br from-stone-50 to-amber-50 dark:from-stone-950/20 dark:to-amber-950/20 rounded-lg p-6 border border-stone-200 dark:border-stone-900">
+              <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>🏔️</span>
+                Zen Buddhism in China: 1500+ Years of Wisdom
+              </h2>
+              <div className="space-y-4 text-sm text-muted-foreground">
+                <p>
+                  Zen Buddhism (known as <strong>Chan 禅</strong> in Chinese) has a rich history spanning over <strong>1,500 years</strong> in China. Originating in the 6th century with the legendary figure Bodhidharma, Chan Buddhism represents a unique synthesis of Indian Buddhist philosophy and Chinese wisdom traditions like Taoism.
+                </p>
+                <p>
+                  <strong>The Essence of Zen Wisdom:</strong> At its core, Zen is about directly perceiving the true nature of reality - the <strong>suchness (tathāta)</strong> of life and the world. It teaches that awakening is not found in distant realms or abstract concepts, but right here in our everyday experience.
+                </p>
+                <p>
+                  <strong>Daily Practice as Transformation:</strong> Through meditation (坐禅), mindfulness in action, and contemplative inquiry, Zen practitioners cultivate the ability to face life's challenges with equanimity and clarity:
+                </p>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li>
+                    <strong>Work & Career:</strong> Bringing mindful presence to daily tasks, transforming ordinary activities into spiritual practice
+                  </li>
+                  <li>
+                    <strong>Relationships:</strong> Responding to others with compassion, wisdom, and non-attachment
+                  </li>
+                  <li>
+                    <strong>Adversity:</strong> Meeting difficulties with acceptance, resilience, and insight into impermanence
+                  </li>
+                  <li>
+                    <strong>Self-Understanding:</strong> Seeing through the illusion of separate self-existence to realize interconnectedness
+                  </li>
+                </ul>
+                <p className="pt-2 border-t border-stone-200 dark:border-stone-900">
+                  <strong>Elevating Life's Realm:</strong> The goal is not escape from the world, but <em>engagement</em> with it - living with greater freedom, authenticity, and wisdom. As the saying goes: <em>"Chop wood, carry water"</em> - before enlightenment, and after.
+                </p>
+                <p className="italic text-stone-700 dark:text-stone-300 pt-2">
+                  {siteName} continues this tradition by making Zen wisdom accessible through modern AI technology, supporting your journey toward greater understanding and peace.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Our Approach */}
           <section className="space-y-4">
             <h2 className="text-2xl font-bold">Our Approach</h2>

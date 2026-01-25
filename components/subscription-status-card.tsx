@@ -30,9 +30,9 @@ export function SubscriptionStatusCard({ subscription, usageCount = 0 }: Subscri
   const hoursSinceSubscription = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60))
   const daysUntilRenewal = Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
-  // Check if eligible for refund
+  // Check if eligible for refund (≤5 messages within 48 hours)
   const isWithinRefundWindow = hoursSinceSubscription <= 48
-  const isLowUsage = usageCount < 5
+  const isLowUsage = usageCount <= 5
   const eligibleForRefund = isWithinRefundWindow && isLowUsage && subscription.status === 'active'
 
   // Check if subscription is already cancelled or scheduled to cancel
@@ -139,8 +139,8 @@ export function SubscriptionStatusCard({ subscription, usageCount = 0 }: Subscri
                     Refund Eligible
                   </p>
                   <p className="text-blue-700 dark:text-blue-300">
-                    Since you subscribed less than 48 hours ago and have used fewer than 5 messages,
-                    you're eligible for a full refund if you cancel now.
+                    Since you subscribed less than 48 hours ago and have used 5 or fewer messages,
+                    you&apos;re eligible for a full refund if you cancel now.
                   </p>
                   <Link
                     href="/refund"
