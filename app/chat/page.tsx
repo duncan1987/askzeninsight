@@ -6,6 +6,8 @@ import { redirect } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Lock, ArrowRight } from "lucide-react"
+import { Suspense } from "react"
+import { AuthErrorToast } from "@/components/auth/auth-error-toast"
 
 // Force dynamic rendering because Header uses cookies for authentication
 export const dynamic = 'force-dynamic'
@@ -62,6 +64,9 @@ export default async function ChatPage() {
           </div>
         </main>
         <Footer />
+        <Suspense fallback={null}>
+          <AuthErrorToast />
+        </Suspense>
       </div>
     )
   }
@@ -73,6 +78,9 @@ export default async function ChatPage() {
         <ChatInterface />
       </main>
       <Footer />
+      <Suspense fallback={null}>
+        <AuthErrorToast />
+      </Suspense>
     </div>
   )
 }

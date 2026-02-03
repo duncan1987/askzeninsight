@@ -550,13 +550,44 @@ export function ChatInterface() {
     }
   }
 
-  const handleCopyShareLink = () => {
-    // Create a share link (in a real app, this would upload to a server and get a URL)
-    const shareUrl = `${window.location.origin}?share=${Date.now()}`
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setCopiedLink(true)
-      setTimeout(() => setCopiedLink(false), 2000)
-    })
+  const handleCopyShareLink = async () => {
+    try {
+      // Get selected messages
+      const selectedMessages = messages.filter((m) => selectedMessageIds.has(m.id))
+
+      if (selectedMessages.length === 0) {
+        console.error("No messages selected")
+        return
+      }
+
+      // Create share via API
+      const response = await fetch("/api/shares", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: userTier.full_name,
+          messages: selectedMessages.map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to create share")
+      }
+
+      const { shareId } = await response.json()
+
+      // Create share URL
+      const shareUrl = `${window.location.origin}/share/${shareId}`
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        setCopiedLink(true)
+        setTimeout(() => setCopiedLink(false), 2000)
+      })
+    } catch (error) {
+      console.error("Failed to create share link:", error)
+    }
   }
 
   const handleDownloadCard = () => {

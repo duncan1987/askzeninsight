@@ -58,9 +58,20 @@ export function ShareCard({ messages, username }: ShareCardProps) {
               background: "rgba(255, 255, 255, 0.2)",
               backdropFilter: "blur(4px)",
               border: "2px solid rgba(255, 255, 255, 0.3)",
+              overflow: "hidden",
             }}
           >
-            <span style={{ all: "initial", fontSize: "1.875rem", lineHeight: "1" }}>🧘</span>
+            <img
+              src="/peaceful-prayer-meditation.jpg"
+              alt="koji"
+              style={{
+                all: "initial",
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
           </div>
           <div style={{ all: "initial" }}>
             <h1 style={{ all: "initial", margin: 0, fontSize: "1.5rem", fontWeight: "bold", color: "#ffffff" }}>Spiritual Conversation</h1>

@@ -73,7 +73,7 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-semibold">Data Storage & Security</h2>
             <p className="text-muted-foreground">
               <strong>Chat History:</strong> Your conversations are securely stored in
-              our database and are linked to your account. You can access, view, or
+              supabase database and are linked to your account. You can access, view, or
               delete your conversations at any time from the chat interface.
             </p>
             <p className="text-muted-foreground">

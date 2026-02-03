@@ -46,6 +46,12 @@ export async function Header() {
             Blog
           </Link>
           <Link
+            href="/meditation"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Course
+          </Link>
+          <Link
             href="/pricing"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
