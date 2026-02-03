@@ -43,6 +43,7 @@ async function handleRequest(req: Request) {
     console.log('[Cron] Checking for subscriptions expiring within 7 days:', sevenDaysFromNow.toISOString())
 
     // Find active subscriptions expiring within 7 days
+    // IMPORTANT: Only send reminder if reminder_sent_at is NULL (not yet sent)
     const { data: expiring, error } = await supabase
       .from('subscriptions')
       .select(`
@@ -50,10 +51,12 @@ async function handleRequest(req: Request) {
         current_period_end,
         plan,
         user_id,
+        reminder_sent_at,
         profiles!inner (email, full_name)
       `)
       .eq('status', 'active')
       .lte('current_period_end', sevenDaysFromNow.toISOString())
+      .is('reminder_sent_at', null)  // Only get subscriptions that haven't received a reminder yet
       .is('replaced_by_new_plan', false)
 
     if (error) {
@@ -94,6 +97,17 @@ async function handleRequest(req: Request) {
           currentPeriodEnd: sub.current_period_end,
           subscriptionId: sub.id,
         })
+
+        // Mark reminder as sent
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update({ reminder_sent_at: new Date().toISOString() })
+          .eq('id', sub.id)
+
+        if (updateError) {
+          console.warn('[Cron] Failed to mark reminder as sent for subscription:', sub.id, updateError)
+        }
+
         console.log('[Cron] Reminder email sent for subscription:', sub.id)
         successCount++
       } catch (emailError) {
