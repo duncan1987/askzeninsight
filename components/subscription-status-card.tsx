@@ -51,36 +51,47 @@ export function SubscriptionStatusCard({ subscription, usageCount = 0 }: Subscri
       </CardHeader>
       <CardContent className="space-y-4">
         {isCancelled ? (
-          // Already cancelled - show cancellation info
+          // Already cancelled - user has been downgraded to free tier immediately
           <div className="space-y-4">
             <div className="flex items-start justify-between">
               <div>
                 <p className="font-medium">Subscription Cancelled</p>
                 <p className="text-sm text-muted-foreground">
-                  You will have access until{' '}
-                  {new Date(subscription.current_period_end).toLocaleDateString()}
+                  Your account has been downgraded to the free tier.
                 </p>
               </div>
               <span className="px-3 py-1 bg-yellow-500/10 text-yellow-600 rounded-full text-sm font-medium">
-                Cancelled
+                Free Tier
               </span>
             </div>
 
             <div className="flex items-start gap-2 p-3 bg-muted rounded-lg">
               <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-muted-foreground space-y-1">
+              <div className="text-sm text-muted-foreground space-y-2">
                 <p>
-                  Your subscription has been cancelled and will not renew.
-                  You can continue using all features until{' '}
-                  {new Date(subscription.current_period_end).toLocaleDateString()}.
+                  Your subscription has been cancelled and you have been downgraded to the free tier.
+                  You can continue using our service with the following limitations:
                 </p>
+                <ul className="text-sm space-y-1 list-disc list-inside">
+                  <li><strong>10 messages per day</strong> (instead of 30)</li>
+                  <li><strong>Basic AI model</strong> (glm-4-flash instead of GLM-4)</li>
+                  <li><strong>No chat history</strong> (conversations are not saved)</li>
+                </ul>
                 {eligibleForRefund && (
-                  <p className="text-foreground font-medium">
+                  <p className="text-foreground font-medium pt-2">
                     You may be eligible for a refund.{' '}
                     <Link href="/refund" className="underline underline-offset-4">
                       View refund policy
                     </Link>{' '}
                     or contact support.
+                  </p>
+                )}
+                {!eligibleForRefund && (
+                  <p className="pt-2">
+                    Want to restore premium features?{' '}
+                    <Link href="/pricing" className="underline underline-offset-4 font-medium">
+                      Subscribe again
+                    </Link>
                   </p>
                 )}
               </div>
@@ -140,7 +151,8 @@ export function SubscriptionStatusCard({ subscription, usageCount = 0 }: Subscri
                   </p>
                   <p className="text-blue-700 dark:text-blue-300">
                     Since you subscribed less than 48 hours ago and have used 5 or fewer messages,
-                    you&apos;re eligible for a full refund if you cancel now.
+                    you&apos;re eligible for a full refund. If you cancel, you will be immediately
+                    downgraded to the free tier (10 messages/day, basic AI model).
                   </p>
                   <Link
                     href="/refund"
@@ -156,12 +168,16 @@ export function SubscriptionStatusCard({ subscription, usageCount = 0 }: Subscri
             {!eligibleForRefund && (
               <div className="flex items-start gap-2 p-3 bg-muted rounded-lg">
                 <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground space-y-1">
                   <p>
-                    Cancel anytime. You'll retain access until the end of your billing period.
-                    <Link href="/refund" className="underline underline-offset-4 ml-1">
+                    Cancellations take effect immediately. Upon cancellation, you will be downgraded
+                    to the free tier with 10 messages per day and basic AI model.
+                  </p>
+                  <p>
+                    <Link href="/refund" className="underline underline-offset-4">
                       Refund policy
                     </Link>
+                    {' '}• Cancellations must be within 7 days of purchase
                   </p>
                 </div>
               </div>

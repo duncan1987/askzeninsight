@@ -52,12 +52,8 @@ export function CancelSubscriptionButton({
       // Handle success - all cancellations are now immediate
       alert(data.message + '\n\n• You are now on the free tier (10 messages/day)\n• Chat model: glm-4-flash\n• Chat history will no longer be saved')
 
-      // Reset loading state before refresh
-      setLoading(false)
-      setShowConfirm(false)
-
-      // Refresh the page to show updated status
-      router.refresh()
+      // Refresh the entire page to update all components including UsageMeter
+      window.location.reload()
     } catch (error) {
       console.error('Failed to cancel subscription:', error)
       alert(

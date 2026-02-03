@@ -216,7 +216,7 @@ describe('Refund Calculation Logic', () => {
     const hoursSinceSubscription = 24
     const plan = 'pro'
 
-    const messagesPerDay = 100
+    const messagesPerDay = 30  // USAGE_LIMITS.PRO_DAILY
     const daysOfQuotaUsed = Math.ceil(usageCount / messagesPerDay)
     const planDays = 30
     const refundPercentage = Math.max(0, ((planDays - daysOfQuotaUsed) / planDays) * 100)
@@ -233,7 +233,7 @@ describe('Refund Calculation Logic', () => {
     const hoursSinceSubscription = 24
     const plan = 'annual'
 
-    const messagesPerDay = 100
+    const messagesPerDay = 30  // USAGE_LIMITS.PRO_DAILY
     const daysOfQuotaUsed = Math.ceil(usageCount / messagesPerDay)
     const planDays = 365
     const refundPercentage = Math.max(0, ((planDays - daysOfQuotaUsed) / planDays) * 100)
@@ -241,8 +241,9 @@ describe('Refund Calculation Logic', () => {
     const fullyRefundable = usageCount <= 5
 
     expect(fullyRefundable).toBe(false)
-    expect(refundPercentage).toBeCloseTo(99.86, 1)
-    expect(estimatedRefund).toBeCloseTo(19.87, 1)
+    expect(daysOfQuotaUsed).toBe(2)  // ceil(50/30) = 2
+    expect(refundPercentage).toBeCloseTo(99.45, 1)
+    expect(estimatedRefund).toBeCloseTo(24.76, 1)
   })
 
   it('should not calculate refund after 48 hours', () => {
