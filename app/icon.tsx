@@ -1,4 +1,4 @@
-import type { ImageResponse } from "next/og"
+import { ImageResponse } from "next/og"
 
 export const size = {
   width: 32,
@@ -7,7 +7,7 @@ export const size = {
 
 export const contentType = "image/png"
 
-export default function Icon() {
+export default function GET() {
   return new ImageResponse(
     (
       <div
