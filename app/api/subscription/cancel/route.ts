@@ -170,7 +170,6 @@ export async function POST(req: Request) {
         { status: 500 }
       )
     }
-
     console.log('[Cancel Subscription] Subscription marked as cancelled (soft delete)')
 
     // Send cancellation email
