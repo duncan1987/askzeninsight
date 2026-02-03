@@ -38,7 +38,7 @@ export default function PricingPage() {
             />
 
             <PricingCard
-              title="Pro"
+              title="Monthly"
               price="$2.99"
               period="/month"
               description="For dedicated practitioners"
@@ -62,7 +62,7 @@ export default function PricingPage() {
               period="/year"
               description="Best value for serious practitioners"
               features={[
-                'Same benefits as Pro plan',
+                'Same benefits as Monthly plan',
                 'Save 30% vs monthly',
                 'Advanced AI (GLM-4) for first 30 messages/day',
                 'Unlimited basic model after quota',
@@ -96,7 +96,7 @@ export default function PricingPage() {
                 Fair Use Policy
               </h2>
               <p className="text-muted-foreground mb-3">
-                To ensure service quality and prevent abuse, Pro and Annual plans include a fair use policy:
+                To ensure service quality and prevent abuse, Premium and Annual plans include a fair use policy:
               </p>
               <ul className="list-disc pl-6 text-muted-foreground space-y-2">
                 <li>
@@ -115,9 +115,9 @@ export default function PricingPage() {
             </div>
           </div>
 
-          {/* Why Choose Pro */}
+          {/* Why Choose Premium */}
           <div className="mt-16 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6 text-center">Why Choose Pro?</h2>
+            <h2 className="text-2xl font-bold mb-6 text-center">Why Choose Premium?</h2>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="bg-card border border-border rounded-lg p-6">
                 <div className="text-2xl mb-3">🧠</div>
@@ -205,10 +205,10 @@ export default function PricingPage() {
               </div>
               <div>
                 <h3 className="font-semibold mb-2">
-                  What's the difference between Free and Pro plans?
+                  What's the difference between Free and Premium plans?
                 </h3>
                 <p className="text-muted-foreground text-sm">
-                  Free users get 10 messages/day with basic AI and no chat history. Pro users get 30 premium messages/day with advanced AI (GLM-4), permanent chat history, and conversation management. After exceeding 30 premium messages, Pro users can continue with the basic model.
+                  Free users get 10 messages/day with basic AI and no chat history. Premium users get 30 premium messages/day with advanced AI (GLM-4), permanent chat history, and conversation management. After exceeding 30 premium messages, Premium users can continue with the basic model.
                 </p>
               </div>
               <div>
@@ -216,7 +216,7 @@ export default function PricingPage() {
                   What is the Fair Use Policy?
                 </h3>
                 <p className="text-muted-foreground text-sm">
-                  To ensure fair access for all users, Pro plans include 30 premium messages per day using our advanced AI model. After reaching this quota, you can continue using the service with the basic AI model at no extra cost. The premium quota resets daily at midnight UTC.
+                  To ensure fair access for all users, Premium plans include 30 premium messages per day using our advanced AI model. After reaching this quota, you can continue using the service with the basic AI model at no extra cost. The premium quota resets daily at midnight UTC.
                 </p>
               </div>
               <div>
@@ -224,7 +224,7 @@ export default function PricingPage() {
                   What's the difference between the AI models?
                 </h3>
                 <p className="text-muted-foreground text-sm">
-                  <strong>GLM-4 (Advanced):</strong> More nuanced understanding, deeper insights, better at complex philosophical concepts. Used for first 30 messages/day for Pro users.<br/>
+                  <strong>GLM-4 (Advanced):</strong> More nuanced understanding, deeper insights, better at complex philosophical concepts. Used for first 30 messages/day for Premium users.<br/>
                   <strong>glm-4-flash (Basic):</strong> Faster responses, good for casual conversations and basic guidance. Used for free users and after premium quota.
                 </p>
               </div>
