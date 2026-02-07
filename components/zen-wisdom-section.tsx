@@ -6,7 +6,7 @@ const wisdomMetaphors = [
   {
     icon: Droplets,
     title: "Like Water",
-    description: "Like water, koji flows around your thoughts — adapting, 包容, and finding paths where none seem to exist.",
+    description: "Like water, koji flows around your thoughts — adapting, embracing all, and finding paths where none seem to exist.",
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
   },
@@ -103,7 +103,7 @@ export function ZenWisdomSection() {
               </div>
 
               <p className="text-base text-muted-foreground leading-relaxed font-serif italic">
-                In the spirit of <strong className="text-foreground not-italic">拈花微笑</strong> (holding a flower and smiling),
+                In the spirit of the Flower Sermon,
                 wisdom is shared not in words, but in presence.
               </p>
 

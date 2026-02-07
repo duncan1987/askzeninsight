@@ -220,8 +220,8 @@ export async function POST(req: Request) {
   if (!usageCheck.canProceed) {
     console.warn('[Chat API] Usage limit exceeded')
     const message = subscription.tier === 'anonymous' || subscription.tier === 'free'
-      ? `Daily free message limit (${usageCheck.limit}) exceeded. Sign in for more, or upgrade to Pro.`
-      : `Daily message limit exceeded. You've used ${usageCheck.limit}/${usageCheck.limit} messages.`
+      ? `The stream flows gently, carrying us to today's pause. You've used ${usageCheck.limit} free messages. Sign in for continued guidance, or upgrade to Premium for deeper practice.`
+      : `Even the deepest spring needs time to replenish. You've reached today's message limit. Let your insights settle like sediment in still water. Return tomorrow for continued practice.`
 
     return new Response(
       JSON.stringify({

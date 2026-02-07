@@ -108,7 +108,7 @@ export default function FAQPage() {
       questions: [
         {
           q: 'Who is koji?',
-          a: 'koji (空寂, meaning "Emptiness and Stillness") is your AI Zen meditation teacher. Designed to emulate Buddha\'s wisdom, koji provides compassionate guidance using Zen philosophy, natural metaphors, and heuristic dialogue.'
+          a: 'koji (meaning "Emptiness and Stillness") is your AI Zen meditation teacher. Designed to emulate Buddha\'s wisdom, koji provides compassionate guidance using Zen philosophy, natural metaphors, and heuristic dialogue.'
         },
         {
           q: 'Is this a religious service?',

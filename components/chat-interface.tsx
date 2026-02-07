@@ -2,13 +2,13 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Send, Sparkles, RefreshCw, MessageSquare, Trash2, X, Zap, Brain, Flower2, Download, Share2, CheckSquare, Square, Image as ImageIcon, AlertTriangle, Check, Crown } from "lucide-react"
+import { Send, Sparkles, RefreshCw, MessageSquare, Trash2, X, Zap, Brain, Flower2, Download, Share2, CheckSquare, Square, Image as ImageIcon, AlertTriangle, Check, Crown, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { UsageMeter } from "@/components/usage-meter"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ShareCard } from "@/components/share-card"
 
@@ -90,8 +90,6 @@ export function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set())
-  const [shouldShowUsageMeter, setShouldShowUsageMeter] = useState(false)
-  const [usageRefreshKey, setUsageRefreshKey] = useState(0)
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(undefined)
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [showHistory, setShowHistory] = useState(false)
@@ -112,19 +110,15 @@ export function ChatInterface() {
   const [copiedLink, setCopiedLink] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [upgradeFeature, setUpgradeFeature] = useState<string>("")
+  const [showDisclaimer, setShowDisclaimer] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [shownToastThresholds, setShownToastThresholds] = useState<Set<number>>(new Set())
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
-
-  // Refresh usage meter after each message
-  useEffect(() => {
-    if (!shouldShowUsageMeter && messages.length > 1) {
-      setShouldShowUsageMeter(true)
-    }
-  }, [messages, shouldShowUsageMeter])
 
   // Load user tier on mount
   useEffect(() => {
@@ -147,6 +141,44 @@ export function ChatInterface() {
       }
     } catch (error) {
       console.error("Failed to fetch user tier:", error)
+    }
+  }
+
+  // Check usage and show toast notifications at thresholds
+  const checkUsageAndShowToast = async () => {
+    try {
+      const response = await fetch("/api/user/usage-stats")
+      if (response.ok) {
+        const stats = await response.json()
+        const { used, limit, percentage } = stats
+
+        // Only show toast at 100% threshold
+        if (percentage >= 100 && !shownToastThresholds.has(100)) {
+          // Update shown thresholds
+          setShownToastThresholds(prev => new Set([...prev, 100]))
+
+          // Determine toast content based on tier
+          if (userTier.tier === 'pro') {
+            toast.warning("Premium Quota Exhausted", {
+              description: `You've used your 30 daily premium messages. Further conversations will use the basic model (glm-4-flash). Your quota resets automatically tomorrow.`,
+              duration: Infinity,
+              closeButton: true,
+            })
+          } else {
+            toast.error("Daily Message Limit Reached", {
+              description: `You've used ${limit} messages. Please upgrade to Pro plan or try again tomorrow.`,
+              duration: Infinity,
+              closeButton: true,
+              action: {
+                label: "Upgrade to Pro",
+                onClick: () => (window.location.href = "/pricing"),
+              },
+            })
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to check usage:", error)
     }
   }
 
@@ -353,8 +385,8 @@ export function ChatInterface() {
       ])
     } finally {
       setIsLoading(false)
-      // Refresh usage meter after message is sent/received
-      setUsageRefreshKey((prev) => prev + 1)
+      // Check usage and show toast notification
+      checkUsageAndShowToast()
     }
   }
 
@@ -621,16 +653,18 @@ export function ChatInterface() {
   return (
     <div className={cn(
       "container mx-auto px-4 py-8 transition-all duration-300",
-      userTier.saveHistory ? "max-w-[1800px]" : "max-w-5xl"
+      // When sidebar is collapsed, reduce max-width for better focus
+      userTier.saveHistory && !sidebarCollapsed ? "max-w-[1800px]" : "max-w-7xl"
     )}>
       <div className={cn(
-        "flex gap-6",
-        userTier.saveHistory && "lg:gap-8"
+        "flex gap-6 transition-all duration-300",
+        userTier.saveHistory && !sidebarCollapsed && "lg:gap-8"
       )}>
         {/* Sidebar - Conversation History (only for Pro users) */}
         {userTier.saveHistory && (
           <aside className={cn(
-            "w-80 shrink-0 transition-all duration-300",
+            "shrink-0 transition-all duration-300 overflow-hidden",
+            sidebarCollapsed ? "w-0 lg:w-0 opacity-0" : "w-80 lg:w-80 opacity-100",
             showHistory ? "block" : "hidden lg:block"
           )}>
             <Card className="border border-border bg-card h-full flex flex-col" style={{ height: "calc(100vh - 280px)", minHeight: "500px" }}>
@@ -713,6 +747,7 @@ export function ChatInterface() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
+                {/* Mobile: Open sidebar button */}
                 {!showHistory && userTier.saveHistory && (
                   <Button
                     onClick={() => setShowHistory(true)}
@@ -721,6 +756,22 @@ export function ChatInterface() {
                     className="lg:hidden"
                   >
                     <MessageSquare className="h-4 w-4" />
+                  </Button>
+                )}
+                {/* Desktop: Toggle sidebar button */}
+                {userTier.saveHistory && (
+                  <Button
+                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    variant="outline"
+                    size="icon"
+                    className="hidden lg:flex"
+                    title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                  >
+                    {sidebarCollapsed ? (
+                      <ChevronRight className="h-4 w-4" />
+                    ) : (
+                      <ChevronLeft className="h-4 w-4" />
+                    )}
                   </Button>
                 )}
                 <div className="text-center flex-1 lg:text-left">
@@ -762,11 +813,6 @@ export function ChatInterface() {
                 )}
               </div>
             </div>
-            {shouldShowUsageMeter && (
-              <div className="max-w-md mx-auto lg:mx-0">
-                <UsageMeter refreshKey={usageRefreshKey} />
-              </div>
-            )}
           </div>
 
           <Card
@@ -790,25 +836,6 @@ export function ChatInterface() {
             </div>
           </div>
         )}
-
-        {/* Medical & Disclaimer Banner */}
-        <div className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
-          <div className="flex items-start gap-2">
-            <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium mb-1">
-                Important: AI Guidance Disclaimer
-              </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                This AI provides spiritual guidance and meditation support for reflection
-                purposes only. It is NOT professional medical, mental health, or legal
-                advice. If experiencing mental health crisis or self-harm thoughts,
-                please contact emergency services or qualified healthcare professionals
-                immediately.
-              </p>
-            </div>
-          </div>
-        </div>
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -998,40 +1025,61 @@ export function ChatInterface() {
 
         {/* Input Area */}
         <div className="border-t border-border bg-background p-4">
+          {/* AI Guidance Disclaimer - Compact */}
+          <div className="mb-3">
+            <button
+              onClick={() => setShowDisclaimer(!showDisclaimer)}
+              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 hover:border-blue-500/20 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                <span className="text-xs text-blue-700 dark:text-blue-300">
+                  AI provides spiritual guidance for reflection only
+                  <span className="text-blue-600 dark:text-blue-400 font-medium"> — not professional advice</span>
+                </span>
+              </div>
+              <span className="text-xs text-blue-600 dark:text-blue-400 opacity-60 group-hover:opacity-100 transition-opacity">
+                {showDisclaimer ? '▲' : '▼'}
+              </span>
+            </button>
+            {showDisclaimer && (
+              <div className="mt-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-slate-700 dark:text-slate-300 font-medium mb-1">
+                  AI Guidance Disclaimer
+                </p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  This AI provides spiritual guidance and meditation support for reflection
+                  purposes only. It is NOT professional medical, mental health, or legal
+                  advice. If experiencing mental health crisis or self-harm thoughts,
+                  please contact emergency services or qualified healthcare professionals
+                  immediately.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Example Questions - Only show on initial state */}
           {messages.length === 1 && (
-            <div className="mb-4">
-              <p className="text-xs text-muted-foreground mb-3 text-center">
-                Not sure where to start? Try one of these:
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
-                {EXAMPLE_QUESTIONS.map((question, index) => {
-                  const IconComponent = question.icon
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => handleExampleQuestion(question.text)}
-                      disabled={isLoading}
-                      className={cn(
-                        "flex items-start gap-3 p-4 rounded-lg border border-border bg-muted/50 hover:bg-muted/80 hover:border-primary/30 transition-all duration-200 text-left group disabled:opacity-50 disabled:cursor-not-allowed",
-                        "hover:shadow-md hover:shadow-primary/5"
-                      )}
-                    >
-                      <div className="shrink-0 mt-0.5">
-                        <div className={cn(
-                          "h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center",
-                          "group-hover:bg-primary/20 transition-colors"
-                        )}>
-                          <IconComponent className="h-4 w-4 text-primary" />
-                        </div>
-                      </div>
-                      <p className="text-sm text-foreground leading-relaxed">
-                        {question.text}
-                      </p>
-                    </button>
-                  )
-                })}
-              </div>
+            <div className="mb-4 space-y-2">
+              {EXAMPLE_QUESTIONS.map((question, index) => {
+                const IconComponent = question.icon
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleExampleQuestion(question.text)}
+                    disabled={isLoading}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-muted/50 hover:bg-muted/80 hover:border-primary/30 transition-all duration-200 text-left group disabled:opacity-50 disabled:cursor-not-allowed",
+                      "hover:shadow-sm"
+                    )}
+                  >
+                    <IconComponent className="h-4 w-4 text-primary shrink-0" />
+                    <span className="text-sm text-foreground">
+                      {question.text}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           )}
 

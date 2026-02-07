@@ -3,131 +3,77 @@ import { Sparkles } from "lucide-react"
 import { getSiteConfig } from "@/lib/site"
 
 export function Footer() {
-  const { siteName, legalName, supportEmail, businessAddress } = getSiteConfig()
+  const { siteName, supportEmail } = getSiteConfig()
   const year = new Date().getFullYear()
 
   return (
     <footer className="border-t border-border bg-muted/30">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid gap-8 md:grid-cols-4">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 text-xl font-bold mb-4">
-              <Sparkles className="h-6 w-6 text-primary" />
-              <span className="text-foreground">{siteName}</span>
+      <div className="container mx-auto px-4 py-4">
+        {/* Main footer row */}
+        <div className="flex flex-col items-center gap-3 text-sm">
+          {/* Brand and links */}
+          <div className="flex flex-wrap items-center justify-center gap-2 text-muted-foreground">
+            {/* Brand */}
+            <Link href="/" className="flex items-center gap-1.5 font-semibold text-foreground hover:text-primary transition-colors">
+              <Sparkles className="h-4 w-4" />
+              <span>{siteName}</span>
             </Link>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Find peace and wisdom through AI-powered Zen guidance
-            </p>
-            <div className="mt-4 space-y-1 text-sm text-muted-foreground">
-              <p>
-                Support:{' '}
-                <a
-                  href={`mailto:${supportEmail}`}
-                  className="underline underline-offset-4 hover:text-foreground transition-colors"
-                >
-                  {supportEmail}
-                </a>
-              </p>
-              {businessAddress && (
-                <p className="leading-relaxed">
-                  {legalName}
-                  <br />
-                  {businessAddress}
-                </p>
-              )}
-            </div>
-          </div>
 
-          {/* Guidance */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold text-foreground">Guidance</h3>
-            <ul className="space-y-3 text-sm">
-              <li>
-                <Link href="/chat" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Start Chat
-                </Link>
-              </li>
-              <li>
-                <Link href="/#features" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Features
-                </Link>
-              </li>
-              <li>
-                <Link href="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Pricing
-                </Link>
-              </li>
-            </ul>
-          </div>
+            <span className="text-muted-foreground/30">|</span>
 
-          {/* Resources */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold text-foreground">Resources</h3>
-            <ul className="space-y-3 text-sm">
-              <li>
-                <Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link href="/meditation" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Course
-                </Link>
-              </li>
-              <li>
-                <Link href="/pricing#faq" className="text-muted-foreground hover:text-foreground transition-colors">
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold text-foreground">Company</h3>
-            <ul className="space-y-3 text-sm">
-              <li>
-                <Link href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Privacy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Terms
-                </Link>
-              </li>
-              <li>
-                <Link href="/refund" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Refund
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 text-sm text-muted-foreground md:flex-row">
-          <p>© {year} {siteName}. All rights reserved.</p>
-          <div className="flex gap-6">
+            {/* Navigation links */}
+            <Link href="/chat" className="hover:text-foreground transition-colors">
+              Chat
+            </Link>
+            <span className="text-muted-foreground/30">|</span>
+            <Link href="/#features" className="hover:text-foreground transition-colors">
+              Features
+            </Link>
+            <span className="text-muted-foreground/30">|</span>
+            <Link href="/pricing" className="hover:text-foreground transition-colors">
+              Pricing
+            </Link>
+            <span className="text-muted-foreground/30">|</span>
+            <Link href="/blog" className="hover:text-foreground transition-colors">
+              Blog
+            </Link>
+            <span className="text-muted-foreground/30">|</span>
+            <Link href="/meditation" className="hover:text-foreground transition-colors">
+              Course
+            </Link>
+            <span className="text-muted-foreground/30">|</span>
+            <Link href="/pricing#faq" className="hover:text-foreground transition-colors">
+              FAQ
+            </Link>
+            <span className="text-muted-foreground/30">|</span>
+            <Link href="/contact" className="hover:text-foreground transition-colors">
+              Contact
+            </Link>
+            <span className="text-muted-foreground/30">|</span>
             <Link href="/privacy" className="hover:text-foreground transition-colors">
-              Privacy Policy
+              Privacy
             </Link>
+            <span className="text-muted-foreground/30">|</span>
             <Link href="/terms" className="hover:text-foreground transition-colors">
-              Terms of Service
+              Terms
             </Link>
+            <span className="text-muted-foreground/30">|</span>
             <Link href="/refund" className="hover:text-foreground transition-colors">
-              Refund Policy
-            </Link>
-            <Link href="/privacy#cookies" className="hover:text-foreground transition-colors">
-              Cookie Policy
+              Refund
             </Link>
           </div>
+
+          {/* Copyright */}
+          <p className="text-xs text-muted-foreground">
+            © {year} {siteName}. All rights reserved.
+            <span className="mx-2 text-muted-foreground/30">•</span>
+            <a
+              href={`mailto:${supportEmail}`}
+              className="hover:text-foreground transition-colors"
+            >
+              {supportEmail}
+            </a>
+          </p>
         </div>
       </div>
     </footer>

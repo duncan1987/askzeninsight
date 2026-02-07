@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Header } from '@/components/header'
 import { UsageMeter } from '@/components/usage-meter'
 import { SubscriptionStatusCard } from '@/components/subscription-status-card'
+import { DataManagementCard } from '@/components/data-management-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -145,6 +146,9 @@ export default async function DashboardPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Data Management */}
+          <DataManagementCard conversationCount={conversations.data?.length || 0} />
         </div>
       </main>
     </div>

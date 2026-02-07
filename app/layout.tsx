@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter, Crimson_Text } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { Toaster } from "sonner"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
@@ -47,6 +48,13 @@ export default function RootLayout({
       <body className={`${inter.variable} ${crimsonText.variable} font-sans antialiased`}>
         {children}
         <Analytics />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: Infinity, // Requires manual dismissal
+            closeButton: true,
+          }}
+        />
       </body>
     </html>
   )

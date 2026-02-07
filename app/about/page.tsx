@@ -25,10 +25,10 @@ export default function AboutPage() {
             <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-lg p-6 border border-amber-200 dark:border-amber-900">
               <h2 className="text-2xl font-bold mb-3 flex items-center gap-2">
                 <span>🧘</span>
-                Meet koji (空寂) - Your AI Zen Guide
+                Meet koji - Your AI Zen Guide
               </h2>
               <p className="text-muted-foreground mb-3">
-                <strong>"空寂"</strong> means "Emptiness and Stillness" - a name that reflects the essence of Zen practice.
+                <strong>"koji"</strong> means "Emptiness and Stillness" - a name that reflects the essence of Zen practice.
               </p>
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
@@ -56,13 +56,13 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-4 text-sm text-muted-foreground">
                 <p>
-                  Zen Buddhism (known as <strong>Chan 禅</strong> in Chinese) has a rich history spanning over <strong>1,500 years</strong> in China. Originating in the 6th century with the legendary figure Bodhidharma, Chan Buddhism represents a unique synthesis of Indian Buddhist philosophy and Chinese wisdom traditions like Taoism.
+                  Zen Buddhism (known as <strong>Chan</strong> in Chinese) has a rich history spanning over <strong>1,500 years</strong> in China. Originating in the 6th century with the legendary figure Bodhidharma, Chan Buddhism represents a unique synthesis of Indian Buddhist philosophy and Chinese wisdom traditions like Taoism.
                 </p>
                 <p>
                   <strong>The Essence of Zen Wisdom:</strong> At its core, Zen is about directly perceiving the true nature of reality - the <strong>suchness (tathāta)</strong> of life and the world. It teaches that awakening is not found in distant realms or abstract concepts, but right here in our everyday experience.
                 </p>
                 <p>
-                  <strong>Daily Practice as Transformation:</strong> Through meditation (坐禅), mindfulness in action, and contemplative inquiry, Zen practitioners cultivate the ability to face life's challenges with equanimity and clarity:
+                  <strong>Daily Practice as Transformation:</strong> Through seated meditation (zazen), mindfulness in action, and contemplative inquiry, Zen practitioners cultivate the ability to face life's challenges with equanimity and clarity:
                 </p>
                 <ul className="list-disc pl-6 space-y-2">
                   <li>
