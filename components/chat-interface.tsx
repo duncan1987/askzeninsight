@@ -11,6 +11,7 @@ import { Send, Sparkles, RefreshCw, MessageSquare, Trash2, X, Zap, Brain, Flower
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ShareCard } from "@/components/share-card"
+import { MessageActions } from "@/components/message-actions"
 
 interface UserTier {
   tier: 'anonymous' | 'free' | 'pro'
@@ -25,6 +26,7 @@ interface Message {
   id: string
   role: "user" | "assistant"
   content: string
+  feedbackType?: 'like' | 'dislike' | null
 }
 
 interface Conversation {
@@ -113,12 +115,73 @@ export function ChatInterface() {
   const [showDisclaimer, setShowDisclaimer] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [shownToastThresholds, setShownToastThresholds] = useState<Set<number>>(new Set())
+  const [currentModel, setCurrentModel] = useState<string>("glm-4-flash")
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const loadedFeedbackMessageIds = useRef<Set<string>>(new Set())
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  // Load feedback for assistant messages
+  useEffect(() => {
+    if (userTier.authenticated && messages.length > 0) {
+      loadMessagesFeedback()
+    }
+    // Only run when message IDs or auth status changes, not on every message update
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.map(m => m.id).join(','), userTier.authenticated])
+
+  const loadMessagesFeedback = async () => {
+    try {
+      const assistantMessageIds = messages
+        .filter(m => m.role === 'assistant')
+        .map(m => m.id)
+
+      if (assistantMessageIds.length === 0) return
+
+      // Only load feedback for messages we haven't loaded yet
+      const newMessageIds = assistantMessageIds.filter(id => !loadedFeedbackMessageIds.current.has(id))
+      if (newMessageIds.length === 0) return
+
+      // Load feedback for new assistant messages in parallel
+      const feedbackPromises = newMessageIds.map(async (messageId) => {
+        const response = await fetch(`/api/message-feedback?messageId=${messageId}`)
+        if (response.ok) {
+          const data = await response.json()
+          return { messageId, feedbackType: data.feedback?.feedback_type }
+        }
+        return { messageId, feedbackType: null }
+      })
+
+      const results = await Promise.all(feedbackPromises)
+
+      // Mark these message IDs as loaded
+      results.forEach(r => loadedFeedbackMessageIds.current.add(r.messageId))
+
+      // Update messages with their feedback types
+      setMessages(prev =>
+        prev.map(msg => {
+          const result = results.find(r => r.messageId === msg.id)
+          if (result && msg.role === 'assistant') {
+            return { ...msg, feedbackType: result.feedbackType }
+          }
+          return msg
+        })
+      )
+    } catch (error) {
+      console.error("Failed to load messages feedback:", error)
+    }
+  }
+
+  const handleMessageFeedbackChange = (messageId: string, feedbackType: 'like' | 'dislike' | null) => {
+    setMessages(prev =>
+      prev.map(msg =>
+        msg.id === messageId ? { ...msg, feedbackType } : msg
+      )
+    )
+  }
 
   // Load user tier on mount
   useEffect(() => {
@@ -138,6 +201,7 @@ export function ChatInterface() {
       if (response.ok) {
         const data = await response.json()
         setUserTier(data)
+        setCurrentModel(data.model)
       }
     } catch (error) {
       console.error("Failed to fetch user tier:", error)
@@ -336,6 +400,8 @@ export function ChatInterface() {
       if (fairUseNoticeHeader) {
         const decodedNotice = decodeURIComponent(fairUseNoticeHeader)
         setFairUseNotice(decodedNotice)
+        // Downgrade to basic model in UI when premium quota is exceeded
+        setCurrentModel("glm-4-flash")
       }
 
       const reader = response.body?.getReader()
@@ -806,7 +872,7 @@ export function ChatInterface() {
                   )}
                   <span>{userTier.tier === 'pro' ? 'Pro' : userTier.authenticated ? 'Free' : 'Guest'}</span>
                   <span className="text-muted-foreground/70 mx-1">•</span>
-                  <span>{userTier.model}</span>
+                  <span>{currentModel}</span>
                 </div>
                 {isSaving && (
                   <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>
@@ -839,8 +905,12 @@ export function ChatInterface() {
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {messages.map((message) => {
+          {messages.map((message, index) => {
             const isSelected = selectedMessageIds.has(message.id)
+            // Get the previous user message for sharing context
+            const prevUserMessage = message.role === "assistant"
+              ? messages.slice(0, index).reverse().find(m => m.role === "user")
+              : undefined
             return (
               <div
                 key={message.id}
@@ -882,6 +952,17 @@ export function ChatInterface() {
                   )}
                 >
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                  {/* Message Actions - only for assistant messages */}
+                  {message.role === "assistant" && !isSelectionMode && (
+                    <MessageActions
+                      messageId={message.id}
+                      content={message.content}
+                      userQuestion={prevUserMessage?.content}
+                      userTier={userTier}
+                      initialFeedbackType={message.feedbackType}
+                      onFeedbackChange={(type) => handleMessageFeedbackChange(message.id, type)}
+                    />
+                  )}
                 </div>
                 {message.role === "user" && (
                   <Avatar className="h-8 w-8">
