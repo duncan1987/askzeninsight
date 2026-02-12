@@ -6,6 +6,7 @@ import { UserMenu } from "@/components/auth/user-menu"
 import { SignInButton } from "@/components/auth/sign-in-button"
 import { SubscriptionButton } from "@/components/auth/subscription-button"
 import { getSiteConfig } from "@/lib/site"
+import { NotificationIcon } from "@/components/notification-icon"
 
 export async function Header() {
   const { siteName } = getSiteConfig()
@@ -76,6 +77,7 @@ export async function Header() {
             <>
               <SubscriptionButton />
               <UserMenu user={session.user} />
+              <NotificationIcon />
             </>
           ) : (
             <>

@@ -58,7 +58,7 @@ export default function PricingPage() {
 
             <PricingCard
               title="Annual"
-              price="$24.9"
+              price="$24.99"
               period="/year"
               description="Best value for serious practitioners"
               features={[

@@ -6,7 +6,7 @@
 ```
 1. Free user subscribes to Monthly plan ($2.99/month, 30 days)
 2. Uses 5 messages (Pro tier: 5/100 used)
-3. Clicks "Upgrade to Annual" to switch to Annual plan ($24.9/year, 365 days)
+3. Clicks "Upgrade to Annual" to switch to Annual plan ($24.99/year, 365 days)
 ```
 
 ---
@@ -177,7 +177,7 @@ window.location.href = checkoutData.checkout_url
 
 **User Experience:**
 - Redirected to Creem checkout page
-- Sees: Annual plan, $24.9/year
+- Sees: Annual plan, $24.99/year
 - Completes payment
 
 ---

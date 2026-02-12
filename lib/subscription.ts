@@ -49,7 +49,7 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
 
   const { data: subscriptions, error } = await supabase
     .from('subscriptions')
-    .select('status, current_period_end, plan, cancel_at_period_end, refund_status')
+    .select('*') // Select all fields including refund_estimated_at, id, created_at
     .eq('user_id', userId)
     .in('status', ['active', 'cancelled', 'canceled', 'queued']) // Include queued subscriptions
     .gte('current_period_end', now)
@@ -86,16 +86,47 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
   }
 
   // Check if subscription has a refund request
-  // If refund_status is 'requested', the subscription is considered cancelled for our system
-  const hasRefundRequest = subscription && subscription.refund_status && subscription.refund_status !== 'none'
+  // Staged downgrade logic (方案A):
+  // - refund_status='requested' → Keep Pro access during 3-day review period
+  // - refund_status='approved' or 'rejected' → Downgrade to Free
+  // - refund_status='none' → Normal logic
+  let hasRefundRequest = false
+  let isInReviewPeriod = false
+
+  if (subscription?.refund_status && subscription.refund_status !== 'none') {
+    hasRefundRequest = true
+
+    // Check if within 3-day review period
+    if (subscription.refund_status === 'requested' && subscription.refund_estimated_at) {
+      const reviewDeadline = new Date(subscription.refund_estimated_at)
+      reviewDeadline.setDate(reviewDeadline.getDate() + 3) // 3 business days
+
+      if (now <= reviewDeadline.toISOString()) {
+        isInReviewPeriod = true
+        console.log('[getUserSubscription] User in refund review period, keeping Pro access:', {
+          refundEstimatedAt: subscription.refund_estimated_at,
+          reviewDeadline: reviewDeadline.toISOString(),
+        })
+      }
+    }
+  }
 
   console.log('[getUserSubscription] selected subscription:', subscription)
   console.log('[getUserSubscription] refund_status check:', {
     hasRefundRequest,
+    isInReviewPeriod,
     refundStatus: subscription?.refund_status,
   })
 
-  const isPro = subscription && !hasRefundRequest && ['active', 'cancelled', 'canceled'].includes(subscription.status) && new Date(subscription.current_period_end) >= new Date(now)
+  // User is Pro if:
+  // 1. Has active subscription AND
+  // 2. (No refund request OR refund is still in review period)
+  const isPro = subscription &&
+    ['active', 'cancelled', 'canceled'].includes(subscription.status) &&
+    new Date(subscription.current_period_end) >= new Date(now) &&
+    (!hasRefundRequest || isInReviewPeriod) &&  // Keep Pro if in review period
+    subscription.refund_status !== 'approved' &&
+    subscription.refund_status !== 'rejected'
   const plan = subscription?.plan as PlanType | null | undefined
 
   return {

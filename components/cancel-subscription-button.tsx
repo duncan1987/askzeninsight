@@ -49,8 +49,29 @@ export function CancelSubscriptionButton({
         throw new Error(data.error || 'Failed to cancel subscription')
       }
 
-      // Handle success - all cancellations are now immediate
-      alert(data.message + '\n\n• You are now on the free tier (10 messages/day)\n• Chat model: glm-4-flash\n• Chat history will no longer be saved')
+      // Handle success - check if Pro access is kept during review
+      const { keepProAccess, immediateCancellation, reviewPeriod } = data
+
+      if (keepProAccess) {
+        // 48h-7day cancellation: Pro access kept during review
+        alert(
+          data.message + '\n\n' +
+          '✅ Your Pro access remains ACTIVE during refund review\n' +
+          `⏱ Review period: ${reviewPeriod}\n` +
+          '📧 You\'ll receive an email notification when review is complete'
+        )
+      } else if (immediateCancellation) {
+        // Within 48h: immediate cancellation
+        alert(
+          data.message + '\n\n' +
+          '• You are now on the free tier (10 messages/day)\n' +
+          '• Chat model: glm-4-flash\n' +
+          '• Chat history will no longer be saved'
+        )
+      } else {
+        // Fallback
+        alert(data.message)
+      }
 
       // Refresh the entire page to update all components including UsageMeter
       window.location.reload()

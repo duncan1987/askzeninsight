@@ -7,6 +7,53 @@ import { USAGE_LIMITS } from '@/lib/usage-limits'
 
 export const runtime = 'nodejs'
 
+/**
+ * Calculate refund amount for 48h-7day cancellations
+ *
+ * Formula:
+ * refundAmount = planAmount × (remainingDays / totalDays) × (1 - usageRateCoefficient)
+ *
+ * Usage Rate Coefficient:
+ * - ≤30 messages: 10% (almost new)
+ * - 31-100 messages: 50% (light usage)
+ * - 101-200 messages: 80% (moderate usage)
+ * - >200 messages: 100% (heavy usage, no discount)
+ */
+function calculateRefundFor48hTo7Days(
+  usageCount: number,
+  daysSinceSubscription: number,
+  planAmount: number,
+  planDays: number
+): { refundAmount: number; breakdown: string } {
+  // Calculate usage rate coefficient
+  let usageRateCoefficient: number
+  if (usageCount <= 30) {
+    usageRateCoefficient = 0.1  // 10% - almost new
+  } else if (usageCount <= 100) {
+    usageRateCoefficient = 0.5  // 50% - light usage
+  } else if (usageCount <= 200) {
+    usageRateCoefficient = 0.8  // 80% - moderate usage
+  } else {
+    usageRateCoefficient = 1.0  // 100% - heavy usage
+  }
+
+  // Calculate remaining days ratio
+  const remainingDays = Math.max(0, planDays - daysSinceSubscription)
+  const remainingDaysRatio = remainingDays / planDays
+
+  // Final refund amount
+  const refundAmount = planAmount * remainingDaysRatio * (1 - usageRateCoefficient)
+
+  // Build breakdown explanation
+  const breakdown = `Plan: $${planAmount.toFixed(2)} | ` +
+    `Used: ${usageCount} msgs (${daysSinceSubscription} days) | ` +
+    `Remaining: ${remainingDays} days (${(remainingDaysRatio * 100).toFixed(0)}%) | ` +
+    `Usage factor: ${(usageRateCoefficient * 100).toFixed(0)}% | ` +
+    `Refund: $${refundAmount.toFixed(2)}`
+
+  return { refundAmount: Math.max(0, refundAmount), breakdown }
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createClient()
@@ -70,7 +117,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error: 'Cancellation period expired',
-          message: `According to our refund policy, subscription cancellations must be submitted within 7 days of purchase. Your subscription was created ${daysSinceSubscription} days ago.`,
+          message: `According to your refund policy, subscription cancellations must be submitted within 7 days of purchase. Your subscription was created ${daysSinceSubscription} days ago.`,
           policyUrl: '/refund',
         },
         { status: 403 }
@@ -79,7 +126,6 @@ export async function POST(req: Request) {
 
     // Get message count for refund calculation
     // CRITICAL: Count ALL PRO-tier messages for THIS subscription from subscription start
-    // NOT just today's messages - this ensures fair refund calculation based on total usage
     const { data: usageRecords } = await adminClient
       .from('usage_records')
       .select('id')
@@ -104,73 +150,116 @@ export async function POST(req: Request) {
       }
     })
 
-    // Calculate refund info
-    const isRefundEligible = hoursSinceSubscription <= 48
-    let refundInfo = null
+    // Determine cancellation scenario
+    const isWithin48Hours = hoursSinceSubscription <= 48
+    const planDays = subscription.plan === 'annual' ? 365 : 30
+    const planAmount = subscription.plan === 'annual' ? 24.99 : 2.99
 
-    if (isRefundEligible) {
-      const messagesPerDay = USAGE_LIMITS.PRO_DAILY  // 30 messages per day for Pro users
-      const daysOfQuotaUsed = Math.ceil(usageCount / messagesPerDay)
-      const planDays = subscription.plan === 'annual' ? 365 : 30
-      const refundPercentage = Math.max(0, ((planDays - daysOfQuotaUsed) / planDays) * 100)
-      const estimatedRefund = (refundPercentage / 100) * (subscription.plan === 'annual' ? 24.9 : 2.99)
+    let refundAmount: number | null = null
+    let refundBreakdown = ''
+    let immediateCancellation = false
+    let keepProAccess = false
 
-      refundInfo = {
-        usageCount,
-        daysOfQuotaUsed,
-        planDays,
-        refundPercentage: refundPercentage.toFixed(2) + '%',
-        estimatedRefund: '$' + estimatedRefund.toFixed(2),
-        fullyRefundable: usageCount <= 5,
+    if (isWithin48Hours) {
+      // SCENARIO 1: Within 48 hours - immediate cancellation + refund calculation
+      immediateCancellation = true
+      keepProAccess = false
+
+      // Special case: ≤5 messages = 100% refund
+      if (usageCount <= 5) {
+        refundAmount = planAmount  // Full refund
+        refundBreakdown = `Used ${usageCount} msgs (≤5) | 100% refund | $${refundAmount.toFixed(2)}`
+
+        console.log('[Cancel Subscription] Within 48h - FULL REFUND (≤5 messages):', {
+          usageCount,
+          refundAmount: '$' + refundAmount.toFixed(2),
+          fullyRefundable: true,
+        })
+      } else {
+        // Prorated refund for >5 messages
+        const messagesPerDay = USAGE_LIMITS.PRO_DAILY  // 30 messages per day for Pro users
+        const daysOfQuotaUsed = Math.ceil(usageCount / messagesPerDay)
+        const refundPercentage = Math.max(0, ((planDays - daysOfQuotaUsed) / planDays) * 100)
+        refundAmount = (refundPercentage / 100) * planAmount
+        refundBreakdown = `Used ${usageCount} msgs (${daysOfQuotaUsed} days quota) | ` +
+          `${refundPercentage.toFixed(0)}% refund | $${refundAmount.toFixed(2)}`
+
+        console.log('[Cancel Subscription] Within 48h - PRORATED REFUND (>5 messages):', {
+          usageCount,
+          daysOfQuotaUsed,
+          refundPercentage: refundPercentage.toFixed(2) + '%',
+          refundAmount: '$' + refundAmount.toFixed(2),
+          fullyRefundable: false,
+        })
       }
+    } else {
+      // SCENARIO 2: 48h - 7 days - staged downgrade, calculate estimated refund
+      immediateCancellation = false
+      keepProAccess = true  // Keep Pro access until review is complete
 
-      console.log('[Cancel Subscription] Refund calculation:', refundInfo)
+      const calculation = calculateRefundFor48hTo7Days(
+        usageCount,
+        daysSinceSubscription,
+        planAmount,
+        planDays
+      )
+      refundAmount = calculation.refundAmount
+      refundBreakdown = calculation.breakdown
+
+      console.log('[Cancel Subscription] 48h-7d - staged downgrade:', {
+        usageCount,
+        daysSinceSubscription,
+        refundAmount: '$' + refundAmount.toFixed(2),
+        breakdown: refundBreakdown,
+      })
     }
 
-    // Update refund status in database before canceling
+    // Update subscription in database
+    const updateData: any = {
+      refund_status: 'requested',
+      updated_at: new Date().toISOString(),
+    }
+
+    // Add refund estimation fields for 48h-7day case
+    if (!isWithin48Hours && refundAmount !== null) {
+      updateData.refund_amount = refundAmount
+      updateData.refund_estimated_at = new Date().toISOString()
+    }
+
     const { error: updateError } = await adminClient
       .from('subscriptions')
-      .update({
-        refund_status: 'requested',
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', subscription.id)
 
     if (updateError) {
-      console.warn('[Cancel Subscription] Failed to update refund_status:', updateError)
+      console.warn('[Cancel Subscription] Failed to update subscription:', updateError)
     }
 
-    // Cancel in Creem with mode: 'immediate' for ALL cases
-    try {
-      await cancelSubscription({
-        subscriptionId: subscription.creem_subscription_id,
-        mode: 'immediate',
-      })
-      console.log('[Cancel Subscription] Creem immediate cancellation successful')
-    } catch (creemError) {
-      console.error('[Cancel Subscription] Creem cancel error:', creemError)
-      // Continue with database deletion even if Creem fails
-    }
+    // Cancel in Creem immediately ONLY for 48h case
+    // For 48h-7day case, wait until refund is reviewed
+    if (immediateCancellation) {
+      try {
+        await cancelSubscription({
+          subscriptionId: subscription.creem_subscription_id,
+          mode: 'immediate',
+        })
+        console.log('[Cancel Subscription] Creem immediate cancellation successful')
 
-    // SOFT CANCELLATION: Mark subscription as cancelled instead of deleting
-    // This preserves the record for audit trail
-    const { error: cancelUpdateError } = await adminClient
-      .from('subscriptions')
-      .update({
-        status: 'cancelled',
-        cancel_at_period_end: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', subscription.id)
-
-    if (cancelUpdateError) {
-      console.error('[Cancel Subscription] Failed to update subscription:', cancelUpdateError)
-      return NextResponse.json(
-        { error: 'Failed to process cancellation' },
-        { status: 500 }
-      )
+        // Mark subscription as cancelled in database
+        await adminClient
+          .from('subscriptions')
+          .update({
+            status: 'cancelled',
+            cancel_at_period_end: true,
+          })
+          .eq('id', subscription.id)
+      } catch (creemError) {
+        console.error('[Cancel Subscription] Creem cancel error:', creemError)
+        // Continue with database update even if Creem fails
+      }
+    } else {
+      console.log('[Cancel Subscription] Deferring Creem cancellation until refund review')
     }
-    console.log('[Cancel Subscription] Subscription marked as cancelled (soft delete)')
 
     // Send cancellation email
     if (user.email) {
@@ -181,6 +270,10 @@ export async function POST(req: Request) {
           plan: subscription.plan || 'pro',
           currentPeriodEnd: subscription.current_period_end,
           subscriptionId: subscription.creem_subscription_id,
+          refundAmount: refundAmount,
+          refundBreakdown,
+          isWithin48Hours,
+          keepProAccess,
         })
         console.log('[Cancel Subscription] Cancellation email sent')
       } catch (emailError) {
@@ -189,28 +282,27 @@ export async function POST(req: Request) {
     }
 
     // Build response message
-    let message = 'Your subscription has been cancelled.'
-
-    if (isRefundEligible) {
-      if (refundInfo?.fullyRefundable) {
-        message += ' You are eligible for a full refund since you used 5 or fewer messages within 48 hours of subscription.'
+    let message: string
+    if (isWithin48Hours) {
+      if (usageCount <= 5) {
+        message = 'Your subscription has been cancelled. You are eligible for a FULL REFUND since you used 5 or fewer messages within 48 hours. Please contact support@zeninsight.xyz to process your refund.'
       } else {
-        message += ` Refund calculation: ${refundInfo.refundPercentage} (${refundInfo.estimatedRefund}) based on your usage of ${usageCount} messages. Please contact support@zeninsight.xyz to process your refund.`
+        message = `Your subscription has been cancelled. Estimated refund: $${refundAmount?.toFixed(2)} (${refundBreakdown}). Please contact support@zeninsight.xyz to process your refund.`
       }
     } else {
-      message += ' Your cancellation request has been submitted and is subject to review. Please contact support@zeninsight.xyz for refund consideration.'
+      message = `Your cancellation request has been received. Estimated refund: $${refundAmount?.toFixed(2)}. Your Pro access will remain active while we review your refund request (within 3 business days). You'll receive an email notification once the review is complete.`
     }
 
     return NextResponse.json({
       success: true,
-      immediateCancellation: true,
+      immediateCancellation,
+      keepProAccess,
       message,
-      refundInfo,
+      refundAmount: refundAmount ? `$${refundAmount.toFixed(2)}` : null,
+      refundBreakdown,
       supportEmail: 'support@zeninsight.xyz',
       policyUrl: '/refund',
-      newTier: 'free',
-      newModel: 'glm-4-flash',
-      dailyLimit: 20,
+      reviewPeriod: !immediateCancellation ? '3 business days' : null,
     })
   } catch (error) {
     console.error('[Cancel Subscription] Error:', error)

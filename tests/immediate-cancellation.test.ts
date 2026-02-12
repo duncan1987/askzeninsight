@@ -237,7 +237,7 @@ describe('Refund Calculation Logic', () => {
     const daysOfQuotaUsed = Math.ceil(usageCount / messagesPerDay)
     const planDays = 365
     const refundPercentage = Math.max(0, ((planDays - daysOfQuotaUsed) / planDays) * 100)
-    const estimatedRefund = (refundPercentage / 100) * 24.9
+    const estimatedRefund = (refundPercentage / 100) * 24.99
     const fullyRefundable = usageCount <= 5
 
     expect(fullyRefundable).toBe(false)

@@ -118,7 +118,7 @@ export default function TermsPage() {
                 history saved, advanced AI model, export and share conversations
               </li>
               <li>
-                <strong>Annual Plan ($24.9/year):</strong> 30 premium messages per day,
+                <strong>Annual Plan ($24.99/year):</strong> 30 premium messages per day,
                 chat history saved, advanced AI model, export and share conversations, best value
               </li>
             </ul>

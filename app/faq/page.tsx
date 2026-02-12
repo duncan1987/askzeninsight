@@ -30,7 +30,7 @@ export default function FAQPage() {
       questions: [
         {
           q: 'What\'s the difference between Free and Pro plans?',
-          a: 'Free users get 10 messages/day with basic AI (glm-4-flash) and no chat history. Pro users ($2.99/month or $24.9/year) get 30 premium messages/day with advanced AI (GLM-4), permanent chat history, multiple conversation management, and unlimited basic model usage after quota.'
+          a: 'Free users get 10 messages/day with basic AI (glm-4-flash) and no chat history. Pro users ($2.99/month or $24.99/year) get 30 premium messages/day with advanced AI (GLM-4), permanent chat history, multiple conversation management, and unlimited basic model usage after quota.'
         },
         {
           q: 'What is the Fair Use Policy?',

@@ -227,12 +227,20 @@ export async function sendCancellationEmail({
   plan,
   currentPeriodEnd,
   subscriptionId,
+  refundAmount = null,
+  refundBreakdown = '',
+  isWithin48Hours = true,
+  keepProAccess = false,
 }: {
   userEmail: string
   userName?: string
   plan: string
   currentPeriodEnd: string
   subscriptionId: string
+  refundAmount?: number | null
+  refundBreakdown?: string
+  isWithin48Hours?: boolean
+  keepProAccess?: boolean
 }) {
   try {
     const displayName = userName || userEmail.split('@')[0]
@@ -242,10 +250,53 @@ export async function sendCancellationEmail({
       day: 'numeric',
     })
 
+    // Determine email content based on cancellation scenario
+    const emailSubject = isWithin48Hours
+      ? 'Subscription Cancelled - Ask Zen Insight'
+      : 'Cancellation Received - Ask Zen Insight'
+
+    const highlightTitle = isWithin48Hours
+      ? 'What happens next:'
+      : 'Your cancellation is being reviewed'
+
+    const highlightContent = isWithin48Hours
+      ? `Your subscription has been cancelled immediately. Your account has been downgraded to the free tier.`
+      : `Your Pro access will <strong>remain active</strong> while we review your refund request. You can continue using all Pro features during the review period.`
+
+    const refundSection = isWithin48Hours
+      ? `
+        <h2>Refund Information</h2>
+        ${refundAmount !== null ? `
+          <div class="details">
+            <p><strong>Estimated Refund:</strong> <span style="color: #059669; font-size: 18px; font-weight: bold;">$${refundAmount.toFixed(2)}</span></p>
+            <p style="color: #6b7280; font-size: 14px;">${refundBreakdown}</p>
+          </div>
+        ` : ''}
+        <p>To process your refund, please contact us at <a href="mailto:support@zeninsight.xyz">support@zeninsight.xyz</a> with your subscription ID. We'll process your refund within 3 business days.</p>
+      `
+      : `
+        <h2>Refund Review Process</h2>
+        ${refundAmount !== null ? `
+          <div class="details">
+            <p><strong>Estimated Refund:</strong> <span style="color: #059669; font-size: 18px; font-weight: bold;">$${refundAmount.toFixed(2)}</span></p>
+            <p style="color: #6b7280; font-size: 14px;">${refundBreakdown}</p>
+          </div>
+        ` : ''}
+        <p><strong>Review Timeline:</strong> We'll review your request within <strong>3 business days</strong>.</p>
+        <p><strong>What to expect:</strong></p>
+        <ul style="color: #4b5563; line-height: 1.8;">
+          <li>You'll keep full Pro access during the review period</li>
+          <li>You'll receive an email notification when our review is complete</li>
+          <li>If approved: Your refund will be processed and your access will be downgraded</li>
+          <li>If declined: Your access will be downgraded with an explanation</li>
+        </ul>
+        <p style="margin-top: 16px;">For questions about your refund, reply to this email or contact <a href="mailto:support@zeninsight.xyz">support@zeninsight.xyz</a>.</p>
+      `
+
     await resend.emails.send({
       from: 'Ask Zen Insight <support@zeninsight.xyz>',
       to: userEmail,
-      subject: 'Subscription Cancelled - Ask Zen Insight',
+      subject: emailSubject,
       html: `
         <!DOCTYPE html>
         <html>
@@ -285,8 +336,8 @@ export async function sendCancellationEmail({
                 margin-bottom: 30px;
               }
               .highlight {
-                background-color: #fef3c7;
-                border-left: 4px solid #f59e0b;
+                background-color: ${isWithin48Hours ? '#fef3c7' : '#dbeafe'};
+                border-left: 4px solid ${isWithin48Hours ? '#f59e0b' : '#3b82f6'};
                 padding: 16px;
                 margin: 20px 0;
                 border-radius: 4px;
@@ -330,27 +381,31 @@ export async function sendCancellationEmail({
               </div>
 
               <div class="content">
-                <h1>Subscription Cancelled</h1>
+                <h1>${isWithin48Hours ? 'Subscription Cancelled' : 'Cancellation Request Received'}</h1>
                 <p>Hi ${displayName},</p>
-                <p>We're writing to confirm that your subscription has been successfully cancelled.</p>
+                ${isWithin48Hours
+                  ? '<p>We\'re writing to confirm that your subscription has been successfully cancelled.</p>'
+                  : '<p>We\'ve received your subscription cancellation request. Thank you for letting us know.</p>'
+                }
 
                 <div class="highlight">
-                  <strong>What happens next:</strong><br>
-                  You'll continue to have full access to all Pro features until the end of your current billing period on <strong>${periodEndDate}</strong>. After that date, your account will revert to the free tier.
+                  <strong>${highlightTitle}</strong><br>
+                  ${highlightContent}
                 </div>
 
                 <div class="details">
                   <p><strong>Subscription Details:</strong></p>
                   <p><strong>Plan:</strong> ${plan === 'annual' ? 'Pro Annual' : 'Pro Monthly'}</p>
-                  <p><strong>Access until:</strong> ${periodEndDate}</p>
                   <p><strong>Subscription ID:</strong> ${subscriptionId}</p>
+                  ${!isWithin48Hours && keepProAccess ? `<p><strong>Pro Access:</strong> Active during review period</p>` : ''}
                 </div>
 
-                <p>If you changed your mind, you can resubscribe anytime from your dashboard.</p>
+                ${refundSection}
 
-                <h2>Refund Information</h2>
-                <p>If you cancelled within 48 hours of your initial subscription and have used 5 or fewer messages, you may be eligible for a full refund.</p>
-                <p>To request a refund, simply reply to this email with your refund request, and we'll process it within 3 business days.</p>
+                ${isWithin48Hours
+                  ? '<p>If you changed your mind, you can resubscribe anytime from your dashboard.</p>'
+                  : '<p>We appreciate your patience while we process your request. You\'ll hear from us soon!</p>'
+                }
               </div>
 
               <div style="text-align: center;">
@@ -370,7 +425,11 @@ export async function sendCancellationEmail({
       `,
     })
 
-    console.log('[Email] Cancellation email sent to:', userEmail)
+    console.log('[Email] Cancellation email sent to:', userEmail, {
+      isWithin48Hours,
+      keepProAccess,
+      refundAmount: refundAmount ? `$${refundAmount.toFixed(2)}` : null,
+    })
     return { success: true }
   } catch (error) {
     console.error('[Email] Failed to send cancellation email:', error)
@@ -724,3 +783,189 @@ export async function sendExpiryReminderEmail({
     return { success: false, error }
   }
 }
+
+/**
+ * Send refund review decision email to user
+ */
+export async function sendRefundReviewEmail({
+  userEmail,
+  userName,
+  subscriptionId,
+  refundAmount = null,
+  action,
+  notes = null,
+  adminNotes = '',
+}: {
+  userEmail: string
+  userName?: string
+  subscriptionId: string
+  refundAmount?: number | null
+  action: 'approve' | 'reject'
+  notes?: string | null
+  adminNotes?: string
+}) {
+  try {
+    const displayName = userName || userEmail.split('@')[0]
+    const isApproved = action === 'approve'
+
+    await resend.emails.send({
+      from: 'Ask Zen Insight <support@zeninsight.xyz>',
+      to: userEmail,
+      subject: isApproved
+        ? 'Refund Approved - Ask Zen Insight'
+        : 'Refund Request Update - Ask Zen Insight',
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Refund ${isApproved ? 'Approved' : 'Update'}</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f9fafb;
+              }
+              .container {
+                background-color: #ffffff;
+                border-radius: 12px;
+                padding: 40px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+              }
+              .header {
+                text-align: center;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 1px solid #e5e7eb;
+              }
+              .logo {
+                font-size: 24px;
+                font-weight: bold;
+                color: #1f2937;
+                margin-bottom: 10px;
+              }
+              .content {
+                margin-bottom: 30px;
+              }
+              .status-box {
+                padding: 24px;
+                border-radius: 8px;
+                margin: 20px 0;
+                text-align: center;
+              }
+              .approved {
+                background-color: #d1fae5;
+                border: 2px solid #10b981;
+              }
+              .rejected {
+                background-color: #fee2e2;
+                border: 2px solid #ef4444;
+              }
+              .status-icon {
+                font-size: 48px;
+                margin-bottom: 10px;
+              }
+              .status-title {
+                font-size: 20px;
+                font-weight: bold;
+                margin-bottom: 8px;
+              }
+              .approved .status-title {
+                color: #065f46;
+              }
+              .rejected .status-title {
+                color: #991b1b;
+              }
+              .details {
+                background-color: #f3f4f6;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+              }
+              .details p {
+                margin: 8px 0;
+              }
+              .details strong {
+                color: #1f2937;
+              }
+              .footer {
+                text-align: center;
+                color: #6b7280;
+                font-size: 14px;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #e5e7eb;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <div class="logo">Ask Zen Insight</div>
+                <p>Your Spiritual Journey Companion</p>
+              </div>
+
+              <div class="content">
+                <h1>Refund ${isApproved ? 'Approved' : 'Request Update'}</h1>
+                <p>Hi ${displayName},</p>
+
+                <div class="status-box ${isApproved ? 'approved' : 'rejected'}">
+                  <div class="status-icon">${isApproved ? '✓' : '✕'}</div>
+                  <div class="status-title">${isApproved ? 'Your Refund Has Been Approved' : 'Your Refund Request Was Declined'}</div>
+                  ${isApproved
+                    ? '<p>We\'ve processed your refund and it will appear in your account within 3-5 business days.</p>'
+                    : '<p>After reviewing your request, we are unable to approve a refund at this time.</p>'
+                  }
+                </div>
+
+                ${refundAmount !== null ? `
+                  <div class="details">
+                    <p><strong>Refund Amount:</strong> $${refundAmount.toFixed(2)}</p>
+                    <p><strong>Subscription ID:</strong> ${subscriptionId}</p>
+                  </div>
+                ` : ''}
+
+                ${notes ? `
+                  <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0;"><strong>Message from our team:</strong></p>
+                    <p style="margin: 8px 0 0 0; color: #4b5563;">${notes}</p>
+                  </div>
+                ` : ''}
+
+                ${adminNotes ? `
+                  <p style="color: #6b7280; font-size: 14px; margin-top: 16px;">${adminNotes}</p>
+                ` : ''}
+
+                ${!isApproved ? `
+                  <p style="margin-top: 20px;">If you have questions about this decision or believe there\'s been an error, please reply to this email and we\'ll be happy to review your case further.</p>
+                ` : ''}
+
+                <p style="margin-top: 20px;">Thank you for being part of our community. We wish you continued peace on your journey.</p>
+              </div>
+
+              <div class="footer">
+                <p>Need help? Contact us at <a href="mailto:support@zeninsight.xyz">support@zeninsight.xyz</a></p>
+                <p>Ask Zen Insight • <a href="https://ask.zeninsight.xyz/refund">Refund Policy</a> • <a href="https://ask.zeninsight.xyz/terms">Terms of Service</a></p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+    })
+
+    console.log('[Email] Refund review email sent to:', userEmail, {
+      action,
+      refundAmount: refundAmount ? `$${refundAmount.toFixed(2)}` : null,
+    })
+    return { success: true }
+  } catch (error) {
+    console.error('[Email] Failed to send refund review email:', error)
+    return { success: false, error }
+  }
+}
+

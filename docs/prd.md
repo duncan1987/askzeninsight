@@ -65,7 +65,7 @@
   Dashboard → Subscriptions → 选择订阅 → Refund
 
   退款信息：
-  - 金额：根据 estimatedRefund 字段（例如 $2.99 或 $24.90）
+  - 金额：根据 estimatedRefund 字段（例如 $2.99 或 $24.99）
   - 原因：用户取消，符合 48 小时退款政策
   - 退款方式：原路返回（自动）
 

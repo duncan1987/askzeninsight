@@ -144,7 +144,10 @@ export async function checkUsageLimit(
 
   const used = count || 0
   const remaining = Math.max(0, limit - used)
-  const canProceed = used < limit
+
+  // Pro users can always proceed (they get downgraded to basic model after premium quota)
+  // Anonymous/Free users are blocked when limit is reached
+  const canProceed = currentTier === 'pro' || used < limit
 
   console.log('[checkUsageLimit]', {
     userId,

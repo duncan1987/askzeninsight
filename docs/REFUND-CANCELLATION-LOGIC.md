@@ -449,7 +449,7 @@ refundPercentage = ((planDays - daysOfQuotaUsed) / planDays) × 100
 estimatedRefund = (refundPercentage / 100) × planPrice
 
 planPrice:
-- Annual: $24.9
+- Annual: $24.99
 - Monthly: $2.99
 ```
 
@@ -462,7 +462,7 @@ planPrice:
 
 ### Examples
 
-**Annual Plan ($24.9, 365 days)**:
+**Annual Plan ($24.99, 365 days)**:
 ```
 7 messages  → 1 day used  → (364/365) × 100 = 99.7% → $19.84
 100 messages → 1 day used  → (364/365) × 100 = 99.7% → $19.84
@@ -508,7 +508,7 @@ planPrice:
 ### 0 Messages Used
 - 0 messages = RULE 2 (≤5 messages)
 - Immediate cancellation
-- 100% refund ($24.9 or $2.99)
+- 100% refund ($24.99 or $2.99)
 
 ### All Messages Used
 - Even if all 100 messages used in one day

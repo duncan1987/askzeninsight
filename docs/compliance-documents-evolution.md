@@ -388,7 +388,7 @@ const messagesPerDay = 100
 const daysOfQuotaUsed = Math.ceil(usageCount / messagesPerDay)
 const planDays = subscription.plan === 'annual' ? 365 : 30
 const refundPercentage = Math.max(0, ((planDays - daysOfQuotaUsed) / planDays) * 100)
-const estimatedRefund = (refundPercentage / 100) * (subscription.plan === 'annual' ? 24.9 : 2.99)
+const estimatedRefund = (refundPercentage / 100) * (subscription.plan === 'annual' ? 24.99  : 2.99)
 ```
 
 ---
