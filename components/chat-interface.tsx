@@ -871,8 +871,6 @@ export function ChatInterface() {
                     <Sparkles className="h-3.5 w-3.5" />
                   )}
                   <span>{userTier.tier === 'pro' ? 'Pro' : userTier.authenticated ? 'Free' : 'Guest'}</span>
-                  <span className="text-muted-foreground/70 mx-1">•</span>
-                  <span>{currentModel}</span>
                 </div>
                 {isSaving && (
                   <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>

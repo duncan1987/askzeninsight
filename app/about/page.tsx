@@ -23,8 +23,14 @@ export default function AboutPage() {
           {/* Meet koji */}
           <section className="space-y-4">
             <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-lg p-6 border border-amber-200 dark:border-amber-900">
-              <h2 className="text-2xl font-bold mb-3 flex items-center gap-2">
-                <span>🧘</span>
+              <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full border-2 border-amber-500/30 flex-shrink-0 overflow-hidden">
+                  <img
+                    src="/peaceful-prayer-meditation.jpg"
+                    alt="koji"
+                    className="h-8 w-8 object-cover"
+                  />
+                </div>
                 Meet koji - Your AI Zen Guide
               </h2>
               <p className="text-muted-foreground mb-3">
