@@ -20,6 +20,27 @@ export const metadata: Metadata = {
   description:
     "Receive thoughtful spiritual guidance and Zen wisdom through AI-powered conversations. Explore mindfulness, meditation, and inner peace.",
   generator: "v0.app",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://askzeninsight.com"),
+  keywords: [
+    "zen",
+    "meditation",
+    "mindfulness",
+    "spiritual guidance",
+    "AI meditation teacher",
+    "buddhism",
+    "inner peace",
+    "mental wellness",
+    "zen philosophy",
+    "meditation coach",
+  ],
+  authors: [{ name: "Ask Zen Insight" }],
+  creator: "Ask Zen Insight",
+  publisher: "Ask Zen Insight",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   icons: {
     icon: [
       {
@@ -36,6 +57,44 @@ export const metadata: Metadata = {
       },
     ],
     apple: "/apple-icon.png",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    title: `${siteName} - AI-Powered Spiritual Guidance`,
+    description: "Discover inner wisdom through mindful conversation with our AI meditation teacher koji (Emptiness and Stillness). Experience gentle, non-judgmental guidance grounded in Zen philosophy.",
+    siteName: siteName,
+    images: [
+      {
+        url: "/og-image.svg",
+        width: 1200,
+        height: 630,
+        alt: `${siteName} - AI-Powered Spiritual Guidance`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${siteName} - AI-Powered Spiritual Guidance`,
+    description: "Discover inner wisdom through mindful conversation with our AI meditation teacher. Experience gentle, non-judgmental guidance grounded in Zen philosophy.",
+    images: ["/og-image.svg"],
+    creator: "@your-twitter-handle",
+    site: "@your-twitter-handle",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION,
   },
 }
 

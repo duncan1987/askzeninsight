@@ -1,0 +1,120 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Zen gradient for the main elements -->
+    <linearGradient id="zen-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#334155;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Subtle glow effect -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Clip path for rounded corners -->
+    <clipPath id="rounded-corners">
+      <rect width="1200" height="630" rx="24" />
+    </clipPath>
+  </defs>
+
+  <!-- Main background -->
+  <rect width="1200" height="630" fill="#f8fafc" clip-path="url(#rounded-corners)"/>
+
+  <!-- Subtle gradient overlay -->
+  <rect width="1200" height="630" fill="url(#zen-gradient)" opacity="0.03" clip-path="url(#rounded-corners)"/>
+
+  <!-- Decorative zen circle (Enso) - representing completeness -->
+  <circle cx="900" cy="315" r="180" stroke="#1e293b" stroke-width="3" fill="none" opacity="0.15"/>
+
+  <!-- Second concentric circle -->
+  <circle cx="900" cy="315" r="140" stroke="#1e293b" stroke-width="2" fill="none" opacity="0.1"/>
+
+  <!-- Small dots representing mindfulness/awareness -->
+  <circle cx="780" cy="280" r="4" fill="#1e293b" opacity="0.2"/>
+  <circle cx="1020" cy="350" r="3" fill="#1e293b" opacity="0.15"/>
+  <circle cx="850" cy="420" r="2" fill="#1e293b" opacity="0.1"/>
+
+  <!-- Main logo/sparkle icon on the left -->
+  <g transform="translate(150, 315)" filter="url(#glow)">
+    <!-- Central 4-point star -->
+    <path d="M0 -80 C8 -50 15 -35 35 -20 L35 -20 C15 -5 8 10 0 40 C-8 10 -15 -5 -35 -20 L-35 -20 C-15 -35 -8 -50 0 -80 Z"
+          fill="#1e293b"/>
+
+    <!-- Top sparkle -->
+    <circle cx="0" cy="-65" r="8" fill="#64748b"/>
+
+    <!-- Bottom sparkle -->
+    <circle cx="0" cy="65" r="8" fill="#64748b"/>
+
+    <!-- Left sparkle -->
+    <circle cx="-65" cy="0" r="8" fill="#64748b"/>
+
+    <!-- Right sparkle -->
+    <circle cx="65" cy="0" r="8" fill="#64748b"/>
+
+    <!-- Diagonal sparkles -->
+    <circle cx="-46" cy="-46" r="6" fill="#94a3b8"/>
+    <circle cx="46" cy="-46" r="6" fill="#94a3b8"/>
+    <circle cx="-46" cy="46" r="6" fill="#94a3b8"/>
+    <circle cx="46" cy="46" r="6" fill="#94a3b8"/>
+  </g>
+
+  <!-- Main text -->
+  <text x="320" y="280" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+        font-size="64" font-weight="700" fill="#1e293b">
+    Ask Zen Insight
+  </text>
+
+  <!-- Subtitle/description -->
+  <text x="320" y="340" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+        font-size="28" font-weight="400" fill="#475569">
+    AI-Powered Spiritual Guidance
+  </text>
+
+  <!-- Tagline -->
+  <text x="320" y="400" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+        font-size="22" font-weight="300" fill="#64748b">
+    Discover inner wisdom through mindful conversation
+  </text>
+
+  <!-- Decorative line separator -->
+  <line x1="320" y1="430" x2="580" y2="430" stroke="#cbd5e1" stroke-width="2" opacity="0.6"/>
+
+  <!-- Small badge/feature text -->
+  <g transform="translate(320, 480)">
+    <rect width="120" height="32" rx="6" fill="#e2e8f0" opacity="0.8"/>
+    <text x="60" y="21" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+          font-size="14" font-weight="500" fill="#475569">
+      Free to Use
+    </text>
+  </g>
+
+  <g transform="translate(460, 480)">
+    <rect width="140" height="32" rx="6" fill="#e2e8f0" opacity="0.8"/>
+    <text x="70" y="21" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+          font-size="14" font-weight="500" fill="#475569">
+      Real-time AI
+    </text>
+  </g>
+
+  <!-- Subtle geometric decoration in corners -->
+  <g opacity="0.05">
+    <rect x="50" y="50" width="40" height="40" stroke="#1e293b" stroke-width="2" fill="none"/>
+    <rect x="60" y="60" width="20" height="20" fill="#1e293b"/>
+  </g>
+
+  <g opacity="0.05">
+    <rect x="1110" y="540" width="40" height="40" stroke="#1e293b" stroke-width="2" fill="none"/>
+    <rect x="1120" y="550" width="20" height="20" fill="#1e293b"/>
+  </g>
+
+  <!-- Website URL at bottom -->
+  <text x="1140" y="600" text-anchor="end" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+        font-size="18" font-weight="500" fill="#94a3b8">
+    askzeninsight.com
+  </text>
+</svg>
