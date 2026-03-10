@@ -1,6 +1,6 @@
 # Building Ask Zen Insight: An AI Meditation Teacher with Next.js 16 and Streaming Responses
 
-![Ask Zen Insight](https://your-site.com/og-image.png)
+![Ask Zen Insight](https://ask.zeninsight.xyz/og-image.svg)
 
 I recently built **Ask Zen Insight**—an AI-powered meditation teacher named "koji" (空寂, Emptiness and Stillness) that offers thoughtful, non-judgmental conversations grounded in Buddhist and Zen philosophy. In this post, I'll share the technical journey, architecture decisions, and key implementation details.
 
@@ -8,7 +8,7 @@ I recently built **Ask Zen Insight**—an AI-powered meditation teacher named "k
 
 Ask Zen Insight is a web application where users can have conversations with an AI trained to respond like a Zen meditation teacher. The AI guides users toward self-reflection using metaphors like water, clouds, mirrors, and the moon—all while maintaining a gentle, non-judgmental tone.
 
-**Live demo:** https://your-site.com
+**Live demo:** https://ask.zeninsight.xyz
 
 ## Technology Stack
 
@@ -399,7 +399,7 @@ The key takeaways are:
 - Consistent personality comes from well-crafted prompts
 - Even error handling can reflect your brand values
 
-**Try it out:** https://your-site.com
+**Try it out:** https://ask.zeninsight.xyz
 
 **GitHub:** [Your repository link]
 
