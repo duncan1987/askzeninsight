@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://yourdomain.com'
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zeninsight.xyz'
 
 // 定义要包含在站点地图中的页面
 const publicPages = [

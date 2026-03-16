@@ -1,16 +1,38 @@
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
+import { Breadcrumb } from '@/components/breadcrumb'
 import { PricingCard } from '@/components/pricing-card'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 
 // Force dynamic rendering because Header uses cookies for authentication
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Pricing & Plans | Ask Zen Insight - AI Meditation Teacher',
+  description: 'Choose the perfect plan for your spiritual journey. Free tier with 10 messages/day, or Premium from $2.99/month with advanced AI and unlimited chat history.',
+  keywords: ['pricing', 'subscription plans', 'AI meditation pricing', 'zen guidance cost', 'meditation app pricing'],
+  openGraph: {
+    title: 'Pricing & Plans | Ask Zen Insight',
+    description: 'Affordable plans for AI-powered spiritual guidance and meditation support.',
+  },
+}
+
+const breadcrumbItems = [
+  { name: 'Home', href: '/' },
+  { name: 'Pricing', href: '/pricing' },
+]
 
 export default function PricingPage() {
   return (
     <div className="min-h-screen">
       <Header />
       <main className="container mx-auto px-4 py-20">
+        {/* Breadcrumb Navigation */}
+        <div className="mx-auto max-w-5xl mb-6">
+          <Breadcrumb items={breadcrumbItems} />
+        </div>
+
         <div className="mx-auto max-w-5xl">
           {/* Header */}
           <div className="text-center mb-16">

@@ -1,6 +1,7 @@
 import { Header } from "@/components/header"
 import { ChatInterface } from "@/components/chat-interface"
 import { Footer } from "@/components/footer"
+import { Breadcrumb } from "@/components/breadcrumb"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Card } from "@/components/ui/card"
@@ -8,9 +9,25 @@ import { Button } from "@/components/ui/button"
 import { Lock, ArrowRight } from "lucide-react"
 import { Suspense } from "react"
 import { AuthErrorToast } from "@/components/auth/auth-error-toast"
+import type { Metadata } from "next"
 
 // Force dynamic rendering because Header uses cookies for authentication
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'AI Chat - Zen Meditation Guidance | Ask Zen Insight',
+  description: 'Start a conversation with koji, your AI meditation teacher. Get personalized spiritual guidance, mindfulness tips, and zen wisdom.',
+  keywords: ['AI chat', 'zen meditation', 'mindfulness conversation', 'spiritual guidance chat', 'meditation teacher AI'],
+  openGraph: {
+    title: 'AI Chat - Zen Meditation Guidance | Ask Zen Insight',
+    description: 'Have a meaningful conversation with our AI meditation teacher and discover inner wisdom.',
+  },
+}
+
+const breadcrumbItems = [
+  { name: 'Home', href: '/' },
+  { name: 'Chat', href: '/chat' },
+]
 
 export default async function ChatPage() {
   const supabase = await createClient()
@@ -75,6 +92,10 @@ export default async function ChatPage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
+        {/* Breadcrumb Navigation */}
+        <div className="container mx-auto px-4 py-2">
+          <Breadcrumb items={breadcrumbItems} />
+        </div>
         <ChatInterface />
       </main>
       <Footer />

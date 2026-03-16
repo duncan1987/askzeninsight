@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description:
     "Receive thoughtful spiritual guidance and Zen wisdom through AI-powered conversations. Explore mindfulness, meditation, and inner peace.",
   generator: "v0.app",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://askzeninsight.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://zeninsight.xyz"),
   keywords: [
     "zen",
     "meditation",
@@ -79,8 +79,8 @@ export const metadata: Metadata = {
     title: `${siteName} - AI-Powered Spiritual Guidance`,
     description: "Discover inner wisdom through mindful conversation with our AI meditation teacher. Experience gentle, non-judgmental guidance grounded in Zen philosophy.",
     images: ["/og-image.svg"],
-    creator: "@your-twitter-handle",
-    site: "@your-twitter-handle",
+    creator: "@zeninsight_ai",
+    site: "@zeninsight_ai",
   },
   robots: {
     index: true,

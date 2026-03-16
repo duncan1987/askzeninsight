@@ -1,8 +1,25 @@
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
+import { Breadcrumb } from '@/components/breadcrumb'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Frequently Asked Questions | Ask Zen Insight',
+  description: 'Find answers to common questions about Ask Zen Insight, our AI meditation teacher, subscription plans, and spiritual guidance services.',
+  keywords: ['FAQ', 'zen meditation questions', 'AI meditation teacher help', 'subscription pricing questions', 'meditation guidance support'],
+  openGraph: {
+    title: 'Frequently Asked Questions | Ask Zen Insight',
+    description: 'Get answers to common questions about our AI-powered spiritual guidance service.',
+  },
+}
+
+const breadcrumbItems = [
+  { name: 'Home', href: '/' },
+  { name: 'FAQ', href: '/faq' },
+]
 
 export default function FAQPage() {
   const faqCategories = [
@@ -208,6 +225,11 @@ export default function FAQPage() {
     <div className="min-h-screen">
       <Header />
       <main className="container mx-auto px-4 py-12">
+        {/* Breadcrumb Navigation */}
+        <div className="mx-auto max-w-4xl mb-6">
+          <Breadcrumb items={breadcrumbItems} />
+        </div>
+
         <div className="mx-auto max-w-4xl">
           {/* Header */}
           <div className="text-center mb-12">
