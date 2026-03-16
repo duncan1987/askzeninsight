@@ -197,8 +197,8 @@ export default function FAQPage() {
           a: 'Yes. You can manage your payment method through the billing portal accessible from your dashboard.'
         },
         {
-          q: 'Do you offer refunds for automatic renewals?',
-          a: 'Refund eligibility is determined based on when you subscribed and your usage. See our Refund Policy for details. Contact support@zeninsight.xyz if you believe you\'re eligible for a refund.'
+          q: 'Do I need to manually renew my subscription?',
+          a: 'Yes, subscriptions are one-time purchases that must be manually renewed. We\'ll send you a reminder email before your subscription expires. You can purchase a new subscription anytime from the Pricing page or your dashboard.'
         }
       ]
     }

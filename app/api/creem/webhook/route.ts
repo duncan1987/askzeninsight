@@ -228,132 +228,16 @@ export async function POST(req: Request) {
         break
       }
 
+      // Auto-renewal events are intentionally ignored
+      // Users must manually renew their subscriptions for better control and transparency
       case 'subscription.paid':
       case 'subscription.active':
       case 'subscription.trialing':
       case 'subscription.update': {
+        console.log('[Webhook] Auto-renewal event received but ignored - manual renewal required')
         const subscriptionId = typeof object?.id === 'string' ? object.id : undefined
-        if (!subscriptionId) break
-
-        const userId = getReferenceId(object?.metadata)
-
-        // Determine subscription period from metadata or subscription object
-        const metadata = object?.metadata
-        const planType = typeof metadata?.plan === 'string' ? metadata.plan : 'monthly'
-        const interval = typeof metadata?.interval === 'string' ? metadata.interval : object?.interval
-
-        // Calculate period end based on plan type
-        const periodDays =
-          interval === 'year' || planType === 'annual'
-            ? 365
-            : 30
-
-        const currentPeriodEnd =
-          toIsoDate(object?.current_period_end_date) ||
-          toIsoDate(object?.next_transaction_date) ||
-          new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString()
-
-        if (userId) {
-          // Check for existing active subscriptions to ensure single active subscription
-          const { data: existingSubs } = await supabase
-            .from('subscriptions')
-            .select('id, status, current_period_end, creem_subscription_id, plan, replaced_by_new_plan')
-            .eq('user_id', userId)
-            .in('status', ['active', 'cancelled', 'queued'])
-            .gte('current_period_end', new Date().toISOString())
-            .order('created_at', { ascending: false })
-
-          const currentActiveSub = existingSubs?.find(
-            (sub: any) => sub.status === 'active' && !sub.replaced_by_new_plan
-          )
-
-          // Determine subscription status and period end based on whether we're queuing
-          let subscriptionStatus = 'active'
-          let subscriptionPeriodEnd = currentPeriodEnd
-
-          // If there's an active subscription, queue the new one
-          if (currentActiveSub && currentActiveSub.creem_subscription_id !== subscriptionId) {
-            console.log('[Webhook] Found existing active subscription, queuing new subscription:', currentActiveSub.id)
-
-            // Mark existing as replaced
-            await supabase
-              .from('subscriptions')
-              .update({
-                replaced_by_new_plan: true,
-                status: 'cancelled',
-                cancel_at_period_end: true,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', currentActiveSub.id)
-
-            // Set new subscription to queued
-            subscriptionStatus = 'queued'
-            subscriptionPeriodEnd = currentActiveSub.current_period_end
-
-            console.log('[Webhook] Queued new subscription - will activate on:', subscriptionPeriodEnd)
-          }
-
-          // Check if subscription already exists to determine if this is a new subscription
-          const { data: existingSub } = await supabase
-            .from('subscriptions')
-            .select('id, created_at')
-            .eq('creem_subscription_id', subscriptionId)
-            .single()
-
-          const isNewSubscription = !existingSub
-
-          const { error } = await supabase
-            .from('subscriptions')
-            .upsert(
-              {
-                user_id: userId,
-                creem_subscription_id: subscriptionId,
-                status: subscriptionStatus,
-                current_period_end: subscriptionPeriodEnd,
-                plan: planType === 'annual' ? 'annual' : 'pro',
-                interval: interval === 'year' ? 'year' : 'month',
-              },
-              { onConflict: 'creem_subscription_id' }
-            )
-          if (error) throw error
-
-          // Send welcome email only for new subscriptions
-          if (isNewSubscription) {
-            const userEmail = typeof metadata?.userEmail === 'string'
-              ? metadata.userEmail
-              : typeof metadata?.user_email === 'string'
-                ? metadata.user_email
-                : null
-
-            if (userEmail) {
-              try {
-                await sendWelcomeEmail({
-                  userEmail,
-                  userName: typeof metadata?.userName === 'string' ? metadata.userName : undefined,
-                  plan: planType === 'annual' ? 'annual' : 'pro',
-                  currentPeriodEnd,
-                  subscriptionId,
-                })
-                console.log('[Webhook] Welcome email sent successfully for subscription.active')
-              } catch (emailError) {
-                console.error('[Webhook] Failed to send welcome email:', emailError)
-                // Don't throw - email failure shouldn't break the subscription
-              }
-            } else {
-              console.log('[Webhook] No user email found in metadata, skipping welcome email')
-            }
-          }
-        } else {
-          const { error } = await supabase
-            .from('subscriptions')
-            .update({
-              status: 'active',
-              current_period_end: currentPeriodEnd,
-              plan: planType === 'annual' ? 'annual' : 'pro',
-              interval: interval === 'year' ? 'year' : 'month',
-            })
-            .eq('creem_subscription_id', subscriptionId)
-          if (error) throw error
+        if (subscriptionId) {
+          console.log('[Webhook] Ignored auto-renewal event for subscription:', subscriptionId)
         }
         break
       }

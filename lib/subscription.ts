@@ -119,10 +119,11 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
   })
 
   // User is Pro if:
-  // 1. Has active subscription AND
-  // 2. (No refund request OR refund is still in review period)
+  // 1. Has active subscription (no auto-renewal) AND
+  // 2. Subscription period is still valid (not expired) AND
+  // 3. (No refund request OR refund is still in review period)
   const isPro = subscription &&
-    ['active', 'cancelled', 'canceled'].includes(subscription.status) &&
+    subscription.status === 'active' &&
     new Date(subscription.current_period_end) >= new Date(now) &&
     (!hasRefundRequest || isInReviewPeriod) &&  // Keep Pro if in review period
     subscription.refund_status !== 'approved' &&

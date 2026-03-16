@@ -77,7 +77,7 @@ export default function PricingPage() {
           </div>
 
           <p className="mt-8 text-center text-sm text-muted-foreground">
-            Subscriptions renew automatically until canceled.{' '}
+            Subscriptions are one-time purchases that must be manually renewed.{' '}
             <Link href="/terms" className="underline underline-offset-4 hover:text-primary">
               Terms apply
             </Link>

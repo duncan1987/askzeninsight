@@ -218,90 +218,52 @@ describe('Subscription Flow: Free → Annual Pro', () => {
 })
 
 /**
- * 测试场景3：订阅续费
+ * 测试场景3：订阅到期后用户降级
  */
-describe('Subscription Flow: Renewal', () => {
+describe('Subscription Flow: Expiration and Downgrade', () => {
   let testUserId: string
   let subscriptionId: string
+  let accessToken: string
 
   beforeAll(async () => {
     const user = await createUser({
-      email: `test-renewal-${Date.now()}@example.com`,
+      email: `test-expiry-${Date.now()}@example.com`,
       password: 'TestPassword123!',
     })
     testUserId = user.id
-    subscriptionId = `sub_renewal_${Date.now()}`
+    accessToken = user.accessToken
+    subscriptionId = `sub_expiry_${Date.now()}`
+
+    // 创建已过期的订阅
+    await supabase.from('subscriptions').insert({
+      user_id: testUserId,
+      creem_subscription_id: subscriptionId,
+      status: 'active',
+      plan: 'pro',
+      interval: 'month',
+      current_period_end: new Date(
+        Date.now() - 24 * 60 * 60 * 1000 // 已过期1天
+      ).toISOString(),
+    })
   })
 
   afterAll(async () => {
     await deleteUser(testUserId)
   })
 
-  it('应该处理subscription.paid事件并更新周期结束日期', async () => {
-    // 首次订阅
-    const firstPayload = {
-      eventType: 'checkout.completed',
-      object: {
-        request_id: testUserId,
-        subscription: {
-          id: subscriptionId,
-          status: 'active',
-          interval: 'month',
-          current_period_end_date: '2024-02-01 00:00:00',
-        },
-        metadata: {
-          referenceId: testUserId,
-          plan: 'pro',
-          interval: 'month',
-        },
-      },
-    }
-
-    await fetch('http://localhost:3000/api/creem/webhook', {
-      method: 'POST',
+  it('订阅到期后用户应该降级为免费用户', async () => {
+    const response = await fetch('http://localhost:3000/api/user/tier', {
       headers: {
-        'Content-Type': 'application/json',
-        'creem-signature': generateTestSignature(JSON.stringify(firstPayload)),
+        Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify(firstPayload),
     })
 
-    // 续费
-    const renewalPayload = {
-      eventType: 'subscription.paid',
-      object: {
-        id: subscriptionId,
-        status: 'active',
-        interval: 'month',
-        current_period_end_date: '2024-03-01 00:00:00',
-        metadata: {
-          referenceId: testUserId,
-          plan: 'pro',
-          interval: 'month',
-        },
-      },
-    }
+    const data = await response.json()
 
-    const response = await fetch('http://localhost:3000/api/creem/webhook', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'creem-signature': generateTestSignature(JSON.stringify(renewalPayload)),
-      },
-      body: JSON.stringify(renewalPayload),
-    })
-
-    expect(response.ok).toBe(true)
-  })
-
-  it('应该更新订阅周期结束日期', async () => {
-    const { data: subscription } = await supabase
-      .from('subscriptions')
-      .select('current_period_end')
-      .eq('user_id', testUserId)
-      .single()
-
-    expect(subscription?.current_period_end).toContain('2024-03-01')
+    expect(data.tier).toBe('free')
+    expect(data.plan).toBe(null)
+    expect(data.model).toBe('glm-4-flash')
+    expect(data.saveHistory).toBe(false)
   })
 })
 

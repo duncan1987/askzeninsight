@@ -133,9 +133,9 @@ export default function TermsPage() {
             <h2 className="text-xl font-semibold">6. Payment Terms</h2>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>
-                <strong>Automatic Renewal:</strong> Subscriptions renew automatically
-                until canceled. You will be charged at the beginning of each billing
-                period.
+                <strong>Manual Renewal:</strong> Subscriptions are one-time purchases
+                that must be manually renewed. We will send you a reminder email before your subscription expires.
+                You can purchase a new subscription anytime from the Pricing page or your dashboard.
               </li>
               <li>
                 <strong>Payment Processing:</strong> All payments are processed by
