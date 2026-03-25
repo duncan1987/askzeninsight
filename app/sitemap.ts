@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zeninsight.xyz'
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ask.zeninsight.xyz'
 
 // 定义要包含在站点地图中的页面
 const publicPages = [
@@ -10,52 +10,52 @@ const publicPages = [
     changeFrequency: 'weekly' as const,
   },
   {
-    path: '/chat',
+    path: '/chat/',
     priority: 0.9,
     changeFrequency: 'weekly' as const,
   },
   {
-    path: '/meditation',
+    path: '/meditation/',
     priority: 0.9,
     changeFrequency: 'weekly' as const,
   },
   {
-    path: '/meditation/level-1',
+    path: '/meditation/level-1/',
     priority: 0.8,
     changeFrequency: 'weekly' as const,
   },
   {
-    path: '/blog',
+    path: '/blog/',
     priority: 0.8,
     changeFrequency: 'weekly' as const,
   },
   {
-    path: '/about',
+    path: '/about/',
     priority: 0.7,
     changeFrequency: 'monthly' as const,
   },
   {
-    path: '/pricing',
+    path: '/pricing/',
     priority: 0.7,
     changeFrequency: 'monthly' as const,
   },
   {
-    path: '/faq',
+    path: '/faq/',
     priority: 0.6,
     changeFrequency: 'monthly' as const,
   },
   {
-    path: '/contact',
+    path: '/contact/',
     priority: 0.6,
     changeFrequency: 'monthly' as const,
   },
   {
-    path: '/privacy',
+    path: '/privacy/',
     priority: 0.3,
     changeFrequency: 'yearly' as const,
   },
   {
-    path: '/terms',
+    path: '/terms/',
     priority: 0.3,
     changeFrequency: 'yearly' as const,
   },
