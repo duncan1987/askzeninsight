@@ -1,8 +1,8 @@
 import type { MetadataRoute } from 'next'
+import { getAllPostsMeta } from '@/lib/blog'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ask.zeninsight.xyz'
 
-// 定义要包含在站点地图中的页面
 const publicPages = [
   {
     path: '/',
@@ -61,17 +61,6 @@ const publicPages = [
   },
 ]
 
-// 动态生成的分享页面（如果有的话）
-// 注意：如果你有大量的动态页面，应该从数据库或 CMS 中获取
-const getSharedPages = async () => {
-  // 这里可以添加逻辑从数据库获取共享页面
-  // 例如：const sharedConversations = await db.query.sharedConversations.findMany()
-  // return sharedConversations.map(conv => ({ path: `/share/${conv.id}`, ... }))
-
-  // 目前返回空数组，因为还没有实际的分享页面数据
-  return []
-}
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages = publicPages.map((page) => ({
     url: `${siteUrl}${page.path}`,
@@ -80,7 +69,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: page.priority,
   }))
 
-  const dynamicPages = await getSharedPages()
+  const blogPosts = getAllPostsMeta().map((post) => ({
+    url: `${siteUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.updated || post.date),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
 
-  return [...staticPages, ...dynamicPages]
+  return [...staticPages, ...blogPosts]
 }
