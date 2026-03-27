@@ -1,7 +1,8 @@
+import { headers } from 'next/headers'
 import type { MetadataRoute } from 'next'
 import { getAllPostsMeta } from '@/lib/blog'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ask.zeninsight.xyz'
+const PRODUCTION_URL = 'https://ask.zeninsight.xyz'
 
 const publicPages = [
   {
@@ -61,7 +62,23 @@ const publicPages = [
   },
 ]
 
+async function getSiteUrl(): Promise<string> {
+  try {
+    const headersList = await headers()
+    const host = headersList.get('host')
+    const protocol = headersList.get('x-forwarded-proto') || 'https'
+    if (host && !host.includes('localhost')) {
+      return `${protocol}://${host}`
+    }
+  } catch {
+    // headers() not available during build time
+  }
+  return PRODUCTION_URL
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const siteUrl = await getSiteUrl()
+
   const staticPages = publicPages.map((page) => ({
     url: `${siteUrl}${page.path}`,
     lastModified: new Date(),
@@ -69,12 +86,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: page.priority,
   }))
 
-  const blogPosts = getAllPostsMeta().map((post) => ({
-    url: `${siteUrl}/blog/${post.slug}`,
-    lastModified: new Date(post.updated || post.date),
-    changeFrequency: 'monthly' as const,
-    priority: 0.7,
-  }))
+  let blogPosts: MetadataRoute.Sitemap = []
+  try {
+    blogPosts = getAllPostsMeta().map((post) => ({
+      url: `${siteUrl}/blog/${post.slug}`,
+      lastModified: new Date(post.updated || post.date),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    }))
+  } catch {
+    // Blog files may not be available in all environments
+  }
 
   return [...staticPages, ...blogPosts]
 }

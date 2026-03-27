@@ -14,7 +14,7 @@ import { getPostBySlug, getAllSlugs, getRelatedPosts } from '@/lib/blog'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { getMdxComponents } from '@/lib/mdx-components'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zeninsight.xyz'
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ask.zeninsight.xyz'
 
 export async function generateStaticParams() {
   const slugs = getAllSlugs()

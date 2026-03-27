@@ -1,8 +1,24 @@
+import { headers } from 'next/headers'
 import type { MetadataRoute } from 'next'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ask.zeninsight.xyz'
+const PRODUCTION_URL = 'https://ask.zeninsight.xyz'
 
-export default function robots(): MetadataRoute.Robots {
+async function getSiteUrl(): Promise<string> {
+  try {
+    const headersList = await headers()
+    const host = headersList.get('host')
+    const protocol = headersList.get('x-forwarded-proto') || 'https'
+    if (host && !host.includes('localhost')) {
+      return `${protocol}://${host}`
+    }
+  } catch {
+    // headers() not available during build time
+  }
+  return PRODUCTION_URL
+}
+
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const siteUrl = await getSiteUrl()
   return {
     rules: [
       {

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description:
     "Receive thoughtful spiritual guidance and Zen wisdom through AI-powered conversations. Explore mindfulness, meditation, and inner peace.",
   generator: "v0.app",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://zeninsight.xyz"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://ask.zeninsight.xyz"),
   keywords: [
     "zen",
     "meditation",
