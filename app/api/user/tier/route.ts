@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   if (!supabase) {
     return NextResponse.json({
       tier: 'anonymous',
-      model: 'glm-4-flash',
+      model: 'glm-5',
       saveHistory: false,
       authenticated: false,
     })
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   if (!user) {
     return NextResponse.json({
       tier: 'anonymous',
-      model: 'glm-4-flash',
+      model: 'glm-5',
       saveHistory: false,
       authenticated: false,
     })

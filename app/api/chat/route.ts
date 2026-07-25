@@ -101,7 +101,7 @@ export async function POST(req: Request) {
   console.log('[Chat API] User tier:', subscription.tier, 'Model:', subscription.model, 'Save history:', subscription.saveHistory)
 
   // Fair Use Policy: Check if pro user is within premium quota
-  // If exceeded, downgrade to basic model (glm-4-flash)
+  // If exceeded, downgrade to basic model (glm-5)
   let model = subscription.model
   let isPremiumModel = false
 
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
     const withinPremiumQuota = await isWithinPremiumQuota(userId)
     if (!withinPremiumQuota) {
       console.log('[Chat API] Premium quota exceeded, downgrading to basic model')
-      model = 'glm-4-flash'
+      model = 'glm-5'
       isPremiumModel = false
     } else {
       isPremiumModel = true
@@ -252,7 +252,9 @@ export async function POST(req: Request) {
       timeoutController.abort()
     })
 
-    const response = await fetch("https://open.bigmodel.cn/api/paas/v4/chat/completions", {
+    // API endpoint from environment variable (supports different providers)
+    const apiUrl = process.env.AI_API_URL || "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

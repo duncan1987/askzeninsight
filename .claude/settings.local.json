@@ -32,7 +32,13 @@
       "Bash(\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" node_modules/jest/bin/jest.js tests/subscription-usage-limits.test.ts --verbose --no-cache --maxWorkers=1)",
       "Bash(start-dev.bat:*)",
       "Bash(git grep:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(mkdir -p \"D:/AppGallery/codex/aibudda/content/blog\")",
+      "Bash(mkdir -p \"D:/AppGallery/codex/aibudda/components/blog\")",
+      "Bash(pnpm lint:*)",
+      "Bash(npx eslint:*)",
+      "Bash(\"C:/Program Files/nodejs/node.exe\" node_modules/next/dist/bin/next build)",
+      "WebSearch"
     ]
   }
 }

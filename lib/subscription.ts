@@ -21,7 +21,7 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
     return {
       tier: 'anonymous',
       plan: null,
-      model: 'glm-4-flash',
+      model: 'glm-5',
       apiKey: process.env.ZHIPU_API_FREE || '',
       saveHistory: false,
     }
@@ -35,7 +35,7 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
     return {
       tier: 'free',
       plan: null,
-      model: 'glm-4-flash',
+      model: 'glm-5',
       apiKey: process.env.ZHIPU_API_FREE || '',
       saveHistory: false,
     }
@@ -133,7 +133,7 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
   return {
     tier: isPro ? 'pro' : 'free',
     plan: isPro ? (plan || 'pro') : null,
-    model: isPro ? 'glm-4.7' : 'glm-4-flash',
+    model: isPro ? 'glm-5' : 'glm-5',
     apiKey: isPro
       ? (process.env.ZHIPU_API_KEY || '')
       : (process.env.ZHIPU_API_FREE || ''),

@@ -734,7 +734,7 @@ export async function sendExpiryReminderEmail({
                   <p style="margin: 0; color: #92400e;">
                     <strong>What happens when your subscription expires:</strong><br>
                     Your account will revert to the free tier, which includes 10 messages per day
-                    and the glm-4-flash model. Your chat history will be preserved, but you'll lose
+                    and the glm-5 model. Your chat history will be preserved, but you'll lose
                     access to premium features.
                   </p>
                 </div>
@@ -751,7 +751,7 @@ export async function sendExpiryReminderEmail({
                 <p>Don't lose access to your premium features. Renew your subscription to continue enjoying:</p>
                 <ul>
                   <li>30 messages per day</li>
-                  <li>Advanced AI model (glm-4.7)</li>
+                  <li>Advanced AI model (glm-5)</li>
                   <li>Chat history preservation</li>
                   <li>Priority support</li>
                 </ul>
