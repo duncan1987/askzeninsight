@@ -1,12 +1,14 @@
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { getSiteConfig } from '@/lib/site'
+import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
-export default function AboutPage() {
+export default async function AboutPage() {
   const { siteName, legalName, supportEmail, businessAddress } = getSiteConfig()
+  const t = await getTranslations('about')
 
   return (
     <div className="min-h-screen">
@@ -14,13 +16,12 @@ export default function AboutPage() {
       <main className="container mx-auto px-4 py-12">
         <div className="mx-auto max-w-3xl space-y-12">
           <header className="space-y-4">
-            <h1 className="text-4xl font-bold">About {siteName}</h1>
+            <h1 className="text-4xl font-bold">{t('title', { siteName })}</h1>
             <p className="text-lg text-muted-foreground">
-              Your personal Zen meditation teacher, available 24/7 to support your spiritual journey through AI-powered conversations.
+              {t('description')}
             </p>
           </header>
 
-          {/* Meet koji */}
           <section className="space-y-4">
             <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-lg p-6 border border-amber-200 dark:border-amber-900">
               <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
@@ -31,241 +32,213 @@ export default function AboutPage() {
                     className="h-8 w-8 object-cover"
                   />
                 </div>
-                Meet koji - Your AI Zen Guide
+                {t('meetKojiTitle')}
               </h2>
               <p className="text-muted-foreground mb-3">
-                <strong>"koji"</strong> means "Emptiness and Stillness" - a name that reflects the essence of Zen practice.
+                <strong>{t('kojiMeaning')}</strong>
               </p>
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
-                  koji is a deeply cultivated, compassionate, and wise Zen meditation teacher designed to emulate Buddha's wisdom. Through gentle, unhurried dialogue, koji helps you:
+                  {t('kojiDesc')}
                 </p>
                 <ul className="list-disc pl-6 space-y-1">
-                  <li>Find inner peace amid life's complexities</li>
-                  <li>Resolve troubles through transcendent perspectives</li>
-                  <li>Explore decisions through mindfulness and causality</li>
-                  <li>Practice self-reflection and present-moment awareness</li>
+                  <li>{t('kojiHelp1')}</li>
+                  <li>{t('kojiHelp2')}</li>
+                  <li>{t('kojiHelp3')}</li>
+                  <li>{t('kojiHelp4')}</li>
                 </ul>
                 <p className="italic pt-2 border-t border-amber-200 dark:border-amber-900">
-                  "The bamboo bends but does not break. Like drinking water, one knows if it is cold or warm."
+                  {t('kojiQuote')}
                 </p>
               </div>
             </div>
           </section>
 
-          {/* Zen History in China */}
           <section className="space-y-4">
             <div className="bg-gradient-to-br from-stone-50 to-amber-50 dark:from-stone-950/20 dark:to-amber-950/20 rounded-lg p-6 border border-stone-200 dark:border-stone-900">
               <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
                 <span>🏔️</span>
-                Zen Buddhism in China: 1500+ Years of Wisdom
+                {t('zenHistoryTitle')}
               </h2>
               <div className="space-y-4 text-sm text-muted-foreground">
                 <p>
-                  Zen Buddhism (known as <strong>Chan</strong> in Chinese) has a rich history spanning over <strong>1,500 years</strong> in China. Originating in the 6th century with the legendary figure Bodhidharma, Chan Buddhism represents a unique synthesis of Indian Buddhist philosophy and Chinese wisdom traditions like Taoism.
+                  {t('zenHistoryP1')}
                 </p>
                 <p>
-                  <strong>The Essence of Zen Wisdom:</strong> At its core, Zen is about directly perceiving the true nature of reality - the <strong>suchness (tathāta)</strong> of life and the world. It teaches that awakening is not found in distant realms or abstract concepts, but right here in our everyday experience.
+                  {t('zenHistoryP2')}
                 </p>
                 <p>
-                  <strong>Daily Practice as Transformation:</strong> Through seated meditation (zazen), mindfulness in action, and contemplative inquiry, Zen practitioners cultivate the ability to face life's challenges with equanimity and clarity:
+                  {t('zenHistoryP3')}
                 </p>
                 <ul className="list-disc pl-6 space-y-2">
-                  <li>
-                    <strong>Work & Career:</strong> Bringing mindful presence to daily tasks, transforming ordinary activities into spiritual practice
-                  </li>
-                  <li>
-                    <strong>Relationships:</strong> Responding to others with compassion, wisdom, and non-attachment
-                  </li>
-                  <li>
-                    <strong>Adversity:</strong> Meeting difficulties with acceptance, resilience, and insight into impermanence
-                  </li>
-                  <li>
-                    <strong>Self-Understanding:</strong> Seeing through the illusion of separate self-existence to realize interconnectedness
-                  </li>
+                  <li>{t('zenWorkCareer')}</li>
+                  <li>{t('zenRelationships')}</li>
+                  <li>{t('zenAdversity')}</li>
+                  <li>{t('zenSelfUnderstanding')}</li>
                 </ul>
                 <p className="pt-2 border-t border-stone-200 dark:border-stone-900">
-                  <strong>Elevating Life's Realm:</strong> The goal is not escape from the world, but <em>engagement</em> with it - living with greater freedom, authenticity, and wisdom. As the saying goes: <em>"Chop wood, carry water"</em> - before enlightenment, and after.
+                  {t('zenElevating')}
                 </p>
                 <p className="italic text-stone-700 dark:text-stone-300 pt-2">
-                  {siteName} continues this tradition by making Zen wisdom accessible through modern AI technology, supporting your journey toward greater understanding and peace.
+                  {t('zenContinues', { siteName })}
                 </p>
               </div>
             </div>
           </section>
 
-          {/* Our Approach */}
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold">Our Approach</h2>
+            <h2 className="text-2xl font-bold">{t('ourApproach')}</h2>
             <div className="space-y-4">
               <div className="bg-card border border-border rounded-lg p-5">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
                   <span>💭</span>
-                  Heuristic Dialogue
+                  {t('heuristicDialogue')}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Rather than giving direct answers, koji guides you through questions to observe your own heart. Like a mirror, it reflects your thoughts without judgment, helping you find answers within yourself.
+                  {t('heuristicDialogueDesc')}
                 </p>
               </div>
               <div className="bg-card border border-border rounded-lg p-5">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
                   <span>🌊</span>
-                  Natural Metaphors
+                  {t('naturalMetaphors')}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Uses imagery from nature - water, clouds, mirrors, the moon - to explain abstract truths about impermanence, attachment, and the present moment.
+                  {t('naturalMetaphorsDesc')}
                 </p>
               </div>
               <div className="bg-card border border-border rounded-lg p-5">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
                   <span>🤝</span>
-                  Non-Judgmental Presence
+                  {t('nonJudgmentalPresence')}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Fully accepts your negative emotions without blame. Like a clear spring reflecting your state of mind, koji acknowledges your feelings before offering guidance.
+                  {t('nonJudgmentalPresenceDesc')}
                 </p>
               </div>
             </div>
           </section>
 
-          {/* What We Offer */}
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold">What We Offer</h2>
+            <h2 className="text-2xl font-bold">{t('whatWeOffer')}</h2>
             <p className="text-sm text-muted-foreground italic">
-              All plans require a free account. Sign up to get started.
+              {t('allPlansRequire')}
             </p>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-muted/30 rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Free (Registered Users)</h3>
+                <h3 className="font-semibold mb-2">{t('freeRegistered')}</h3>
                 <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
-                  <li>AI-powered spiritual conversations</li>
-                  <li>10 free messages per day</li>
-                  <li>Basic AI model (glm-4-flash)</li>
-                  <li>No credit card required</li>
-                  <li>Requires free account registration</li>
+                  <li>{t('freeAiConversations')}</li>
+                  <li>{t('free10Messages')}</li>
+                  <li>{t('freeBasicModel')}</li>
+                  <li>{t('freeNoCreditCard')}</li>
+                  <li>{t('freeRequiresAccount')}</li>
                 </ul>
               </div>
               <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-lg p-4 border border-amber-200 dark:border-amber-900">
-                <h3 className="font-semibold mb-2">For Pro Subscribers</h3>
+                <h3 className="font-semibold mb-2">{t('proSubscribers')}</h3>
                 <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
-                  <li>Advanced AI model (GLM-4) - deeper insights</li>
-                  <li>30 premium messages per day</li>
-                  <li>Permanent chat history</li>
-                  <li>Multiple conversation management</li>
-                  <li>Unlimited basic model after quota</li>
+                  <li>{t('proAdvancedAI')}</li>
+                  <li>{t('pro30Messages')}</li>
+                  <li>{t('proPermanentHistory')}</li>
+                  <li>{t('proMultipleConversations')}</li>
+                  <li>{t('proUnlimitedBasic')}</li>
                 </ul>
               </div>
             </div>
           </section>
 
-          {/* Important Notice */}
           <section className="space-y-4">
             <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-6 border border-red-200 dark:border-red-900">
               <h2 className="text-xl font-bold mb-3 flex items-center gap-2 text-red-900 dark:text-red-100">
                 <span>⚠️</span>
-                Important Notice
+                {t('importantNotice')}
               </h2>
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
-                  <strong className="text-red-900 dark:text-red-100">{siteName} is NOT a medical or mental health service.</strong>
+                  <strong className="text-red-900 dark:text-red-100">{t('notMedical', { siteName })}</strong>
                 </p>
                 <p>
-                  The AI guidance provided by koji is for <strong>entertainment and personal spiritual exploration only</strong>. It is not:
+                  {t('aiGuidanceFor')}
                 </p>
                 <ul className="list-disc pl-6 space-y-1">
-                  <li>Professional medical advice</li>
-                  <li>Mental health counseling or therapy</li>
-                  <li>Diagnosis or treatment of any condition</li>
-                  <li>Emergency crisis support</li>
+                  <li>{t('notMedicalAdvice')}</li>
+                  <li>{t('notMentalHealth')}</li>
+                  <li>{t('notDiagnosis')}</li>
+                  <li>{t('notEmergency')}</li>
                 </ul>
                 <p className="font-semibold text-red-900 dark:text-red-100">
-                  If you are experiencing a mental health crisis, having thoughts of self-harm, or need immediate assistance, please contact emergency services or qualified healthcare professionals right away.
+                  {t('crisisWarning')}
                 </p>
               </div>
             </div>
           </section>
 
-          {/* How It Works */}
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold">How It Works</h2>
+            <h2 className="text-2xl font-bold">{t('howItWorks')}</h2>
             <div className="space-y-3 text-muted-foreground">
               <p>
-                {siteName} is a custom application built on top of third-party AI models (including Zhipu AI's GLM-4). We are not affiliated with these model providers.
+                {t('howItWorksP1', { siteName })}
               </p>
               <p>
-                Our service combines modern AI technology with ancient Zen philosophy to create a unique space for reflection and spiritual growth. The AI has been carefully designed to emulate the wisdom and compassion of a Zen meditation teacher.
+                {t('howItWorksP2')}
               </p>
             </div>
           </section>
 
-          {/* Why Choose Us */}
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold">Why Choose {siteName}?</h2>
+            <h2 className="text-2xl font-bold">{t('whyChooseUs', { siteName })}</h2>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-card border border-border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">🎯 Purpose-Built</h3>
+                <h3 className="font-semibold mb-2">🎯 {t('purposeBuilt')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Specifically designed for Zen philosophy and spiritual guidance, not a generic AI assistant
+                  {t('purposeBuiltDesc')}
                 </p>
               </div>
               <div className="bg-card border border-border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">⏰ Always Available</h3>
+                <h3 className="font-semibold mb-2">⏰ {t('alwaysAvailable')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  24/7 access to spiritual guidance whenever you need reflection or support
+                  {t('alwaysAvailableDesc')}
                 </p>
               </div>
               <div className="bg-card border border-border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">🔒 Private & Confidential</h3>
+                <h3 className="font-semibold mb-2">🔒 {t('privateConfidential')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Your conversations are private. Chat history only stored for Pro subscribers
+                  {t('privateConfidentialDesc')}
                 </p>
               </div>
               <div className="bg-card border border-border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">🌱 Grow at Your Pace</h3>
+                <h3 className="font-semibold mb-2">🌱 {t('growAtYourPace')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  No pressure, no judgment. Progress at your own speed with koji as your companion
+                  {t('growAtYourPaceDesc')}
                 </p>
               </div>
             </div>
           </section>
 
-          {/* Contact */}
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Contact Us</h2>
+            <h2 className="text-xl font-semibold">{t('contactUs')}</h2>
             <p className="text-muted-foreground">
-              Have questions? We'd love to hear from you. Email{' '}
-              <a
-                className="underline underline-offset-4 hover:text-primary font-medium"
-                href={`mailto:${supportEmail}`}
-              >
-                {supportEmail}
-              </a>
-              .
+              {t('contactDesc', { email: supportEmail })}
             </p>
           </section>
 
-          {/* Business Information */}
           <section className="space-y-3 pt-6 border-t border-border">
-            <h2 className="text-xl font-semibold">Business Information</h2>
+            <h2 className="text-xl font-semibold">{t('businessInfo')}</h2>
             <p className="text-sm text-muted-foreground">
-              <strong>Legal Name:</strong> {legalName}
+              <strong>{t('legalNameLabel')}</strong> {legalName}
               {businessAddress && (
                 <>
                   <br />
-                  <strong>Address:</strong> {businessAddress}
+                  <strong>{t('addressLabel')}</strong> {businessAddress}
                 </>
               )}
             </p>
             <p className="text-sm text-muted-foreground">
-              Read our{' '}
-              <Link className="underline underline-offset-4 hover:text-primary font-medium" href="/terms">
-                Terms of Service
-              </Link>
-              {' '}and{' '}
-              <Link className="underline underline-offset-4 hover:text-primary font-medium" href="/privacy">
-                Privacy Policy
-              </Link>
-              .
+              {t.rich('readOur', {
+                terms: (chunks) => <Link className="underline underline-offset-4 hover:text-primary font-medium" href="/terms">{chunks}</Link>,
+                privacy: (chunks) => <Link className="underline underline-offset-4 hover:text-primary font-medium" href="/privacy">{chunks}</Link>,
+              })}
             </p>
           </section>
         </div>
@@ -274,4 +247,3 @@ export default function AboutPage() {
     </div>
   )
 }
-

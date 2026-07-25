@@ -1,39 +1,36 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { getTranslations } from "next-intl/server"
 
-const faqs = [
-  {
-    question: "What is Ask Zen Insight?",
-    answer:
-      "Ask Zen Insight is an AI-powered spiritual guidance experience. It offers reflective conversations to support mindfulness, clarity, and inner peace.",
-  },
-  {
-    question: "How does it work?",
-    answer:
-      "You sign in and chat with an AI assistant. The service provides thoughtful reflections and practical prompts designed to support your personal practice.",
-  },
-  {
-    question: "Is there a free plan?",
-    answer:
-      "Yes. The free plan includes a limited number of messages per day so you can try the experience before upgrading.",
-  },
-  {
-    question: "What does Pro include?",
-    answer:
-      "Pro increases your daily usage limit and unlocks subscriber features in your account.",
-  },
-  {
-    question: "How do I cancel my subscription?",
-    answer:
-      "You can manage or cancel your subscription anytime from your dashboard via the billing portal.",
-  },
-  {
-    question: "How do refunds work?",
-    answer:
-      "Refunds are handled according to our Refund Policy. If you need help, contact support and include your account email.",
-  },
-]
+export async function FaqSection() {
+  const t = await getTranslations("faqSection")
 
-export function FaqSection() {
+  const faqs = [
+    {
+      question: t("q1Question"),
+      answer: t("q1Answer"),
+    },
+    {
+      question: t("q2Question"),
+      answer: t("q2Answer"),
+    },
+    {
+      question: t("q3Question"),
+      answer: t("q3Answer"),
+    },
+    {
+      question: t("q4Question"),
+      answer: t("q4Answer"),
+    },
+    {
+      question: t("q5Question"),
+      answer: t("q5Answer"),
+    },
+    {
+      question: t("q6Question"),
+      answer: t("q6Answer"),
+    },
+  ]
+
   return (
     <section id="faq" className="py-20 md:py-32">
       <div className="container mx-auto px-4">
@@ -41,10 +38,10 @@ export function FaqSection() {
           {/* Section Header */}
           <div className="mb-16 text-center">
             <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground md:text-5xl text-balance">
-              Frequently Asked Questions
+              {t("heading")}
             </h2>
             <p className="text-lg text-muted-foreground text-balance leading-relaxed">
-              Everything you need to know about Ask Zen Insight
+              {t("subtitle")}
             </p>
           </div>
 

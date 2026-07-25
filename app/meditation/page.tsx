@@ -4,77 +4,64 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Sparkles, Clock, BookOpen, Target, Lock, ArrowRight, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
+import { getTranslations } from 'next-intl/server'
 
-// Force dynamic rendering because Header uses cookies for authentication
 export const dynamic = 'force-dynamic'
 
-const courseLevels = [
-  {
-    level: 1,
-    title: "Mindfulness Foundation",
-    description: "Build a daily meditation habit and relieve modern life anxiety through simple, proven techniques.",
-    duration: "21 days",
-    modules: 3,
-    icon: Sparkles,
-    color: "from-blue-500/20 to-cyan-500/20",
-    borderColor: "border-blue-500/30",
-    available: true,
-    features: [
-      "Breath Awareness techniques",
-      "Body Scan meditation",
-      "Thought Labeling practice",
-      "10-minute daily sessions",
-      "Science-backed approach",
-    ]
-  },
-  {
-    level: 2,
-    title: "Zen Wisdom for Modern Life",
-    description: "Apply Zen principles to specific life scenarios including work, relationships, and digital wellness.",
-    duration: "28 days",
-    modules: 4,
-    icon: BookOpen,
-    color: "from-amber-500/20 to-orange-500/20",
-    borderColor: "border-amber-500/30",
-    available: false,
-    comingSoon: true,
-    features: [
-      "Single-Tasking mastery",
-      "Emotional Surfing techniques",
-      "Digital Detox strategies",
-      "Koan study for modern life",
-      "Personal Zen Ritual design",
-    ]
-  },
-  {
-    level: 3,
-    title: "Awakening in Everyday Life",
-    description: "Transform meditation into a lifestyle, incorporating Zen wisdom into every aspect of daily living.",
-    duration: "Ongoing",
-    modules: 4,
-    icon: Target,
-    color: "from-emerald-500/20 to-teal-500/20",
-    borderColor: "border-emerald-500/30",
-    available: false,
-    comingSoon: true,
-    features: [
-      "Work as Meditation practice",
-      "Relationship Zen principles",
-      "Impermanence acceptance",
-      "Compassion in Action",
-      "90-day Zen Life Project",
-    ]
-  },
-]
+export default async function MeditationPage() {
+  const t = await getTranslations('meditation')
 
-export default function MeditationPage() {
+  const courseLevels = [
+    {
+      level: 1,
+      title: t('level1.title'),
+      description: t('level1.description'),
+      duration: t('level1.duration'),
+      modules: 3,
+      icon: Sparkles,
+      color: "from-blue-500/20 to-cyan-500/20",
+      borderColor: "border-blue-500/30",
+      available: true,
+      features: [t('level1.f1'), t('level1.f2'), t('level1.f3'), t('level1.f4'), t('level1.f5')],
+      startCourse: t('level1.startCourse'),
+    },
+    {
+      level: 2,
+      title: t('level2.title'),
+      description: t('level2.description'),
+      duration: t('level2.duration'),
+      modules: 4,
+      icon: BookOpen,
+      color: "from-amber-500/20 to-orange-500/20",
+      borderColor: "border-amber-500/30",
+      available: false,
+      comingSoon: true,
+      features: [t('level2.f1'), t('level2.f2'), t('level2.f3'), t('level2.f4'), t('level2.f5')],
+      comingSoonLabel: t('level2.comingSoon'),
+      inDevelopmentLabel: t('level2.inDevelopment'),
+    },
+    {
+      level: 3,
+      title: t('level3.title'),
+      description: t('level3.description'),
+      duration: t('level3.duration'),
+      modules: 4,
+      icon: Target,
+      color: "from-emerald-500/20 to-teal-500/20",
+      borderColor: "border-emerald-500/30",
+      available: false,
+      comingSoon: true,
+      features: [t('level3.f1'), t('level3.f2'), t('level3.f3'), t('level3.f4'), t('level3.f5')],
+      comingSoonLabel: t('level3.comingSoon'),
+      inDevelopmentLabel: t('level3.inDevelopment'),
+    },
+  ]
+
   return (
     <div className="min-h-screen">
       <Header />
       <main>
-        {/* Hero Section */}
         <section className="relative overflow-hidden border-b border-border">
-          {/* Background decoration */}
           <div className="absolute inset-0 -z-10">
             <div className="absolute top-20 right-10 h-72 w-72 rounded-full bg-accent/20 blur-3xl" />
             <div className="absolute bottom-20 left-10 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
@@ -82,58 +69,49 @@ export default function MeditationPage() {
 
           <div className="container mx-auto px-4 py-20 md:py-32">
             <div className="mx-auto max-w-4xl text-center">
-              {/* Badge */}
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
                 <Sparkles className="h-4 w-4" />
-                <span>Structured Meditation Courses</span>
+                <span>{t('badge')}</span>
               </div>
 
-              {/* Heading */}
               <h1 className="mb-6 text-4xl font-bold tracking-tight text-foreground md:text-6xl lg:text-7xl text-balance">
-                From Chaos to <span className="text-primary">Clarity</span>
+                {t('heroTitle', { highlight: t('heroHighlight') })}
               </h1>
 
-              {/* Description */}
               <p className="mb-10 text-lg text-muted-foreground md:text-xl max-w-3xl mx-auto text-balance leading-relaxed">
-                Discover peace through structured meditation courses rooted in Zen wisdom.
-                Each level combines ancient teachings with modern science to help you navigate
-                life's challenges with clarity and compassion.
+                {t('heroDesc')}
               </p>
 
-              {/* Features */}
               <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground mb-10">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <span>Science-Based Techniques</span>
+                  <span>{t('scienceBased')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <span>15 Minutes Daily</span>
+                  <span>{t('fifteenMinutesDaily')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <span>Self-Paced Learning</span>
+                  <span>{t('selfPacedLearning')}</span>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Course Levels Section */}
         <section className="py-20 md:py-32">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-6xl">
-              {/* Section Header */}
               <div className="mb-16 text-center">
                 <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground md:text-5xl text-balance">
-                  Choose Your Path
+                  {t('chooseYourPath')}
                 </h2>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-balance leading-relaxed">
-                  A progressive three-level system designed to take you from beginner to practitioner
+                  {t('chooseYourPathDesc')}
                 </p>
               </div>
 
-              {/* Course Cards */}
               <div className="space-y-8">
                 {courseLevels.map((course) => {
                   const IconComponent = course.icon
@@ -148,7 +126,6 @@ export default function MeditationPage() {
                     >
                       <div className="p-8 md:p-12">
                         <div className="flex flex-col lg:flex-row lg:items-center lg:gap-12">
-                          {/* Icon & Level Badge */}
                           <div className="mb-6 lg:mb-0 lg:shrink-0">
                             <div className={`relative inline-flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br ${course.color} border ${course.borderColor}`}>
                               <IconComponent className="h-10 w-10 text-foreground" />
@@ -158,7 +135,6 @@ export default function MeditationPage() {
                             </div>
                           </div>
 
-                          {/* Content */}
                           <div className="flex-1">
                             <div className="mb-4">
                               <h3 className="text-2xl font-bold text-foreground mb-2">{course.title}</h3>
@@ -168,7 +144,6 @@ export default function MeditationPage() {
                               {course.description}
                             </p>
 
-                            {/* Features */}
                             <div className="mb-6 flex flex-wrap gap-3">
                               {course.features.map((feature, idx) => (
                                 <div
@@ -181,7 +156,6 @@ export default function MeditationPage() {
                               ))}
                             </div>
 
-                            {/* Meta Info */}
                             <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
                               <div className="flex items-center gap-2">
                                 <Clock className="h-4 w-4" />
@@ -189,12 +163,11 @@ export default function MeditationPage() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <BookOpen className="h-4 w-4" />
-                                <span>{course.modules} modules</span>
+                                <span>{course.modules} {t('level1.modules')}</span>
                               </div>
                             </div>
                           </div>
 
-                          {/* Action Button */}
                           <div className="mt-8 lg:mt-0 lg:shrink-0">
                             {course.available ? (
                               <Button
@@ -203,7 +176,7 @@ export default function MeditationPage() {
                                 className="bg-primary text-primary-foreground hover:bg-primary/90 group-hover:scale-105 transition-transform"
                               >
                                 <Link href="/meditation/level-1" className="gap-2">
-                                  Start Course
+                                  {course.startCourse}
                                   <ArrowRight className="h-4 w-4" />
                                 </Link>
                               </Button>
@@ -214,24 +187,22 @@ export default function MeditationPage() {
                                 className="bg-muted text-muted-foreground cursor-not-allowed gap-2"
                               >
                                 <Lock className="h-4 w-4" />
-                                Coming Soon
+                                {course.comingSoonLabel}
                               </Button>
                             )}
                           </div>
                         </div>
 
-                        {/* Coming Soon Banner */}
                         {course.comingSoon && (
                           <div className="absolute top-4 right-4">
                             <div className="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
                               <Lock className="h-3 w-3" />
-                              <span>In Development</span>
+                              <span>{course.inDevelopmentLabel}</span>
                             </div>
                           </div>
                         )}
                       </div>
 
-                      {/* Decorative gradient border for available courses */}
                       {course.available && (
                         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
                       )}
@@ -240,13 +211,11 @@ export default function MeditationPage() {
                 })}
               </div>
 
-              {/* CTA Section */}
               <div className="mt-20 text-center">
                 <Card className="border-primary/20 bg-primary/5 p-8 md:p-12">
-                  <h3 className="mb-4 text-2xl font-bold text-foreground">Ready to Begin Your Journey?</h3>
+                  <h3 className="mb-4 text-2xl font-bold text-foreground">{t('readyToBegin')}</h3>
                   <p className="mb-6 text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                    Start with Level 1: Mindfulness Foundation. Build a solid meditation practice
-                    in just 21 days with short, accessible daily sessions.
+                    {t('readyToBeginDesc')}
                   </p>
                   <Button
                     asChild
@@ -254,7 +223,7 @@ export default function MeditationPage() {
                     className="bg-primary text-primary-foreground hover:bg-primary/90"
                   >
                     <Link href="/meditation/level-1" className="gap-2">
-                      Start Level 1 Free
+                      {t('startLevel1Free')}
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>

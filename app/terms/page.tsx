@@ -1,12 +1,14 @@
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { getSiteConfig } from '@/lib/site'
+import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
-export default function TermsPage() {
+export default async function TermsPage() {
   const { siteName, legalName, supportEmail, businessAddress } = getSiteConfig()
+  const t = await getTranslations('termsPage')
 
   return (
     <div className="min-h-screen">
@@ -14,20 +16,17 @@ export default function TermsPage() {
       <main className="container mx-auto px-4 py-12">
         <div className="mx-auto max-w-3xl space-y-8">
           <header className="space-y-3">
-            <h1 className="text-3xl font-bold">Terms of Service</h1>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
             <p className="text-muted-foreground">
-              Last updated: 1/20/2026
+              {t('lastUpdated')}
             </p>
             <p className="text-muted-foreground">
-              These Terms of Service (&quot;Terms&quot;) govern your use of {siteName}
-              (&quot;the Service&quot;) provided by {legalName} (&quot;we&quot;,
-              &quot;us&quot;, or &quot;our&quot;). By accessing or using the Service,
-              you agree to be bound by these Terms.
+              {t('intro', { siteName, legalName })}
             </p>
           </header>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">1. Acceptance of Terms</h2>
+            <h2 className="text-xl font-semibold">{t('s1Title')}</h2>
             <p className="text-muted-foreground">
               By creating an account or using the Service, you agree to these Terms and
               our{' '}
@@ -40,7 +39,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">2. Service Description</h2>
+            <h2 className="text-xl font-semibold">{t('s2Title')}</h2>
             <p className="text-muted-foreground">
               {siteName} provides an AI-powered spiritual guidance and meditation
               support service. The Service includes:
@@ -72,7 +71,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">3. Eligibility</h2>
+            <h2 className="text-xl font-semibold">{t('s3Title')}</h2>
             <p className="text-muted-foreground">
               You must be at least 13 years old to use the Service. By using the
               Service, you represent and warrant that you are of legal age to form a
@@ -81,7 +80,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">4. Account Registration</h2>
+            <h2 className="text-xl font-semibold">{t('s4Title')}</h2>
             <p className="text-muted-foreground">
               To use certain features, you must create an account. You agree to:
             </p>
@@ -104,7 +103,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">5. Subscription Plans & Billing</h2>
+            <h2 className="text-xl font-semibold">{t('s5Title')}</h2>
             <p className="text-muted-foreground">
               We offer Free and paid subscription plans:
             </p>
@@ -130,7 +129,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">6. Payment Terms</h2>
+            <h2 className="text-xl font-semibold">{t('s6Title')}</h2>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>
                 <strong>Manual Renewal:</strong> Subscriptions are one-time purchases
@@ -173,7 +172,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">7. Cancellation & Refunds</h2>
+            <h2 className="text-xl font-semibold">{t('s7Title')}</h2>
             <p className="text-muted-foreground">
               You can cancel your subscription at any time from your dashboard. Upon
               cancellation:
@@ -195,7 +194,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">8. Usage Limits & Fair Use Policy</h2>
+            <h2 className="text-xl font-semibold">{t('s8Title')}</h2>
             <p className="text-muted-foreground">
               <strong>Daily Message Limits:</strong>
             </p>
@@ -239,7 +238,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">9. Acceptable Use</h2>
+            <h2 className="text-xl font-semibold">{t('s9Title')}</h2>
             <p className="text-muted-foreground">
               You agree not to use the Service for:
             </p>
@@ -263,9 +262,9 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">
-              10. Health & Medical Disclaimer
-            </h2>
+              <h2 className="text-xl font-semibold">
+                {t('s10Title')}
+              </h2>
             <p className="text-muted-foreground">
               <strong>Important:</strong> {siteName} is NOT a medical or mental
               health service. The AI guidance provided is for informational and
@@ -285,9 +284,9 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">
-              11. Intellectual Property
-            </h2>
+              <h2 className="text-xl font-semibold">
+                {t('s11Title')}
+              </h2>
             <p className="text-muted-foreground">
               <strong>Our Content:</strong> The Service, including its design, text,
               graphics, and code, is owned by {legalName} and protected by
@@ -301,7 +300,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">12. Privacy</h2>
+            <h2 className="text-xl font-semibold">{t('s12Title')}</h2>
             <p className="text-muted-foreground">
               Your privacy is important to us. Please review our{' '}
               <Link className="underline underline-offset-4" href="/privacy">
@@ -313,9 +312,9 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">
-              13. Disclaimers & Warranties
-            </h2>
+              <h2 className="text-xl font-semibold">
+                {t('s13Title')}
+              </h2>
             <p className="text-muted-foreground">
               THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot;
               WITHOUT WARRANTIES OF ANY KIND. WE DISCLAIM ALL WARRANTIES, EXPRESS OR
@@ -330,9 +329,9 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">
-              14. Limitation of Liability
-            </h2>
+              <h2 className="text-xl font-semibold">
+                {t('s14Title')}
+              </h2>
             <p className="text-muted-foreground">
               TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, {legalName}{' '}
               SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL,
@@ -343,9 +342,9 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">
-              15. Indemnification
-            </h2>
+              <h2 className="text-xl font-semibold">
+                {t('s15Title')}
+              </h2>
             <p className="text-muted-foreground">
               You agree to indemnify and hold {legalName} harmless from any claims,
               damages, losses, liabilities, and expenses arising from your use of the
@@ -354,7 +353,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">16. Termination</h2>
+            <h2 className="text-xl font-semibold">{t('s16Title')}</h2>
             <p className="text-muted-foreground">
               We may terminate or suspend your access to the Service at any time, with
               or without cause, with or without notice, effective immediately. Upon
@@ -363,7 +362,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">17. Changes to Terms</h2>
+            <h2 className="text-xl font-semibold">{t('s17Title')}</h2>
             <p className="text-muted-foreground">
               We may modify these Terms at any time. We will notify you of material
               changes by posting the updated Terms on our website and updating the
@@ -373,7 +372,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">18. Governing Law</h2>
+            <h2 className="text-xl font-semibold">{t('s18Title')}</h2>
             <p className="text-muted-foreground">
               These Terms shall be governed by and construed in accordance with
               applicable laws. Any disputes arising from these Terms shall be subject
@@ -383,7 +382,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">19. Severability</h2>
+            <h2 className="text-xl font-semibold">{t('s19Title')}</h2>
             <p className="text-muted-foreground">
               If any provision of these Terms is found to be unenforceable or
               invalid, that provision will be limited or eliminated to the minimum
@@ -393,7 +392,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">20. Waiver</h2>
+            <h2 className="text-xl font-semibold">{t('s20Title')}</h2>
             <p className="text-muted-foreground">
               Our failure to enforce any right or provision of these Terms will not be
               considered a waiver of those rights.
@@ -401,7 +400,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">21. Contact Us</h2>
+            <h2 className="text-xl font-semibold">{t('s21Title')}</h2>
             <p className="text-muted-foreground">
               If you have questions about these Terms, please contact us at{' '}
               <a

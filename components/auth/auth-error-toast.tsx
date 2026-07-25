@@ -4,17 +4,18 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { AlertCircle, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useTranslations } from 'next-intl'
 
 export function AuthErrorToast() {
   const searchParams = useSearchParams()
   const error = searchParams.get('error')
   const errorType = searchParams.get('error_type')
   const [isVisible, setIsVisible] = useState(false)
+  const t = useTranslations('auth')
 
   useEffect(() => {
     if (error) {
       setIsVisible(true)
-      // Clean up URL without triggering a navigation
       const url = new URL(window.location.href)
       url.searchParams.delete('error')
       url.searchParams.delete('error_type')
@@ -38,21 +39,11 @@ export function AuthErrorToast() {
           <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <h3 className="font-semibold text-sm text-foreground">
-              Authentication Failed
+              {t('authFailed')}
             </h3>
             <div className="mt-1 text-sm text-muted-foreground">
               {isAdBlockerRelated ? (
-                <>
-                  <p className="mb-2">
-                    This may be caused by an ad-blocker or browser privacy settings.
-                  </p>
-                  <p className="mb-2">Please try:</p>
-                  <ul className="list-disc list-inside space-y-1 text-xs">
-                    <li>Disabling your ad-blocker for this site</li>
-                    <li>Adding ask.zeninsight.xyz to your allowlist</li>
-                    <li>Using an incognito/private window</li>
-                  </ul>
-                </>
+                <p>{t('adBlockerMsg')}</p>
               ) : (
                 <p>{decodedError}</p>
               )}
@@ -64,7 +55,7 @@ export function AuthErrorToast() {
                 className="h-7 text-xs"
                 onClick={() => setIsVisible(false)}
               >
-                Dismiss
+                {t('dismiss')}
               </Button>
               {isAdBlockerRelated && (
                 <Button
@@ -72,7 +63,7 @@ export function AuthErrorToast() {
                   className="h-7 text-xs"
                   onClick={() => window.location.reload()}
                 >
-                  Try Again
+                  {t('tryAgain')}
                 </Button>
               )}
             </div>

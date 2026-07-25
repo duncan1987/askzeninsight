@@ -4,14 +4,15 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { X } from "lucide-react"
+import { useTranslations } from "next-intl"
 
-const PRESET_REASONS = [
-  "This explanation is not clear enough.",
-  "This answer lacks depth.",
-  "This explanation is not very helpful.",
-  "This answer is confusing.",
-  "This explanation is not detailed enough.",
-]
+const PRESET_REASON_KEYS = [
+  "reasonNotClear",
+  "reasonLacksDepth",
+  "reasonNotHelpful",
+  "reasonConfusing",
+  "reasonNotDetailed",
+] as const
 
 interface FeedbackDialogProps {
   isOpen: boolean
@@ -28,13 +29,13 @@ export function FeedbackDialog({
 }: FeedbackDialogProps) {
   const [selectedReason, setSelectedReason] = useState<string | null>(null)
   const [customReason, setCustomReason] = useState("")
+  const t = useTranslations('feedback')
 
   if (!isOpen) return null
 
   const handleSubmit = () => {
     if (selectedReason || customReason.trim()) {
       onSubmit(selectedReason || "", customReason.trim() || undefined)
-      // Reset form
       setSelectedReason(null)
       setCustomReason("")
     }
@@ -49,10 +50,9 @@ export function FeedbackDialog({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <Card className="max-w-md w-full border-border bg-card overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div>
-            <h3 className="text-lg font-semibold">Your feedback will help us to be better</h3>
+            <h3 className="text-lg font-semibold">{t('title')}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               Tell us what can be improved
             </p>
@@ -68,21 +68,19 @@ export function FeedbackDialog({
           </Button>
         </div>
 
-        {/* Content */}
         <div className="p-4 space-y-4">
-          {/* Preset Options */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Select a reason:</p>
+            <p className="text-sm font-medium text-foreground">{t('selectReason')}</p>
             <div className="space-y-2">
-              {PRESET_REASONS.map((reason) => (
+              {PRESET_REASON_KEYS.map((key) => (
                 <button
-                  key={reason}
-                  onClick={() => setSelectedReason(reason)}
+                  key={key}
+                  onClick={() => setSelectedReason(key)}
                   disabled={isSubmitting}
                   className={`
                     w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all duration-200
                     ${
-                      selectedReason === reason
+                      selectedReason === key
                         ? "bg-primary text-primary-foreground border border-primary"
                         : "bg-muted/50 hover:bg-muted/80 border border-transparent"
                     }
@@ -94,33 +92,32 @@ export function FeedbackDialog({
                       className={`
                         w-4 h-4 rounded-full border-2 flex items-center justify-center
                         ${
-                          selectedReason === reason
+                          selectedReason === key
                             ? "border-current"
                             : "border-muted-foreground/50"
                         }
                       `}
                     >
-                      {selectedReason === reason && (
+                      {selectedReason === key && (
                         <div className="w-2 h-2 rounded-full bg-current" />
                       )}
                     </div>
-                    <span>{reason}</span>
+                    <span>{t(key)}</span>
                   </div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Custom Input */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">
-              Or share your own thoughts:
+              {t('orShare')}
             </p>
             <textarea
               value={customReason}
               onChange={(e) => setCustomReason(e.target.value)}
               disabled={isSubmitting}
-              placeholder="Type your feedback here..."
+              placeholder={t('typeHere')}
               className="
                 w-full px-3 py-2 rounded-lg text-sm border border-border bg-background
                 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
@@ -132,7 +129,6 @@ export function FeedbackDialog({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="p-4 border-t border-border bg-muted/20">
           <div className="flex gap-3">
             <Button
@@ -141,7 +137,7 @@ export function FeedbackDialog({
               className="flex-1"
               disabled={isSubmitting}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -152,10 +148,10 @@ export function FeedbackDialog({
               {isSubmitting ? (
                 <>
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                  Submitting...
+                  {t('submitting')}
                 </>
               ) : (
-                "Submit Feedback"
+                t('submit')
               )}
             </Button>
           </div>

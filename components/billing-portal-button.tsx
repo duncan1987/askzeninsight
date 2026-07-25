@@ -3,14 +3,15 @@
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 export function BillingPortalButton() {
   const [loading, setLoading] = useState(false)
+  const t = useTranslations('billing')
 
   const handleClick = async () => {
     setLoading(true)
     try {
-      // Navigate to the portal API route which will redirect to Creem
       window.location.href = '/api/creem/portal'
     } catch (error) {
       console.error('Failed to open billing portal:', error)
@@ -27,10 +28,10 @@ export function BillingPortalButton() {
       {loading ? (
         <>
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          Opening...
+          {t('opening')}
         </>
       ) : (
-        'Manage billing'
+        t('manageBilling')
       )}
     </Button>
   )

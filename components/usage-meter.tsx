@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Progress } from '@/components/ui/progress'
 import { createClient } from '@/lib/supabase/client'
+import { useTranslations } from 'next-intl'
 
 interface UsageStats {
   used: number
@@ -20,6 +21,7 @@ export function UsageMeter({ refreshKey }: UsageMeterProps = {}) {
   const [stats, setStats] = useState<UsageStats | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+  const t = useTranslations('usage')
 
   useEffect(() => {
     if (!supabase) {
@@ -57,21 +59,21 @@ export function UsageMeter({ refreshKey }: UsageMeterProps = {}) {
     <div className="space-y-3">
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Today&apos;s usage</span>
+          <span className="text-muted-foreground">{t('todayUsage')}</span>
           <span className="font-medium">
-            {stats.used} / {stats.limit} messages
+            {stats.used} / {stats.limit} {t('messages')}
           </span>
         </div>
         <Progress value={stats.percentage} className="h-2" />
         {stats.remaining === 0 && (
           <p className="text-xs text-destructive">
             {stats.tier === 'pro' ? (
-              <>The day&apos;s conversations find their rest. Return tomorrow with renewed presence.</>
+              <>{t('limitReachedZen')}</>
             ) : (
               <>
-                The day&apos;s vessel is full. To continue your journey,{' '}
+                {t('limitReached')}{' '}
                 <a href="/pricing" className="underline font-medium">
-                  upgrade to Pro or Annual
+                  {t('upgradeToPro')}
                 </a>
               </>
             )}

@@ -1,11 +1,13 @@
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { getSiteConfig } from '@/lib/site'
+import { getTranslations } from 'next-intl/server'
 
 export const dynamic = 'force-dynamic'
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
   const { siteName, legalName, supportEmail, businessAddress } = getSiteConfig()
+  const t = await getTranslations('privacyPage')
 
   return (
     <div className="min-h-screen">
@@ -13,19 +15,17 @@ export default function PrivacyPage() {
       <main className="container mx-auto px-4 py-12">
         <div className="mx-auto max-w-3xl space-y-8">
           <header className="space-y-3">
-            <h1 className="text-3xl font-bold">Privacy Policy</h1>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
             <p className="text-muted-foreground">
-              Last updated: 1/20/2026
+              Last updated: {t('lastUpdated')}
             </p>
             <p className="text-muted-foreground">
-              This Privacy Policy explains how {legalName} (&quot;we&quot;, &quot;our&quot;,
-              or &quot;us&quot;) collects, uses, and protects your information when you use
-              {siteName} (&quot;the Service&quot;).
+              {t('intro', { legalName, siteName })}
             </p>
           </header>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Information We Collect</h2>
+            <h2 className="text-xl font-semibold">{t('infoWeCollect')}</h2>
             <p className="text-muted-foreground">
               We collect information to provide, maintain, and improve our Service:
             </p>
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">How We Use Your Information</h2>
+            <h2 className="text-xl font-semibold">{t('howWeUse')}</h2>
             <p className="text-muted-foreground">We use your information to:</p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>Provide AI-powered spiritual guidance conversations</li>
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Data Storage & Security</h2>
+            <h2 className="text-xl font-semibold">{t('dataStorage')}</h2>
             <p className="text-muted-foreground">
               <strong>Chat History:</strong> Your conversations are securely stored in
               supabase database and are linked to your account. You can access, view, or
@@ -88,7 +88,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Payment Processing</h2>
+            <h2 className="text-xl font-semibold">{t('paymentProcessing')}</h2>
             <p className="text-muted-foreground">
               All payments are processed by Creem as our merchant of record. We do not
               store or have access to your full credit card numbers or bank account
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">AI Model & Data Usage</h2>
+            <h2 className="text-xl font-semibold">{t('aiModelDataUsage')}</h2>
             <p className="text-muted-foreground">
               Our Service uses Zhipu AI&apos;s GLM-4.7 model to generate
               responses. When you send a message:
@@ -118,7 +118,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Cross-Border Data Transfer</h2>
+            <h2 className="text-xl font-semibold">{t('crossBorderTransfer')}</h2>
             <p className="text-muted-foreground">
               <strong>Important Notice:</strong> When you use our Service, your
               messages are transmitted to Zhipu AI&apos;s servers located in
@@ -153,7 +153,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Data Retention & Deletion</h2>
+            <h2 className="text-xl font-semibold">{t('dataRetention')}</h2>
             <p className="text-muted-foreground">
               <strong>Chat History:</strong> Your conversations are retained until
               you delete them or delete your account. You can delete individual
@@ -178,7 +178,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Data Sharing</h2>
+            <h2 className="text-xl font-semibold">{t('dataSharing')}</h2>
             <p className="text-muted-foreground">
               <strong>We do NOT sell your data.</strong> We only share your
               information in limited circumstances:
@@ -202,7 +202,7 @@ export default function PrivacyPage() {
           </section>
 
           <section id="cookies" className="space-y-3">
-            <h2 className="text-xl font-semibold">Cookies & Tracking</h2>
+            <h2 className="text-xl font-semibold">{t('cookiesTracking')}</h2>
             <p className="text-muted-foreground">
               We use essential cookies for authentication and session management. We do
               not use advertising, analytics, or tracking cookies for marketing purposes.
@@ -210,7 +210,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Your Rights</h2>
+            <h2 className="text-xl font-semibold">{t('yourRights')}</h2>
             <p className="text-muted-foreground">You have the right to:</p>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
               <li>Access your personal data</li>
@@ -223,7 +223,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Children&apos;s Privacy</h2>
+            <h2 className="text-xl font-semibold">{t('childrenPrivacy')}</h2>
             <p className="text-muted-foreground">
               Our Service is not intended for children under 13. We do not knowingly
               collect personal information from children under 13. If we discover we
@@ -232,7 +232,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Changes to This Policy</h2>
+            <h2 className="text-xl font-semibold">{t('changesToPolicy')}</h2>
             <p className="text-muted-foreground">
               We may update this Privacy Policy from time to time. We will notify you
               of significant changes by posting the new policy on our website and
@@ -242,7 +242,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Contact Us</h2>
+            <h2 className="text-xl font-semibold">{t('contactUs')}</h2>
             <p className="text-muted-foreground">
               If you have questions about this Privacy Policy or how we handle your
               data, please contact us at{' '}

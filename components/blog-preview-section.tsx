@@ -2,8 +2,10 @@ import { Button } from '@/components/ui/button'
 import { BlogCard } from '@/components/blog/blog-card'
 import { getFeaturedPosts } from '@/lib/blog'
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 
-export function BlogPreviewSection() {
+export async function BlogPreviewSection() {
+  const t = await getTranslations("blogPreview")
   const featuredPosts = getFeaturedPosts(3)
 
   if (featuredPosts.length === 0) return null
@@ -15,14 +17,14 @@ export function BlogPreviewSection() {
           <div className="mb-12 flex items-end justify-between">
             <div>
               <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-                Latest from Our Blog
+                {t("heading")}
               </h2>
               <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">
-                Insights, reflections, and guidance on meditation, Zen philosophy, and spiritual growth.
+                {t("subtitle")}
               </p>
             </div>
             <Button asChild variant="outline" className="hidden bg-transparent md:inline-flex">
-              <Link href="/blog">View All Posts</Link>
+              <Link href="/blog">{t("viewAll")}</Link>
             </Button>
           </div>
 
@@ -34,7 +36,7 @@ export function BlogPreviewSection() {
 
           <div className="mt-8 text-center md:hidden">
             <Button asChild variant="outline">
-              <Link href="/blog">View All Posts</Link>
+              <Link href="/blog">{t("viewAll")}</Link>
             </Button>
           </div>
         </div>

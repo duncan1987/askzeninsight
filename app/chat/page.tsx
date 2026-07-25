@@ -10,8 +10,8 @@ import { Lock, ArrowRight } from "lucide-react"
 import { Suspense } from "react"
 import { AuthErrorToast } from "@/components/auth/auth-error-toast"
 import type { Metadata } from "next"
+import { getTranslations } from 'next-intl/server'
 
-// Force dynamic rendering because Header uses cookies for authentication
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
@@ -24,12 +24,15 @@ export const metadata: Metadata = {
   },
 }
 
-const breadcrumbItems = [
-  { name: 'Home', href: '/' },
-  { name: 'Chat', href: '/chat' },
-]
-
 export default async function ChatPage() {
+  const t = await getTranslations('chatPage')
+  const tc = await getTranslations('common')
+
+  const breadcrumbItems = [
+    { name: tc('home'), href: '/' },
+    { name: tc('chat'), href: '/chat' },
+  ]
+
   const supabase = await createClient()
   if (!supabase) {
     return (
@@ -37,9 +40,9 @@ export default async function ChatPage() {
         <Header />
         <main className="flex-1 container mx-auto px-4 py-16 max-w-4xl">
           <div className="text-center space-y-6">
-            <h1 className="text-3xl font-bold text-foreground">Service Unavailable</h1>
+            <h1 className="text-3xl font-bold text-foreground">{t('serviceUnavailable')}</h1>
             <p className="text-muted-foreground text-lg">
-              Please try again later.
+              {t('tryAgainLater')}
             </p>
           </div>
         </main>
@@ -49,7 +52,6 @@ export default async function ChatPage() {
   }
   const { data: { session } } = await supabase.auth.getSession()
 
-  // Redirect to home if not authenticated
   if (!session) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -59,23 +61,21 @@ export default async function ChatPage() {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10">
               <Lock className="h-10 w-10 text-primary" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground">Authentication Required</h1>
+            <h1 className="text-3xl font-bold text-foreground">{t('authRequired')}</h1>
             <p className="text-muted-foreground text-lg max-w-md mx-auto">
-              Please sign in to access the spiritual guidance chat and have a conversation with koji.
+              {t('signInPrompt')}
             </p>
             <div className="flex items-center justify-center gap-4 pt-4">
               <Button size="lg" asChild className="gap-2">
                 <a href="/">
-                  Back to Home <ArrowRight className="h-4 w-4" />
+                  {t('backToHome')} <ArrowRight className="h-4 w-4" />
                 </a>
               </Button>
             </div>
             <Card className="max-w-2xl mx-auto p-6 bg-muted/50 mt-8">
-              <h2 className="font-semibold mb-2">Why do I need to sign in?</h2>
+              <h2 className="font-semibold mb-2">{t('whySignIn')}</h2>
               <p className="text-sm text-muted-foreground text-left">
-                Creating an account allows us to save your conversations, track your progress,
-                and provide a more personalized spiritual guidance experience. Your privacy is
-                protected and your data is secure.
+                {t('whySignInDesc')}
               </p>
             </Card>
           </div>
@@ -92,7 +92,6 @@ export default async function ChatPage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
-        {/* Breadcrumb Navigation */}
         <div className="container mx-auto px-4 py-2">
           <Breadcrumb items={breadcrumbItems} />
         </div>

@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -42,35 +43,6 @@ interface ChatError {
   remaining?: number
 }
 
-// Zen-inspired error messages for API failures
-const ZEN_ERROR_MESSAGES = [
-  "Mountains remain silent through storms. Please try again in a moment.",
-  "The bamboo bends but does not break. Let us reconnect.",
-  "In stillness, clarity returns. Breathe and try once more.",
-  "All things pass. This momentary pause shall too.",
-  "Like clouds drifting, connection fades and returns. Please try again.",
-  "The river flows around obstacles. Let us find another path.",
-  "A brief pause in the journey. Rest, then continue when ready.",
-  "Cherry blossoms fall, yet bloom again. Your patience is appreciated.",
-]
-
-const getRandomZenError = () => {
-  return ZEN_ERROR_MESSAGES[Math.floor(Math.random() * ZEN_ERROR_MESSAGES.length)]
-}
-
-// Example questions to guide users
-const EXAMPLE_QUESTIONS = [
-  {
-    icon: Brain,
-    text: "I'm feeling stressed about work. How can I find peace?",
-  },
-  {
-    icon: Flower2,
-    text: "Can you guide me through a simple meditation?",
-  },
-]
-
-// Helper function to get user initials from full name
 const getUserInitials = (fullName?: string) => {
   if (!fullName) return 'U'
   return fullName
@@ -81,12 +53,13 @@ const getUserInitials = (fullName?: string) => {
 }
 
 export function ChatInterface() {
+  const t = useTranslations('chat')
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: "Welcome. I'm here to offer spiritual guidance and support. Whether you're seeking wisdom about faith, meditation, or life's challenges, feel free to share what's on your heart. How may I assist you today?",
+      content: t("welcome"),
     },
   ])
   const [isLoading, setIsLoading] = useState(false)
@@ -119,17 +92,30 @@ export function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const loadedFeedbackMessageIds = useRef<Set<string>>(new Set())
 
-  // Scroll to bottom when messages change
+  const zenErrors = t.raw("zenErrors") as string[]
+  const getRandomZenError = () => {
+    return zenErrors[Math.floor(Math.random() * zenErrors.length)]
+  }
+
+  const exampleQuestions = [
+    {
+      icon: Brain,
+      text: t("exampleQ1"),
+    },
+    {
+      icon: Flower2,
+      text: t("exampleQ2"),
+    },
+  ]
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  // Load feedback for assistant messages
   useEffect(() => {
     if (userTier.authenticated && messages.length > 0) {
       loadMessagesFeedback()
     }
-    // Only run when message IDs or auth status changes, not on every message update
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.map(m => m.id).join(','), userTier.authenticated])
 
@@ -141,11 +127,9 @@ export function ChatInterface() {
 
       if (assistantMessageIds.length === 0) return
 
-      // Only load feedback for messages we haven't loaded yet
       const newMessageIds = assistantMessageIds.filter(id => !loadedFeedbackMessageIds.current.has(id))
       if (newMessageIds.length === 0) return
 
-      // Load feedback for new assistant messages in parallel
       const feedbackPromises = newMessageIds.map(async (messageId) => {
         const response = await fetch(`/api/message-feedback?messageId=${messageId}`)
         if (response.ok) {
@@ -157,10 +141,8 @@ export function ChatInterface() {
 
       const results = await Promise.all(feedbackPromises)
 
-      // Mark these message IDs as loaded
       results.forEach(r => loadedFeedbackMessageIds.current.add(r.messageId))
 
-      // Update messages with their feedback types
       setMessages(prev =>
         prev.map(msg => {
           const result = results.find(r => r.messageId === msg.id)
@@ -183,12 +165,10 @@ export function ChatInterface() {
     )
   }
 
-  // Load user tier on mount
   useEffect(() => {
     fetchUserTier()
   }, [])
 
-  // Load conversations on mount (only if authenticated and tier supports history)
   useEffect(() => {
     if (userTier.authenticated && userTier.saveHistory) {
       loadConversations()
@@ -208,7 +188,6 @@ export function ChatInterface() {
     }
   }
 
-  // Check usage and show toast notifications at thresholds
   const checkUsageAndShowToast = async () => {
     try {
       const response = await fetch("/api/user/usage-stats")
@@ -216,25 +195,22 @@ export function ChatInterface() {
         const stats = await response.json()
         const { used, limit, percentage } = stats
 
-        // Only show toast at 100% threshold
         if (percentage >= 100 && !shownToastThresholds.has(100)) {
-          // Update shown thresholds
           setShownToastThresholds(prev => new Set([...prev, 100]))
 
-          // Determine toast content based on tier
           if (userTier.tier === 'pro') {
-            toast.warning("Premium Quota Exhausted", {
-              description: `You've used your 30 daily premium messages. Further conversations will use the basic model (glm-4-flash). Your quota resets automatically tomorrow.`,
+            toast.warning(t("premiumQuotaExhausted"), {
+              description: t("premiumQuotaDesc"),
               duration: Infinity,
               closeButton: true,
             })
           } else {
-            toast.error("Daily Message Limit Reached", {
-              description: `You've used ${limit} messages. Please upgrade to Pro plan or try again tomorrow.`,
+            toast.error(t("dailyLimitReached"), {
+              description: t("dailyLimitDesc", { limit }),
               duration: Infinity,
               closeButton: true,
               action: {
-                label: "Upgrade to Pro",
+                label: t("upgradeToProAction"),
                 onClick: () => (window.location.href = "/pricing"),
               },
             })
@@ -265,7 +241,6 @@ export function ChatInterface() {
         const data = await response.json()
         console.log("Loaded conversation:", data)
         setCurrentConversationId(data.id)
-        // Ensure we have messages array
         const messages = data.messages || []
         console.log("Setting messages:", messages)
         setMessages(
@@ -287,9 +262,8 @@ export function ChatInterface() {
   const deleteConversation = async (conversationId: string, e: React.MouseEvent) => {
     e.stopPropagation()
 
-    // Zen-inspired confirmation message
     const confirmed = window.confirm(
-      "All things are impermanent.\n\nAre you ready to let go of this conversation?\n\n(Like a river flowing, once released, it cannot return.)"
+      `${t("deleteConfirmTitle")}\n\n${t("deleteConfirmDesc")}`
     )
 
     if (!confirmed) return
@@ -310,7 +284,6 @@ export function ChatInterface() {
   }
 
   const saveMessage = async (role: "user" | "assistant", content: string, explicitConversationId?: string) => {
-    // Only save messages for authenticated users with history enabled
     if (!userTier.saveHistory) {
       console.log("Not saving message - history not enabled")
       return
@@ -318,7 +291,6 @@ export function ChatInterface() {
 
     try {
       setIsSaving(true)
-      // Use explicit conversationId if provided (to avoid async state issues)
       const convId = explicitConversationId !== undefined ? explicitConversationId : currentConversationId
       console.log("Saving message:", { role, content: content.substring(0, 50) + "...", conversationId: convId })
       const response = await fetch("/api/conversations/save", {
@@ -329,11 +301,9 @@ export function ChatInterface() {
       if (response.ok) {
         const data = await response.json()
         console.log("Message saved successfully:", data)
-        // Only update state if we got a new conversation ID
         if (data.conversationId && data.conversationId !== currentConversationId) {
           setCurrentConversationId(data.conversationId)
         }
-        // Refresh conversation list
         loadConversations()
         return data.conversationId
       } else {
@@ -362,10 +332,8 @@ export function ChatInterface() {
     setInput("")
     setIsLoading(true)
 
-    // Save user message to database and get the conversation ID
     const conversationId = await saveMessage("user", userInput)
 
-    // Create empty assistant message for streaming
     const assistantMessageId = (Date.now() + 1).toString()
     setMessages((prev) => [
       ...prev,
@@ -387,7 +355,6 @@ export function ChatInterface() {
       })
 
       if (!response.ok) {
-        // Handle usage limit error (429)
         if (response.status === 429) {
           const errorData: ChatError = await response.json()
           throw new Error(errorData.error || "Daily message limit exceeded")
@@ -395,12 +362,10 @@ export function ChatInterface() {
         throw new Error(`API error: ${response.statusText}`)
       }
 
-      // Check for fair use notice in response headers
       const fairUseNoticeHeader = response.headers.get("X-Fair-Use-Notice")
       if (fairUseNoticeHeader) {
         const decodedNotice = decodeURIComponent(fairUseNoticeHeader)
         setFairUseNotice(decodedNotice)
-        // Downgrade to basic model in UI when premium quota is exceeded
         setCurrentModel("glm-4-flash")
       }
 
@@ -427,16 +392,13 @@ export function ChatInterface() {
         )
       }
 
-      // Save assistant message to database using the conversation ID we got earlier
       if (fullResponse && conversationId) {
         await saveMessage("assistant", fullResponse, conversationId)
       }
     } catch (error) {
       console.error("Chat error:", error)
-      // Use zen-inspired error message for API errors, or show specific error message for limits
       let errorMessage = getRandomZenError()
       if (error instanceof Error) {
-        // For usage limit errors (429), show the specific message
         if (error.message.includes("Daily message limit")) {
           errorMessage = error.message
         }
@@ -451,7 +413,6 @@ export function ChatInterface() {
       ])
     } finally {
       setIsLoading(false)
-      // Check usage and show toast notification
       checkUsageAndShowToast()
     }
   }
@@ -465,7 +426,6 @@ export function ChatInterface() {
 
   const handleExampleQuestion = (question: string) => {
     setInput(question)
-    // Auto-send after a brief delay for better UX
     setTimeout(() => {
       handleSend()
     }, 100)
@@ -478,7 +438,7 @@ export function ChatInterface() {
       {
         id: Date.now().toString(),
         role: "assistant",
-        content: "Welcome. I'm here to offer spiritual guidance and support. Whether you're seeking wisdom about faith, meditation, or life's challenges, feel free to share what's on your heart. How may I assist you today?",
+        content: t("welcome"),
       },
     ])
     setInput("")
@@ -487,7 +447,6 @@ export function ChatInterface() {
     setSelectedMessageIds(new Set())
   }
 
-  // Selection mode functions
   const toggleMessageSelection = (messageId: string) => {
     const newSelection = new Set(selectedMessageIds)
     if (newSelection.has(messageId)) {
@@ -515,7 +474,6 @@ export function ChatInterface() {
     setSelectedMessageIds(new Set())
   }
 
-  // Export functions
   const exportToTxt = () => {
     if (!checkExportPermission("TXT Export")) return
 
@@ -593,7 +551,6 @@ export function ChatInterface() {
     const selectedMessages = messages.filter((m) => selectedMessageIds.has(m.id))
     if (selectedMessages.length === 0) return
 
-    // Show privacy warning first
     setShowPrivacyWarning(true)
   }
 
@@ -602,7 +559,6 @@ export function ChatInterface() {
     setIsGeneratingCard(true)
 
     try {
-      // Dynamic import to avoid SSR issues
       const html2canvas = (await import("html2canvas")).default
 
       const cardElement = document.getElementById("zen-share-card")
@@ -611,11 +567,10 @@ export function ChatInterface() {
       }
 
       const canvas = await html2canvas(cardElement, {
-        scale: 2, // Higher quality
+        scale: 2,
         backgroundColor: null,
         logging: false,
         onclone: (clonedDoc) => {
-          // Replace oklch CSS variables with hex equivalents for html2canvas compatibility
           const root = clonedDoc.documentElement
           root.style.setProperty("--background", "#ffffff")
           root.style.setProperty("--foreground", "#1e293b")
@@ -637,7 +592,6 @@ export function ChatInterface() {
         },
       })
 
-      // Convert canvas to data URL and show preview modal
       const dataUrl = canvas.toDataURL("image/png")
       setShareCardPreview(dataUrl)
       setShowPreviewModal(true)
@@ -650,7 +604,6 @@ export function ChatInterface() {
 
   const handleCopyShareLink = async () => {
     try {
-      // Get selected messages
       const selectedMessages = messages.filter((m) => selectedMessageIds.has(m.id))
 
       if (selectedMessages.length === 0) {
@@ -658,7 +611,6 @@ export function ChatInterface() {
         return
       }
 
-      // Create share via API
       const response = await fetch("/api/shares", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -677,7 +629,6 @@ export function ChatInterface() {
 
       const { shareId } = await response.json()
 
-      // Create share URL
       const shareUrl = `${window.location.origin}/share/${shareId}`
       navigator.clipboard.writeText(shareUrl).then(() => {
         setCopiedLink(true)
@@ -705,9 +656,7 @@ export function ChatInterface() {
     setCopiedLink(false)
   }
 
-  // Check if user has access to export and sharing features
   const checkExportPermission = (featureName: string): boolean => {
-    // Only Pro tier (authenticated with saveHistory) can export
     if (userTier.tier !== 'pro') {
       setUpgradeFeature(featureName)
       setShowUpgradeModal(true)
@@ -719,7 +668,6 @@ export function ChatInterface() {
   return (
     <div className={cn(
       "container mx-auto px-4 py-8 transition-all duration-300",
-      // When sidebar is collapsed, reduce max-width for better focus
       userTier.saveHistory && !sidebarCollapsed ? "max-w-[1800px]" : "max-w-7xl"
     )}>
       <div className={cn(
@@ -736,7 +684,7 @@ export function ChatInterface() {
             <Card className="border border-border bg-card h-full flex flex-col" style={{ height: "calc(100vh - 280px)", minHeight: "500px" }}>
               <div className="p-4 border-b border-border">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-semibold text-lg">Chat History</h2>
+                  <h2 className="font-semibold text-lg">{t("chatHistory")}</h2>
                   <Button
                     onClick={handleNewConversation}
                     disabled={isLoading}
@@ -745,7 +693,7 @@ export function ChatInterface() {
                     className="gap-2"
                   >
                     <RefreshCw className="h-4 w-4" />
-                    <span className="hidden lg:inline">New</span>
+                    <span className="hidden lg:inline">{t("new")}</span>
                   </Button>
                 </div>
                 <Button
@@ -755,13 +703,13 @@ export function ChatInterface() {
                   className="lg:hidden w-full"
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Close
+                  {t("close")}
                 </Button>
               </div>
               <div className="flex-1 overflow-y-auto p-2 space-y-2">
                 {conversations.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">
-                    No conversations yet
+                    {t("noConversations")}
                   </p>
                 ) : (
                   conversations.map((conv) => (
@@ -831,7 +779,7 @@ export function ChatInterface() {
                     variant="outline"
                     size="icon"
                     className="hidden lg:flex"
-                    title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    title={sidebarCollapsed ? t("expandSidebar") : t("collapseSidebar")}
                   >
                     {sidebarCollapsed ? (
                       <ChevronRight className="h-4 w-4" />
@@ -841,8 +789,8 @@ export function ChatInterface() {
                   </Button>
                 )}
                 <div className="text-center flex-1 lg:text-left">
-                  <h1 className="text-3xl font-bold text-foreground mb-2">Spiritual Guidance Chat</h1>
-                  <p className="text-muted-foreground">Share your thoughts and questions with koji (Emptiness and Stillness)</p>
+                  <h1 className="text-3xl font-bold text-foreground mb-2">{t("title")}</h1>
+                  <p className="text-muted-foreground">{t("subtitle")}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -855,7 +803,7 @@ export function ChatInterface() {
                     className="gap-2"
                   >
                     <CheckSquare className="h-4 w-4" />
-                    <span className="hidden sm:inline">Select Messages</span>
+                    <span className="hidden sm:inline">{t("selectMessages")}</span>
                   </Button>
                 )}
                 {/* Tier Badge */}
@@ -870,10 +818,10 @@ export function ChatInterface() {
                   ) : (
                     <Sparkles className="h-3.5 w-3.5" />
                   )}
-                  <span>{userTier.tier === 'pro' ? 'Pro' : userTier.authenticated ? 'Free' : 'Guest'}</span>
+                  <span>{userTier.tier === 'pro' ? t("proBadge") : userTier.authenticated ? t("freeBadge") : t("guestBadge")}</span>
                 </div>
                 {isSaving && (
-                  <span className="text-xs text-muted-foreground animate-pulse">Saving...</span>
+                  <span className="text-xs text-muted-foreground animate-pulse">{t("saving")}</span>
                 )}
               </div>
             </div>
@@ -905,7 +853,6 @@ export function ChatInterface() {
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {messages.map((message, index) => {
             const isSelected = selectedMessageIds.has(message.id)
-            // Get the previous user message for sharing context
             const prevUserMessage = message.role === "assistant"
               ? messages.slice(0, index).reverse().find(m => m.role === "user")
               : undefined
@@ -1021,12 +968,12 @@ export function ChatInterface() {
                     {selectedMessageIds.size === messages.length ? (
                       <>
                         <Square className="h-4 w-4" />
-                        <span className="hidden sm:inline">Deselect All</span>
+                        <span className="hidden sm:inline">{t("deselectAll")}</span>
                       </>
                     ) : (
                       <>
                         <CheckSquare className="h-4 w-4" />
-                        <span className="hidden sm:inline">Select All</span>
+                        <span className="hidden sm:inline">{t("selectAll")}</span>
                       </>
                     )}
                   </Button>
@@ -1037,13 +984,13 @@ export function ChatInterface() {
                     className="gap-2"
                   >
                     <X className="h-4 w-4" />
-                    <span className="hidden sm:inline">Clear</span>
+                    <span className="hidden sm:inline">{t("clear")}</span>
                   </Button>
                   <span className="text-sm text-muted-foreground">
                     {selectedMessageIds.size > 0 && (
                       <span className="font-medium text-foreground">{selectedMessageIds.size}</span>
                     )}{" "}
-                    selected
+                    {t("selected")}
                   </span>
                 </div>
 
@@ -1053,7 +1000,7 @@ export function ChatInterface() {
                     variant="ghost"
                     size="sm"
                   >
-                    Cancel
+                    {t("cancel")}
                   </Button>
                   {selectedMessageIds.size > 0 && (
                     <>
@@ -1064,7 +1011,7 @@ export function ChatInterface() {
                         className="gap-2"
                       >
                         <Download className="h-4 w-4" />
-                        <span className="hidden sm:inline">TXT</span>
+                        <span className="hidden sm:inline">{t("txt")}</span>
                       </Button>
                       <Button
                         onClick={exportToMarkdown}
@@ -1073,7 +1020,7 @@ export function ChatInterface() {
                         className="gap-2"
                       >
                         <Download className="h-4 w-4" />
-                        <span className="hidden sm:inline">Markdown</span>
+                        <span className="hidden sm:inline">{t("markdown")}</span>
                       </Button>
                       <Button
                         onClick={handleGenerateShareCard}
@@ -1085,12 +1032,12 @@ export function ChatInterface() {
                         {isGeneratingCard ? (
                           <>
                             <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            <span className="hidden sm:inline">Generating...</span>
+                            <span className="hidden sm:inline">{t("generating")}</span>
                           </>
                         ) : (
                           <>
                             <ImageIcon className="h-4 w-4" />
-                            <span className="hidden sm:inline">Share Card</span>
+                            <span className="hidden sm:inline">{t("shareCard")}</span>
                           </>
                         )}
                       </Button>
@@ -1113,8 +1060,8 @@ export function ChatInterface() {
               <div className="flex items-center gap-2">
                 <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                 <span className="text-xs text-blue-700 dark:text-blue-300">
-                  AI provides spiritual guidance for reflection only
-                  <span className="text-blue-600 dark:text-blue-400 font-medium"> — not professional advice</span>
+                  {t("disclaimer")}
+                  <span className="text-blue-600 dark:text-blue-400 font-medium"> {t("disclaimerHighlight")}</span>
                 </span>
               </div>
               <span className="text-xs text-blue-600 dark:text-blue-400 opacity-60 group-hover:opacity-100 transition-opacity">
@@ -1124,14 +1071,10 @@ export function ChatInterface() {
             {showDisclaimer && (
               <div className="mt-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
                 <p className="text-xs text-slate-700 dark:text-slate-300 font-medium mb-1">
-                  AI Guidance Disclaimer
+                  {t("disclaimerTitle")}
                 </p>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  This AI provides spiritual guidance and meditation support for reflection
-                  purposes only. It is NOT professional medical, mental health, or legal
-                  advice. If experiencing mental health crisis or self-harm thoughts,
-                  please contact emergency services or qualified healthcare professionals
-                  immediately.
+                  {t("disclaimerContent")}
                 </p>
               </div>
             )}
@@ -1140,7 +1083,7 @@ export function ChatInterface() {
           {/* Example Questions - Only show on initial state */}
           {messages.length === 1 && (
             <div className="mb-4 space-y-2">
-              {EXAMPLE_QUESTIONS.map((question, index) => {
+              {exampleQuestions.map((question, index) => {
                 const IconComponent = question.icon
                 return (
                   <button
@@ -1167,7 +1110,7 @@ export function ChatInterface() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Share your thoughts or ask a question..."
+              placeholder={t("inputPlaceholder")}
               className="flex-1"
               disabled={isLoading}
             />
@@ -1180,7 +1123,7 @@ export function ChatInterface() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            Press Enter to send • Your conversation is private and confidential
+            {t("sendHint")}
           </p>
           </div>
       </Card>
@@ -1196,19 +1139,19 @@ export function ChatInterface() {
                 <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-2">Privacy Notice</h3>
+                <h3 className="text-lg font-semibold mb-2">{t("privacyNotice")}</h3>
                 <div className="text-sm text-muted-foreground space-y-2">
                   <p>
-                    You are about to create a shareable image of your spiritual conversation.
+                    {t("privacyNoticeDesc")}
                   </p>
                   <p className="font-medium text-foreground">
-                    Please consider:
+                    {t("pleaseConsider")}
                   </p>
                   <ul className="list-disc list-inside space-y-1 text-xs">
-                    <li>This image will contain your personal reflections</li>
-                    <li>Once shared online, it cannot be fully removed</li>
-                    <li>Others may see, save, or reshare this content</li>
-                    <li>Review the selected messages carefully</li>
+                    <li>{t("privacyItem1")}</li>
+                    <li>{t("privacyItem2")}</li>
+                    <li>{t("privacyItem3")}</li>
+                    <li>{t("privacyItem4")}</li>
                   </ul>
                 </div>
                 <div className="flex gap-2 mt-4">
@@ -1217,14 +1160,14 @@ export function ChatInterface() {
                     variant="outline"
                     className="flex-1"
                   >
-                    Go Back
+                    {t("goBack")}
                   </Button>
                   <Button
                     onClick={confirmGenerateShareCard}
                     variant="default"
                     className="flex-1"
                   >
-                    I Understand, Generate
+                    {t("iUnderstand")}
                   </Button>
                 </div>
               </div>
@@ -1240,8 +1183,8 @@ export function ChatInterface() {
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border">
               <div>
-                <h3 className="text-lg font-semibold">Share Card Preview</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Review your spiritual conversation card</p>
+                <h3 className="text-lg font-semibold">{t("shareCardPreview")}</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("shareCardPreviewDesc")}</p>
               </div>
               <Button
                 onClick={closePreviewModal}
@@ -1258,7 +1201,7 @@ export function ChatInterface() {
               <div className="rounded-lg overflow-hidden shadow-2xl">
                 <img
                   src={shareCardPreview}
-                  alt="Share Card Preview"
+                  alt={t("shareCardPreview")}
                   className="max-w-full h-auto"
                   style={{ maxHeight: "500px" }}
                 />
@@ -1276,12 +1219,12 @@ export function ChatInterface() {
                   {copiedLink ? (
                     <>
                       <Check className="h-4 w-4" />
-                      Copied!
+                      {t("copied")}
                     </>
                   ) : (
                     <>
                       <Share2 className="h-4 w-4" />
-                      Copy Share Link
+                      {t("copyShareLink")}
                     </>
                   )}
                 </Button>
@@ -1291,11 +1234,11 @@ export function ChatInterface() {
                   className="flex-1 gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  Download Card
+                  {t("downloadCard")}
                 </Button>
               </div>
               <p className="text-xs text-center text-muted-foreground mt-3">
-                The image will be downloaded as a PNG file
+                {t("theImageWillBe")}
               </p>
             </div>
           </Card>
@@ -1311,10 +1254,10 @@ export function ChatInterface() {
                 <Crown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-2">Pro Feature</h3>
+                <h3 className="text-lg font-semibold mb-2">{t("upgradeRequired")}</h3>
                 <div className="text-sm text-muted-foreground space-y-2">
                   <p>
-                    <span className="font-medium text-foreground">{upgradeFeature}</span> is available exclusively for Pro subscribers.
+                    {t("upgradeDesc")}
                   </p>
                   <p className="text-xs">
                     Upgrade to Pro to unlock:
@@ -1342,7 +1285,7 @@ export function ChatInterface() {
                     className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                   >
                     <Crown className="h-4 w-4 mr-1" />
-                    Upgrade to Pro
+                    {t("upgradeToPro")}
                   </Button>
                 </div>
               </div>

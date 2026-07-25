@@ -1,8 +1,10 @@
 import Link from "next/link"
 import { Sparkles } from "lucide-react"
 import { getSiteConfig } from "@/lib/site"
+import { getTranslations } from "next-intl/server"
 
-export function Footer() {
+export async function Footer() {
+  const t = await getTranslations("footer")
   const { siteName, supportEmail } = getSiteConfig()
   const year = new Date().getFullYear()
 
@@ -23,49 +25,49 @@ export function Footer() {
 
             {/* Navigation links */}
             <Link href="/chat" className="hover:text-foreground transition-colors">
-              Chat
+              {t("chat")}
             </Link>
             <span className="text-muted-foreground/30">|</span>
             <Link href="/#features" className="hover:text-foreground transition-colors">
-              Features
+              {t("features")}
             </Link>
             <span className="text-muted-foreground/30">|</span>
             <Link href="/pricing" className="hover:text-foreground transition-colors">
-              Pricing
+              {t("pricing")}
             </Link>
             <span className="text-muted-foreground/30">|</span>
             <Link href="/blog" className="hover:text-foreground transition-colors">
-              Blog
+              {t("blog")}
             </Link>
             <span className="text-muted-foreground/30">|</span>
             <Link href="/meditation" className="hover:text-foreground transition-colors">
-              Course
+              {t("course")}
             </Link>
             <span className="text-muted-foreground/30">|</span>
             <Link href="/pricing#faq" className="hover:text-foreground transition-colors">
-              FAQ
+              {t("faq")}
             </Link>
             <span className="text-muted-foreground/30">|</span>
             <Link href="/contact" className="hover:text-foreground transition-colors">
-              Contact
+              {t("contact")}
             </Link>
             <span className="text-muted-foreground/30">|</span>
             <Link href="/privacy" className="hover:text-foreground transition-colors">
-              Privacy
+              {t("privacy")}
             </Link>
             <span className="text-muted-foreground/30">|</span>
             <Link href="/terms" className="hover:text-foreground transition-colors">
-              Terms
+              {t("terms")}
             </Link>
             <span className="text-muted-foreground/30">|</span>
             <Link href="/refund" className="hover:text-foreground transition-colors">
-              Refund
+              {t("refund")}
             </Link>
           </div>
 
           {/* Copyright */}
           <p className="text-xs text-muted-foreground">
-            © {year} {siteName}. All rights reserved.
+            © {year} {siteName}. {t("allRightsReserved")}
             <span className="mx-2 text-muted-foreground/30">•</span>
             <a
               href={`mailto:${supportEmail}`}

@@ -6,6 +6,7 @@ import { Check, AlertCircle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface PricingCardProps {
   title: string
@@ -44,6 +45,7 @@ export function PricingCard({
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const t = useTranslations('pricing')
 
   useEffect(() => {
     checkSubscriptionStatus()
@@ -76,32 +78,20 @@ export function PricingCard({
   }
 
   const handleSubscribe = async () => {
-    // Check if user is logged in
     const supabase = createClient()
     if (!supabase) {
-      alert('Auth is not configured.')
+      alert(t('authNotConfigured'))
       return
     }
     const { data: { session } } = await supabase.auth.getSession()
 
     if (!session) {
-      // Redirect to home with sign in
       window.location.href = '/?signin=true'
       return
     }
 
-    // If trying to subscribe but already has active subscription
     if (subscriptionStatus?.hasActiveSubscription) {
-      const currentPlan = subscriptionStatus.activeSubscription?.plan
-
-      alert(
-        `You currently have an active ${currentPlan === 'annual' ? 'Annual' : 'Monthly'} subscription.\n\n` +
-        `To subscribe to a different plan, please:\n` +
-        `1. Go to your Dashboard\n` +
-        `2. Cancel your current subscription\n` +
-        `3. Then subscribe to the new plan\n\n` +
-        `You'll continue to have access until your current billing period ends.`
-      )
+      alert(t('existingSubscriptionMsg'))
       window.location.href = '/dashboard'
       return
     }
@@ -121,7 +111,7 @@ export function PricingCard({
         if (errorData.error) {
           alert(errorData.error + (errorData.message ? '\n\n' + errorData.message : ''))
         } else {
-          alert('Failed to start checkout. Please try again.')
+          alert(t('failedCheckout'))
         }
         return
       }
@@ -137,21 +127,17 @@ export function PricingCard({
     }
 
     if (!paymentLink) {
-      // For free plan, just navigate
       window.location.href = ctaHref
       return
     }
 
-    // Generate payment link with user info
     const url = new URL(paymentLink)
     url.searchParams.set('user_id', session.user.id)
     url.searchParams.set('user_email', session.user.email || '')
 
-    // Redirect to Creem payment page
     window.location.href = url.toString()
   }
 
-  // Determine button state and text
   const getButtonState = () => {
     if (loading) {
       return {
@@ -162,27 +148,24 @@ export function PricingCard({
     }
 
     if (!creemPlan) {
-      // Free plan
       return {
         disabled: false,
-        text: ctaText,
+        text: t('free.cta'),
         variant: highlighted ? 'default' : 'outline' as const,
       }
     }
 
     if (subscriptionStatus?.hasActiveSubscription) {
-      // Already has a subscription - go to dashboard
       return {
         disabled: false,
-        text: 'Manage Subscription',
+        text: t('manageSubscription'),
         variant: 'secondary' as const,
       }
     }
 
-    // No active subscription
     return {
       disabled: actionLoading,
-      text: actionLoading ? 'Processing...' : ctaText,
+      text: actionLoading ? t('processing') : t(creemPlan === 'annual' ? 'annual.cta' : 'monthly.cta'),
       variant: highlighted ? 'default' : 'outline' as const,
     }
   }
@@ -223,14 +206,13 @@ export function PricingCard({
         ))}
       </ul>
 
-      {/* Show message if already has any subscription */}
       {hasActiveSubscription && creemPlan && (
         <div className="mb-4 flex items-start gap-2 p-3 bg-primary/10 border border-primary/20 rounded-lg">
           <AlertCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
           <div className="text-sm">
-            <p className="font-medium">Active Subscription</p>
+            <p className="font-medium">{t('activeSubscription')}</p>
             <p className="text-muted-foreground text-xs">
-              You already have an active subscription. Go to your dashboard to manage it.
+              {t('activeSubscriptionDesc')}
             </p>
           </div>
         </div>

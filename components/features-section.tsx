@@ -1,40 +1,43 @@
 import { Card } from "@/components/ui/card"
 import { Heart, Shield, Clock, BookOpen, MessageCircle, Users } from "lucide-react"
+import { getTranslations } from "next-intl/server"
 
-const features = [
-  {
-    icon: Heart,
-    title: "Compassionate Guidance",
-    description: "Receive thoughtful, empathetic responses rooted in spiritual wisdom and religious teachings.",
-  },
-  {
-    icon: Shield,
-    title: "Safe & Private",
-    description: "Your conversations are completely confidential. Share your thoughts and questions freely.",
-  },
-  {
-    icon: Clock,
-    title: "Always Available",
-    description: "Spiritual guidance whenever you need it. No appointments necessary, available 24/7.",
-  },
-  {
-    icon: BookOpen,
-    title: "Scripture-Based Wisdom",
-    description: "Answers grounded in sacred texts and traditional religious teachings from various faiths.",
-  },
-  {
-    icon: MessageCircle,
-    title: "Natural Conversations",
-    description: "Discuss faith, prayer, and life's challenges in a comfortable, conversational manner.",
-  },
-  {
-    icon: Users,
-    title: "All Faith Traditions",
-    description: "Respectful guidance across different religious backgrounds and spiritual paths.",
-  },
-]
+export async function FeaturesSection() {
+  const t = await getTranslations("features")
 
-export function FeaturesSection() {
+  const features = [
+    {
+      icon: Heart,
+      title: t("compassionateTitle"),
+      description: t("compassionateDescription"),
+    },
+    {
+      icon: Shield,
+      title: t("safeTitle"),
+      description: t("safeDescription"),
+    },
+    {
+      icon: Clock,
+      title: t("availableTitle"),
+      description: t("availableDescription"),
+    },
+    {
+      icon: BookOpen,
+      title: t("scriptureTitle"),
+      description: t("scriptureDescription"),
+    },
+    {
+      icon: MessageCircle,
+      title: t("naturalTitle"),
+      description: t("naturalDescription"),
+    },
+    {
+      icon: Users,
+      title: t("allFaithsTitle"),
+      description: t("allFaithsDescription"),
+    },
+  ]
+
   return (
     <section id="features" className="border-b border-border py-20 md:py-32">
       <div className="container mx-auto px-4">
@@ -42,10 +45,10 @@ export function FeaturesSection() {
           {/* Section Header */}
           <div className="mb-16 text-center">
             <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground md:text-5xl text-balance">
-              Why Seek Guidance Here?
+              {t("heading")}
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-balance leading-relaxed">
-              A trusted companion for your spiritual journey and faith exploration
+              {t("subtitle")}
             </p>
           </div>
 

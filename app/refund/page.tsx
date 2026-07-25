@@ -1,12 +1,14 @@
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { getSiteConfig } from '@/lib/site'
+import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
-export default function RefundPolicyPage() {
+export default async function RefundPolicyPage() {
   const { siteName, supportEmail } = getSiteConfig()
+  const t = await getTranslations('refundPage')
 
   return (
     <div className="min-h-screen">
@@ -14,85 +16,68 @@ export default function RefundPolicyPage() {
       <main className="container mx-auto px-4 py-12">
         <div className="mx-auto max-w-3xl space-y-8">
           <header className="space-y-3">
-            <h1 className="text-3xl font-bold">Refund Policy</h1>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
             <p className="text-muted-foreground">
-              This policy describes how refunds work for purchases made through{' '}
-              {siteName}.
+              {t('description', { siteName })}
             </p>
           </header>
 
           <section className="space-y-2">
-            <h2 className="text-xl font-semibold">Who Processes Payments</h2>
+            <h2 className="text-xl font-semibold">{t('whoProcessesPayments')}</h2>
             <p className="text-muted-foreground">
-              Payments are processed by Creem as merchant of record. Refunds, if
-              approved, are issued back to the original payment method.
+              {t('whoProcessesPaymentsDesc')}
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-xl font-semibold">How to Request a Refund</h2>
+            <h2 className="text-xl font-semibold">{t('howToRequest')}</h2>
             <p className="text-muted-foreground">
-              Refund requests must be submitted within 7 days of purchase. To
-              request a refund, contact us at{' '}
-              <a
-                className="underline underline-offset-4"
-                href={`mailto:${supportEmail}`}
-              >
-                {supportEmail}
-              </a>{' '}
-              with your account email and a brief explanation.
+              {t('howToRequestDesc', { supportEmail })}
             </p>
             <p className="text-muted-foreground">
-              We aim to respond within 3 business days.
+              {t('respondWithin')}
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold">Refund Eligibility</h2>
+            <h2 className="text-xl font-semibold">{t('refundEligibility')}</h2>
             <div className="space-y-2 text-muted-foreground">
               <p>
-                <strong className="text-foreground">48-Hour Refund Window:</strong> You
-                can request a full refund within 48 hours of purchase if you have used
-                5 or fewer messages. No explanation required.
+                <strong className="text-foreground">{t('48hourWindow')}</strong>{' '}
+                {t('48hourWindowDesc')}
               </p>
               <p>
-                <strong className="text-foreground">7-Day Refund Requests:</strong> For
-                purchases between 48 hours and 7 days, you may request a refund by
-                contacting support. Refunds are evaluated on a case-by-case basis.
+                <strong className="text-foreground">{t('7dayRequests')}</strong>{' '}
+                {t('7dayRequestsDesc')}
               </p>
               <p>
-                <strong className="text-foreground">After 7 Days:</strong> Refunds are
-                generally not granted except in cases of technical issues or service
-                failures.
+                <strong className="text-foreground">{t('after7days')}</strong>{' '}
+                {t('after7daysDesc')}
               </p>
             </div>
             <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm font-medium mb-1">Quick Summary:</p>
+              <p className="text-sm font-medium mb-1">{t('quickSummary')}</p>
               <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                <li>&lt; 48 hours and ≤ 5 messages: Automatic refund eligibility</li>
-                <li>48 hours - 7 days: Contact support for review</li>
-                <li>&gt; 7 days: No refund (unless technical issue)</li>
+                <li>{t('summary48h')}</li>
+                <li>{t('summary7d')}</li>
+                <li>{t('summaryAfter7d')}</li>
               </ul>
             </div>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-xl font-semibold">Cancellations</h2>
+            <h2 className="text-xl font-semibold">{t('cancellations')}</h2>
             <p className="text-muted-foreground">
-              You can cancel your subscription at any time from your dashboard
-              via the billing portal. See our{' '}
-              <Link className="underline underline-offset-4" href="/terms">
-                Terms of Service
-              </Link>{' '}
-              for details.
+              {t.rich('cancellationsDesc', {
+                terms: (chunks) => <Link className="underline underline-offset-4" href="/terms">{chunks}</Link>
+              })}
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-xl font-semibold">Important Note</h2>
+            <h2 className="text-xl font-semibold">{t('importantNote')}</h2>
             <p className="text-muted-foreground">
-              Refund requests cannot be based solely on personal subjective
-              preferences about AI-generated content.
+              {t('importantNoteDesc')}
             </p>
           </section>
         </div>

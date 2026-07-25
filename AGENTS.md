@@ -27,6 +27,8 @@ Run a single test file: `pnpm test subscription-usage-limits.test.ts`
    - `admin.ts` — service role key, bypasses RLS (used in API routes)
 3. **Payments**: Creem (not Stripe). Webhook at `/api/creem/webhook`. Config in `lib/creem.ts`.
 4. **Usage limits**: `lib/usage-limits.ts` — daily message caps per tier, tracked in `usage_records` table. Counting is tier+subscription_id aware (counter resets on plan change).
+5. **i18n**: `next-intl` — Cookie-based locale (`NEXT_LOCALE`), no URL prefix. 31 namespaces in `messages/en.json` + `messages/zh.json`. Server components use `getTranslations()`, client components use `useTranslations()`. Legal pages (privacy, terms, refund) only translate headings; body stays in original language. `zh` locale shows WeChat login; `en` shows Google/Logto.
+6. **Logto Auth**: Identity provider layer alongside Supabase Auth. Routes at `app/api/auth/logto/` (sign-in, sign-out, callback). Config in `lib/logto.ts`. `profiles` table has `logto_id TEXT UNIQUE` column.
 
 ### Tiers & models
 
@@ -44,7 +46,9 @@ Pro users exceeding premium quota get downgraded to basic model mid-day (fair us
 - `components/ui/` — shadcn/ui primitives (Radix + Tailwind). Style: "new-york", icon lib: lucide. Add components via shadcn CLI.
 - `components/auth/` — Supabase auth UI components
 - `content/blog/` — MDX blog posts (processed by `next-mdx-remote`)
-- `lib/` — business logic (subscription, usage-limits, creem, email, site config, sensitive-keywords)
+- `i18n/` — next-intl routing, request, navigation config
+- `messages/` — translation JSON files (`en.json`, `zh.json`), 31 namespaces each
+- `lib/` — business logic (subscription, usage-limits, creem, email, site config, sensitive-keywords, logto)
 - `supabase/` — SQL schema and migrations
 - `tests/` — Jest integration tests (require running dev server + Supabase)
 
@@ -56,7 +60,7 @@ Pro users exceeding premium quota get downgraded to basic model mid-day (fair us
 - **UI components**: shadcn/ui (new-york style). Use `data-[state=...]` variants for Radix states.
 - **Client components**: must have `"use client"` directive. Server components are default.
 - **`import 'server-only'`**: used in server-only libs (`lib/creem.ts`, `lib/site.ts`)
-- **Middleware** (`middleware.ts`): currently passes through all requests (auth disabled)
+- **i18n**: Server components use `getTranslations()`, client components use `useTranslations()`. Add new keys to both `messages/en.json` and `messages/zh.json`.
 
 ## Testing
 
@@ -76,11 +80,13 @@ Copy `.env.example` to `.env.local`. Key vars:
 - `CREEM_*` — Creem payment config (API key, webhook secret, product IDs, payment links)
 - `RESEND_API_KEY` — email via Resend
 - `CRON_SECRET` / `ADMIN_SECRET_KEY` — protect cron and admin endpoints
+- `LOGTO_APP_ID` / `LOGTO_APP_SECRET` / `LOGTO_ENDPOINT` / `LOGTO_COOKIE_SECRET` — Logto identity provider
 
 ## Gotchas
 
 - `next.config.mjs` has `typescript.ignoreBuildErrors: true` — `pnpm build` won't catch TS errors. Run editor/IDE type checking separately.
-- The chat route (`app/api/chat/route.ts`) does **not** use Vercel AI SDK's `streamText()` — it calls Zhipu's OpenAI-compatible endpoint directly with `fetch` and manually transforms SSE to plain text streaming.
-- `middleware.ts` auth is disabled (passes through all requests).
+- The chat route (`app/api/chat/route.ts`) does **not** use Vercel AI SDK's `streamText()` — it calls Zhipu's OpenAI-compatible endpoint directly with `fetch` and manually transforms SSE to plain text streaming. Includes bilingual system prompts and locale-aware crisis messages.
+- `middleware.ts` uses next-intl `createMiddleware` for locale routing; skips `/api/`, `/_next/`, `/auth/callback` routes.
 - `components.json` is shadcn/ui config. Run `npx shadcn@latest add <component>` to add UI primitives.
 - Subscription `refund_status` field enables staged downgrade: `requested` keeps Pro access during 3-day review; `approved`/`rejected` triggers downgrade.
+- When editing `messages/*.json`, ensure UTF-8 encoding — background agents can introduce mojibake for multi-byte characters (em dashes, emojis). Validate with `node -e "JSON.parse(require('fs').readFileSync('messages/en.json','utf8'))"`.

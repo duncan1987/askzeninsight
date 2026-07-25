@@ -87,7 +87,32 @@ export function containsSensitiveKeywords(message: string): boolean {
 /**
  * Get crisis resources message
  */
-export function getCrisisResourcesMessage(): string {
+export function getCrisisResourcesMessage(locale?: string): string {
+  if (locale === 'zh') {
+    return `我注意到你正在经历一段非常困难的时期。本 AI 心灵指引服务无法处理心理健康危机或紧急情况。
+
+如果你正在经历自伤或自杀的念头，请立即寻求帮助：
+
+🆘 紧急服务：
+- 紧急电话：110（中国）/ 911（美国）/ 112（欧盟）
+- 全国24小时心理危机干预热线：400-161-9995
+- 北京心理危机研究与干预中心：010-82951332
+- 生命热线：400-821-1215
+
+🌟 专业帮助：
+- 寻找附近的心理咨询师
+- 联系你所在地区的心理健康热线
+- 前往医院急诊科
+
+💙 支持资源：
+- 与信任的朋友、家人或灵性导师交谈
+- 联系你的医生或医疗保健提供者
+
+你不是一个人，帮助就在身边。请向专业人士寻求支持。
+
+关心你的安危。`
+  }
+
   return `I notice you may be going through a very difficult time. This AI spiritual guidance service is not equipped to handle mental health crises or emergency situations.
 
 If you are experiencing thoughts of self-harm or suicide, please reach out for help immediately:

@@ -1,32 +1,35 @@
 import { Card } from "@/components/ui/card"
 import { Droplets, Circle, Moon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getTranslations } from "next-intl/server"
 
-const wisdomMetaphors = [
-  {
-    icon: Droplets,
-    title: "Like Water",
-    description: "Like water, koji flows around your thoughts — adapting, embracing all, and finding paths where none seem to exist.",
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
-  },
-  {
-    icon: Circle,
-    title: "Like a Mirror",
-    description: "Like a clear mirror, koji reflects your words without judgment — helping you see yourself with clarity and compassion.",
-    color: "text-purple-500",
-    bgColor: "bg-purple-500/10",
-  },
-  {
-    icon: Moon,
-    title: "Like the Moon",
-    description: "Like moonlight on a dark lake, koji illuminates your questions — gentle guidance that shows you way, yet the journey is yours alone.",
-    color: "text-amber-500",
-    bgColor: "bg-amber-500/10",
-  },
-]
+export async function ZenWisdomSection() {
+  const t = await getTranslations("zenWisdom")
 
-export function ZenWisdomSection() {
+  const wisdomMetaphors = [
+    {
+      icon: Droplets,
+      title: t("likeWaterTitle"),
+      description: t("likeWaterDescription"),
+      color: "text-blue-500",
+      bgColor: "bg-blue-500/10",
+    },
+    {
+      icon: Circle,
+      title: t("likeMirrorTitle"),
+      description: t("likeMirrorDescription"),
+      color: "text-purple-500",
+      bgColor: "bg-purple-500/10",
+    },
+    {
+      icon: Moon,
+      title: t("likeMoonTitle"),
+      description: t("likeMoonDescription"),
+      color: "text-amber-500",
+      bgColor: "bg-amber-500/10",
+    },
+  ]
+
   return (
     <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-background via-muted/20 to-background">
       {/* Subtle background decoration */}
@@ -41,20 +44,18 @@ export function ZenWisdomSection() {
             {/* Badge */}
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-1.5 text-sm font-medium text-muted-foreground">
               <span>🧘</span>
-              <span>Ancient Wisdom × AI</span>
+              <span>{t("badge")}</span>
             </div>
 
             {/* Main Heading */}
             <h2 className="mb-6 text-3xl font-bold tracking-tight text-foreground md:text-5xl text-balance">
-              Ancient Wisdom,<br className="hidden sm:block" />{" "}
-              <span className="text-primary">Illuminated by AI</span>
+              {t("heading")}<br className="hidden sm:block" />{" "}
+              <span className="text-primary">{t("headingHighlight")}</span>
             </h2>
 
             {/* Subtitle - Introducing koji */}
             <p className="text-lg text-muted-foreground md:text-xl max-w-3xl mx-auto text-balance leading-relaxed">
-              Meet <strong className="text-foreground font-semibold">koji</strong> — your Zen meditation guide.
-              Embodying the essence of <em className="font-serif">Emptiness and Stillness</em>, koji weaves
-              Buddhist philosophy into gentle, transformative conversations.
+              {t("subtitle")}
             </p>
           </div>
 
@@ -103,12 +104,11 @@ export function ZenWisdomSection() {
               </div>
 
               <p className="text-base text-muted-foreground leading-relaxed font-serif italic">
-                In the spirit of the Flower Sermon,
-                wisdom is shared not in words, but in presence.
+                {t("closingQuote")}
               </p>
 
               <p className="mt-4 text-lg text-foreground font-medium">
-                Begin your conversation below. 🙏
+                {t("closingCta")}
               </p>
             </div>
           </div>

@@ -11,12 +11,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { SignOutButton } from './sign-out-button'
 import { User } from '@supabase/supabase-js'
+import { useTranslations } from 'next-intl'
 
 interface UserMenuProps {
   user: User
 }
 
 export function UserMenu({ user }: UserMenuProps) {
+  const t = useTranslations('common')
   const initials = user.user_metadata?.name
     ?.split(' ')
     .map((n: string) => n[0])

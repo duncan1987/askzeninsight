@@ -16,6 +16,7 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 interface ExportTask {
   id: string
@@ -38,8 +39,8 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
   const [exportTasks, setExportTasks] = useState<ExportTask[]>([])
   const [deleteConfirmed, setDeleteConfirmed] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const t = useTranslations('dataManagement')
 
-  // Poll for export status updates
   useEffect(() => {
     const fetchExports = async () => {
       try {
@@ -55,7 +56,6 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
 
     fetchExports()
 
-    // Poll every 2 seconds if there are pending/processing tasks
     const interval = setInterval(() => {
       const hasActiveTasks = exportTasks.some(
         task => task.status === 'pending' || task.status === 'processing'
@@ -79,10 +79,9 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
 
       if (response.ok) {
         const data = await response.json()
-        toast.success("Export task created", {
-          description: "Processing in the background. It will be available for download shortly.",
+        toast.success(t('exportTaskCreated'), {
+          description: t('exportTaskCreatedDesc'),
         })
-        // Refresh exports list
         const exportsResponse = await fetch("/api/user/export-conversations")
         if (exportsResponse.ok) {
           setExportTasks(await exportsResponse.json())
@@ -91,8 +90,8 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
         throw new Error("Failed to create export")
       }
     } catch (error) {
-      toast.error("Export failed", {
-        description: error instanceof Error ? error.message : "Unknown error",
+      toast.error(t('exportFailed'), {
+        description: error instanceof Error ? error.message : t('unknownError'),
       })
     } finally {
       setIsExporting(false)
@@ -107,7 +106,6 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
         throw new Error(error.error || "Download failed")
       }
 
-      // Get filename from Content-Disposition header
       const contentDisposition = response.headers.get("Content-Disposition")
       let filename = `zen-insight-conversations-${new Date().toISOString().split("T")[0]}.json`
       if (contentDisposition) {
@@ -115,7 +113,6 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
         if (match) filename = match[1]
       }
 
-      // Download file
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
@@ -126,10 +123,10 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
 
-      toast.success("Download successful", { description: "Conversation export file has been downloaded" })
+      toast.success(t('downloadSuccess'), { description: t('downloadSuccessDesc') })
     } catch (error) {
-      toast.error("Download failed", {
-        description: error instanceof Error ? error.message : "Unknown error",
+      toast.error(t('downloadFailed'), {
+        description: error instanceof Error ? error.message : t('unknownError'),
       })
     }
   }
@@ -148,19 +145,18 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
 
       if (response.ok) {
         const data = await response.json()
-        toast.success("Deletion successful", {
-          description: data.message || "All conversations have been deleted",
+        toast.success(t('deletionSuccess'), {
+          description: data.message || t('deletionSuccessDesc'),
         })
         setShowDeleteConfirm(false)
         setDeleteConfirmed(false)
-        // Refresh the page after 1 second
         setTimeout(() => window.location.reload(), 1000)
       } else {
         throw new Error("Failed to delete conversations")
       }
     } catch (error) {
-      toast.error("Deletion failed", {
-        description: error instanceof Error ? error.message : "Unknown error",
+      toast.error(t('deletionFailed'), {
+        description: error instanceof Error ? error.message : t('deletionFailedDesc'),
       })
     } finally {
       setIsDeleting(false)
@@ -197,35 +193,36 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
   const getExportStatusText = (task: ExportTask) => {
     switch (task.status) {
       case 'pending':
-        return 'Pending'
+        return t('pending')
       case 'processing':
-        return 'Processing...'
+        return t('processing')
       case 'completed':
-        return isExpired(task.expires_at) ? 'Expired' : 'Completed'
+        return isExpired(task.expires_at) ? t('expired') : t('completed')
       case 'failed':
-        return 'Failed'
+        return t('failed')
     }
   }
+
+  const convLabel = (count: number) => count === 1 ? t('conversation') : t('conversations')
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Download className="h-5 w-5" />
-          Data Management
+          {t('title')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Export Section */}
         <div>
-          <h3 className="font-semibold mb-2">Export Conversations</h3>
+          <h3 className="font-semibold mb-2">{t('exportConversations')}</h3>
           <p className="text-sm text-muted-foreground mb-3">
-            Download all conversation records for backup or personal archiving. Supports JSON and Markdown formats.
+            {t('exportDesc')}
           </p>
 
           {conversationCount > 0 && (
             <p className="text-xs text-muted-foreground mb-3">
-              {conversationCount} conversation{conversationCount > 1 ? 's' : ''} total
+              {conversationCount} {convLabel(conversationCount)} {t('total')}
             </p>
           )}
 
@@ -237,7 +234,7 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
               disabled={isExporting || conversationCount === 0}
             >
               <FileJson className="h-4 w-4 mr-1.5" />
-              {isExporting ? "Creating..." : "Export JSON"}
+              {isExporting ? t('creating') : t('exportJson')}
             </Button>
             <Button
               variant="outline"
@@ -246,14 +243,13 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
               disabled={isExporting || conversationCount === 0}
             >
               <FileText className="h-4 w-4 mr-1.5" />
-              {isExporting ? "Creating..." : "Export Markdown"}
+              {isExporting ? t('creating') : t('exportMarkdown')}
             </Button>
           </div>
 
-          {/* Export Tasks List */}
           {exportTasks.length > 0 && (
             <div className="mt-4 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Export Records</p>
+              <p className="text-xs font-medium text-muted-foreground">{t('exportRecords')}</p>
               {exportTasks.slice(0, 3).map((task) => (
                 <div
                   key={task.id}
@@ -269,7 +265,7 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
                     </span>
                     {task.status === 'completed' && task.total_conversations && (
                       <span className="text-xs text-muted-foreground">
-                        ({task.total_conversations} conversation{task.total_conversations > 1 ? 's' : ''})
+                        ({task.total_conversations} {convLabel(task.total_conversations)})
                       </span>
                     )}
                   </div>
@@ -294,20 +290,19 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
           )}
         </div>
 
-        {/* Delete All Section */}
         <div className="border-t border-border pt-4">
           <h3 className="font-semibold mb-2 flex items-center gap-2 text-destructive">
             <Trash2 className="h-4 w-4" />
-            Delete All Conversations
+            {t('deleteAllConversations')}
           </h3>
 
           {!showDeleteConfirm ? (
             <>
               <p className="text-sm text-muted-foreground mb-3">
-                ⚠️ Warning: This action cannot be undone. All conversations will be permanently deleted from our servers.
+                {t('deleteWarning')}
               </p>
               <p className="text-sm text-muted-foreground mb-3">
-                We recommend exporting your data before deleting.
+                {t('exportBeforeDelete')}
               </p>
               <Button
                 variant="outline"
@@ -319,12 +314,12 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
                 {isDeleting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                    Deleting...
+                    {t('deleting')}
                   </>
                 ) : (
                   <>
                     <Trash2 className="h-4 w-4 mr-1.5" />
-                    Delete All Conversations
+                    {t('deleteAllCta')}
                   </>
                 )}
               </Button>
@@ -334,10 +329,10 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
               <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
                 <p className="text-sm font-medium text-destructive mb-1">
                   <AlertTriangle className="h-4 w-4 inline mr-1" />
-                  Confirm Deletion
+                  {t('confirmDeletion')}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Are you sure you want to delete all conversations? This will permanently delete {conversationCount} conversation{conversationCount > 1 ? 's' : ''} and all their messages.
+                  {t('confirmDeletionDesc', { count: conversationCount })}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -352,7 +347,7 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
                   htmlFor="delete-confirm"
                   className="text-sm text-muted-foreground cursor-pointer"
                 >
-                  I understand this cannot be undone
+                  {t('understandCannotUndo')}
                 </label>
               </div>
               <div className="flex gap-2">
@@ -365,10 +360,10 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
                   {isDeleting ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                      Deleting...
+                      {t('deleting')}
                     </>
                   ) : (
-                    "Confirm Deletion"
+                    t('confirmDeletionCta')
                   )}
                 </Button>
                 <Button
@@ -380,7 +375,7 @@ export function DataManagementCard({ conversationCount = 0 }: DataManagementCard
                   }}
                   disabled={isDeleting}
                 >
-                  Cancel
+                  {t('cancel') || 'Cancel'}
                 </Button>
               </div>
             </div>

@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { Sparkles } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { UserMenu } from "@/components/auth/user-menu"
@@ -7,9 +6,12 @@ import { SignInButton } from "@/components/auth/sign-in-button"
 import { SubscriptionButton } from "@/components/auth/subscription-button"
 import { getSiteConfig } from "@/lib/site"
 import { NotificationIcon } from "@/components/notification-icon"
+import { LanguageSwitcher } from "@/components/language-switcher"
+import { getTranslations } from "next-intl/server"
 
 export async function Header() {
   const { siteName } = getSiteConfig()
+  const t = await getTranslations("header")
   let session = null
 
   try {
@@ -32,47 +34,48 @@ export async function Header() {
 
         <nav className="hidden md:flex items-center gap-6">
           <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            Home
+            {t("home")}
           </Link>
           <Link
             href="/chat"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            Chat
+            {t("chat")}
           </Link>
           <Link
             href="/blog"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            Blog
+            {t("blog")}
           </Link>
           <Link
             href="/meditation"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            Course
+            {t("course")}
           </Link>
           <Link
             href="/pricing"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            Pricing
+            {t("pricing")}
           </Link>
           <Link
             href="/contact"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            Contact
+            {t("contact")}
           </Link>
           <Link
             href="/about"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            About
+            {t("about")}
           </Link>
         </nav>
 
         <div className="flex items-center gap-3">
+          <LanguageSwitcher />
           {session?.user ? (
             <>
               <SubscriptionButton />

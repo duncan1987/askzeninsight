@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 
 const READ_NOTIFICATIONS_KEY = 'read_notifications'
 
@@ -30,8 +31,8 @@ export function NotificationIcon() {
   const [isLoading, setIsLoading] = useState(false)
   const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set())
   const [showAll, setShowAll] = useState(false)
+  const t = useTranslations('notification')
 
-  // Load read notification IDs from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem(READ_NOTIFICATIONS_KEY)
     if (stored) {
@@ -44,10 +45,8 @@ export function NotificationIcon() {
     }
   }, [])
 
-  // Fetch notifications on mount
   useEffect(() => {
     fetchNotifications()
-    // Poll for new notifications every 2 minutes
     const interval = setInterval(fetchNotifications, 120000)
     return () => clearInterval(interval)
   }, [])
@@ -62,7 +61,6 @@ export function NotificationIcon() {
         const data = await response.json()
         setNotifications(data.notifications || [])
 
-        // Count unread notifications (active AND not read by user)
         const activeCount = (data.notifications || []).filter(
           (n: Notification) => n.is_active && !readNotificationIds.has(n.id)
         ).length
@@ -76,21 +74,17 @@ export function NotificationIcon() {
   }
 
   const dismissAll = () => {
-    // Mark all current notifications as read
     const currentIds = notifications.map(n => n.id)
     const newReadIds = new Set([...readNotificationIds, ...currentIds])
 
-    // Update localStorage
     localStorage.setItem(READ_NOTIFICATIONS_KEY, JSON.stringify([...newReadIds]))
 
-    // Update state - don't show all notifications after dismiss
     setReadNotificationIds(newReadIds)
     setShowAll(false)
     setUnreadCount(0)
     setOpen(false)
   }
 
-  // Filter notifications: show unread by default, or all if showAll is true
   const filteredNotifications = showAll
     ? notifications
     : notifications.filter(n => !readNotificationIds.has(n.id))
@@ -105,16 +99,15 @@ export function NotificationIcon() {
           )} />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {unreadCount > 9 ? t('ninePlus') : unreadCount}
             </span>
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 sm:w-96 p-0">
         <div className="space-y-4">
-          {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <h3 className="font-semibold text-foreground">Notifications</h3>
+            <h3 className="font-semibold text-foreground">{t('notifications')}</h3>
             <div className="flex gap-2">
               {!showAll && notifications.length > filteredNotifications.length && (
                 <Button
@@ -123,7 +116,7 @@ export function NotificationIcon() {
                   className="text-xs text-muted-foreground"
                   onClick={() => setShowAll(true)}
                 >
-                  View all
+                  {t('viewAll')}
                 </Button>
               )}
               {showAll && (
@@ -133,7 +126,7 @@ export function NotificationIcon() {
                   className="text-xs text-muted-foreground"
                   onClick={() => setShowAll(false)}
                 >
-                  View unread
+                  {t('viewUnread')}
                 </Button>
               )}
               {unreadCount > 0 && (
@@ -143,17 +136,16 @@ export function NotificationIcon() {
                   className="text-xs text-muted-foreground"
                   onClick={dismissAll}
                 >
-                  Dismiss all
+                  {t('dismissAll')}
                 </Button>
               )}
             </div>
           </div>
 
-          {/* Notifications List */}
           {filteredNotifications.length === 0 ? (
             <div className="px-4 py-8 text-center text-muted-foreground">
               <p className="text-sm">
-                {showAll ? "No notifications" : "No unread notifications"}
+                {showAll ? t('noNotifications') : t('noUnread')}
               </p>
               {!showAll && notifications.length > 0 && (
                 <Button
@@ -162,7 +154,7 @@ export function NotificationIcon() {
                   className="mt-2"
                   onClick={() => setShowAll(true)}
                 >
-                  View all notifications
+                  {t('viewAllNotifications')}
                 </Button>
               )}
             </div>

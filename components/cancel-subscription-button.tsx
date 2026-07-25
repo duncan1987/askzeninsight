@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 interface CancelSubscriptionButtonProps {
   subscriptionId?: string
@@ -19,8 +20,8 @@ export function CancelSubscriptionButton({
   const [loading, setLoading] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const router = useRouter()
+  const t = useTranslations('cancelSubscription')
 
-  // Don't show cancel button if already cancelled
   if (isCancelled) {
     return null
   }
@@ -38,7 +39,6 @@ export function CancelSubscriptionButton({
       const data = await response.json()
 
       if (!response.ok) {
-        // Handle 403 Forbidden (past 7 days)
         if (response.status === 403) {
           alert(data.error + '\n\n' + data.message)
           setLoading(false)
@@ -46,41 +46,30 @@ export function CancelSubscriptionButton({
           return
         }
 
-        throw new Error(data.error || 'Failed to cancel subscription')
+        throw new Error(data.error || t('failedToCancel'))
       }
 
-      // Handle success - check if Pro access is kept during review
       const { keepProAccess, immediateCancellation, reviewPeriod } = data
 
       if (keepProAccess) {
-        // 48h-7day cancellation: Pro access kept during review
         alert(
-          data.message + '\n\n' +
-          '✅ Your Pro access remains ACTIVE during refund review\n' +
-          `⏱ Review period: ${reviewPeriod}\n` +
-          '📧 You\'ll receive an email notification when review is complete'
+          data.message + '\n\n' + t('proAccessRemains') + '\n' + t('reviewPeriod', { period: reviewPeriod }) + '\n' + t('emailNotification')
         )
       } else if (immediateCancellation) {
-        // Within 48h: immediate cancellation
         alert(
-          data.message + '\n\n' +
-          '• You are now on the free tier (10 messages/day)\n' +
-          '• Chat model: glm-4-flash\n' +
-          '• Chat history will no longer be saved'
+          data.message + '\n\n' + t('nowFreeTier') + '\n' + t('chatModel') + '\n' + t('historyNotSaved')
         )
       } else {
-        // Fallback
         alert(data.message)
       }
 
-      // Refresh the entire page to update all components including UsageMeter
       window.location.reload()
     } catch (error) {
       console.error('Failed to cancel subscription:', error)
       alert(
         error instanceof Error
           ? error.message
-          : 'Failed to cancel subscription. Please try again or contact support.'
+          : t('failedToCancel')
       )
       setLoading(false)
       setShowConfirm(false)
@@ -90,7 +79,7 @@ export function CancelSubscriptionButton({
   if (showConfirm) {
     const periodEnd = currentPeriodEnd
       ? new Date(currentPeriodEnd).toLocaleDateString()
-      : 'the end of your billing period'
+      : t('endOfBillingPeriod')
 
     return (
       <div className="flex gap-2">
@@ -103,10 +92,10 @@ export function CancelSubscriptionButton({
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Cancelling...
+              {t('cancelling')}
             </>
           ) : (
-            'Confirm Cancel'
+            t('confirmCancel')
           )}
         </Button>
         <Button
@@ -118,7 +107,7 @@ export function CancelSubscriptionButton({
           }}
           disabled={loading}
         >
-          Keep Subscription
+          {t('keepSubscription')}
         </Button>
       </div>
     )
@@ -131,7 +120,7 @@ export function CancelSubscriptionButton({
       onClick={() => setShowConfirm(true)}
       className="text-destructive hover:text-destructive hover:bg-destructive/10"
     >
-      Cancel Subscription
+      {t('cancelSubscription')}
     </Button>
   )
 }

@@ -4,6 +4,10 @@ import { Inter, Crimson_Text } from "next/font/google"
 import Script from "next/script"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "sonner"
+import { NextIntlClientProvider, hasLocale } from "next-intl"
+import { getMessages, setRequestLocale } from "next-intl/server"
+import { routing } from "@/i18n/routing"
+import { cookies } from "next/headers"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
@@ -98,13 +102,23 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const cookieStore = await cookies()
+  const cookieLocale = cookieStore.get('NEXT_LOCALE')?.value
+  let locale = routing.defaultLocale
+  if (cookieLocale && hasLocale(routing.locales, cookieLocale)) {
+    locale = cookieLocale
+  }
+
+  setRequestLocale(locale)
+  const messages = await getMessages()
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <head>
         {/* Google tag (gtag.js) */}
         <Script
@@ -121,12 +135,14 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={`${inter.variable} ${crimsonText.variable} font-sans antialiased`}>
-        {children}
+        <NextIntlClientProvider messages={messages} locale={locale}>
+          {children}
+        </NextIntlClientProvider>
         <Analytics />
         <Toaster
           position="top-right"
           toastOptions={{
-            duration: Infinity, // Requires manual dismissal
+            duration: Infinity,
             closeButton: true,
           }}
         />

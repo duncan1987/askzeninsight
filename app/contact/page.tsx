@@ -1,12 +1,14 @@
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { getSiteConfig } from '@/lib/site'
+import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
-export default function ContactPage() {
+export default async function ContactPage() {
   const { siteName, supportEmail, legalName } = getSiteConfig()
+  const t = await getTranslations('contact')
 
   return (
     <div className="min-h-screen">
@@ -14,85 +16,65 @@ export default function ContactPage() {
       <main className="container mx-auto px-4 py-12">
         <div className="mx-auto max-w-3xl space-y-8">
           <header className="space-y-3">
-            <h1 className="text-3xl font-bold">Contact</h1>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
             <p className="text-muted-foreground">
-              Need help with {siteName}, billing, or your subscription? We’re
-              here to help.
+              {t('description', { siteName })}
             </p>
           </header>
 
           <section className="space-y-2">
-            <h2 className="text-xl font-semibold">Support Email</h2>
+            <h2 className="text-xl font-semibold">{t('supportEmail')}</h2>
             <p className="text-muted-foreground">
-              Email us at{' '}
-              <a
-                className="underline underline-offset-4"
-                href={`mailto:${supportEmail}`}
-              >
-                {supportEmail}
-              </a>
-              .
+              {t('emailUsAt', { email: supportEmail })}
             </p>
             <p className="text-muted-foreground">
-              We aim to respond within 3 business days.
+              {t('respondWithin')}
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-xl font-semibold">About {siteName}</h2>
+            <h2 className="text-xl font-semibold">{t('aboutSiteName', { siteName })}</h2>
             <p className="text-muted-foreground">
-              {siteName} provides AI-powered spiritual guidance and reflective
-              conversations designed to support mindfulness and inner peace.
+              {t('aboutDesc', { siteName })}
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-xl font-semibold">What We Offer</h2>
+            <h2 className="text-xl font-semibold">{t('whatWeOffer')}</h2>
             <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-              <li>Guided, conversational reflections with an AI assistant</li>
-              <li>Optional subscription for higher daily usage limits</li>
-              <li>Account dashboard to view usage and manage billing</li>
+              <li>{t('offer1')}</li>
+              <li>{t('offer2')}</li>
+              <li>{t('offer3')}</li>
             </ul>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-xl font-semibold">How It Works</h2>
+            <h2 className="text-xl font-semibold">{t('howItWorks')}</h2>
             <p className="text-muted-foreground">
-              {siteName} provides a custom interface built on top of third-party
-              AI models. We are not affiliated with those model providers.
+              {t('howItWorksDesc', { siteName })}
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-xl font-semibold">Important Notice</h2>
+            <h2 className="text-xl font-semibold">{t('importantNotice')}</h2>
             <p className="text-muted-foreground">
-              The content provided by {siteName} is for informational and
-              spiritual reflection purposes only and is not medical, legal, or
-              professional advice. If you are in crisis or may harm yourself or
-              others, seek immediate professional help.
+              {t('importantNoticeDesc', { siteName })}
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-xl font-semibold">Billing & Refunds</h2>
+            <h2 className="text-xl font-semibold">{t('billingRefunds')}</h2>
             <p className="text-muted-foreground">
-              See our{' '}
-              <Link className="underline underline-offset-4" href="/refund">
-                Refund Policy
-              </Link>{' '}
-              and{' '}
-              <Link className="underline underline-offset-4" href="/terms">
-                Terms of Service
-              </Link>
-              .
+              {t.rich('billingRefundsDesc', {
+                refund: (chunks) => <Link className="underline underline-offset-4" href="/refund">{chunks}</Link>,
+                terms: (chunks) => <Link className="underline underline-offset-4" href="/terms">{chunks}</Link>
+              })}
             </p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-xl font-semibold">Business Information</h2>
-            <p className="text-muted-foreground">
-              {legalName}
-            </p>
+            <h2 className="text-xl font-semibold">{t('businessInfo')}</h2>
+            <p className="text-muted-foreground">{legalName}</p>
           </section>
         </div>
       </main>
@@ -100,4 +82,3 @@ export default function ContactPage() {
     </div>
   )
 }
-

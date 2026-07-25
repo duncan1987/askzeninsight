@@ -4,11 +4,14 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { LogIn } from 'lucide-react'
 import { useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
 
 export function SignInButton() {
   const [isLoading, setIsLoading] = useState(false)
+  const t = useTranslations('auth')
+  const locale = useLocale()
 
-  const handleSignIn = async (e?: React.MouseEvent) => {
+  const handleGoogleSignIn = async (e?: React.MouseEvent) => {
     e?.preventDefault()
     setIsLoading(true)
 
@@ -17,13 +20,11 @@ export function SignInButton() {
 
       if (!supabase) {
         console.error('Supabase client is not configured')
-        showError('Sign-in is not configured. Please check environment variables.')
+        showError(t('notConfigured'))
         setIsLoading(false)
         return
       }
 
-      // Use PKCE flow with explicit redirect handling
-      // This is more resistant to ad-blocker interference
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -38,24 +39,19 @@ export function SignInButton() {
       if (error) {
         console.error('OAuth error:', error)
         setIsLoading(false)
-        showError(`Sign-in failed: ${error.message}`)
+        showError(`${t('signInFailed')}: ${error.message}`)
         return
       }
 
-      // Use direct window.location.href instead of anchor click
-      // This is more reliable when ad-blockers are present
       if (data?.url) {
-        // Add a small timeout to allow the UI to update
         setTimeout(() => {
           window.location.href = data.url
         }, 100)
       }
     } catch (error: any) {
       console.error('Sign in error:', error)
-
       setIsLoading(false)
 
-      // Detect if this might be an ad-blocker issue
       const errorMessage = error?.message || String(error)
       const isLikelyAdBlocker =
         errorMessage.includes('fetch') ||
@@ -65,12 +61,34 @@ export function SignInButton() {
         errorMessage.includes('blocked')
 
       if (isLikelyAdBlocker) {
-        showError(getAdBlockerMessage())
+        showError(t('adBlockerMsg'))
       } else {
-        showError(`Sign-in error: ${errorMessage}`)
+        showError(`${t('signInError')}: ${errorMessage}`)
       }
     }
   }
+
+  const handleLogtoSignIn = async (connectorId?: string) => {
+    setIsLoading(true)
+    try {
+      const params = connectorId ? `?connector=${connectorId}` : ''
+      window.location.href = `${window.location.origin}/api/auth/logto/sign-in${params}`
+    } catch (error) {
+      console.error('Logto sign in error:', error)
+      setIsLoading(false)
+    }
+  }
+
+  const handleSignIn = async (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    if (locale === 'zh') {
+      await handleLogtoSignIn()
+    } else {
+      await handleGoogleSignIn(e)
+    }
+  }
+
+  const buttonText = locale === 'zh' ? t('signInWithWechat') : t('signIn')
 
   return (
     <Button
@@ -81,22 +99,11 @@ export function SignInButton() {
       disabled={isLoading}
     >
       <LogIn className="mr-2 h-4 w-4" />
-      {isLoading ? 'Loading...' : 'Sign In'}
+      {isLoading ? t('loading') : buttonText}
     </Button>
   )
 }
 
 function showError(message: string) {
   alert(message)
-}
-
-function getAdBlockerMessage(): string {
-  return `Sign-in failed. This may be caused by an ad-blocker.
-
-Please try:
-• Disabling your ad-blocker for this site
-• Adding ask.zeninsight.xyz to your allowlist
-• Using an incognito/private window
-
-If the problem persists, please contact support.`
 }

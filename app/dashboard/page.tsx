@@ -8,11 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { getSiteConfig } from '@/lib/site'
+import { getTranslations } from 'next-intl/server'
 
-// Force dynamic rendering because this page uses cookies for authentication
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
+  const t = await getTranslations('dashboard')
   const { supportEmail } = getSiteConfig()
   const supabase = await createClient()
   if (!supabase) {
@@ -26,7 +27,6 @@ export default async function DashboardPage() {
     redirect('/')
   }
 
-  // Fetch user data
   const [conversations, subscription] = await Promise.all([
     supabase
       .from('conversations')
@@ -35,7 +35,6 @@ export default async function DashboardPage() {
       .order('updated_at', { ascending: false })
       .limit(10),
 
-    // Get subscription (including cancelled ones that are still active)
     supabase
       .from('subscriptions')
       .select('*')
@@ -47,8 +46,6 @@ export default async function DashboardPage() {
       .maybeSingle(),
   ])
 
-  // Calculate usage count for refund eligibility
-  // Count messages from subscription start (not just today)
   let usageCount = 0
   if (subscription.data) {
     const subscriptionStart = new Date(subscription.data.created_at)
@@ -56,8 +53,8 @@ export default async function DashboardPage() {
       .from('usage_records')
       .select('id')
       .eq('user_id', user.id)
-      .eq('message_type', 'user')  // Only count user messages
-      .eq('subscription_id', subscription.data.id)  // Only count for this subscription
+      .eq('message_type', 'user')
+      .eq('subscription_id', subscription.data.id)
       .gte('timestamp', subscriptionStart.toISOString())
 
     usageCount = usageRecords?.length || 0
@@ -68,27 +65,24 @@ export default async function DashboardPage() {
       <Header />
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto space-y-8">
-          {/* Welcome */}
           <div>
             <h1 className="text-3xl font-bold mb-2">
-              Welcome back, {user.user_metadata?.name?.split(' ')[0] || 'User'}
+              {t('welcomeBack', { name: user.user_metadata?.name?.split(' ')[0] || 'User' })}
             </h1>
             <p className="text-muted-foreground">
-              Manage your spiritual journey and conversations
+              {t('manageJourney')}
             </p>
           </div>
 
-          {/* Usage Stats */}
           <Card>
             <CardHeader>
-              <CardTitle>Daily Usage</CardTitle>
+              <CardTitle>{t('dailyUsage')}</CardTitle>
             </CardHeader>
             <CardContent>
               <UsageMeter />
             </CardContent>
           </Card>
 
-          {/* Subscription Status */}
           {subscription.data ? (
             <SubscriptionStatusCard
               subscription={subscription.data}
@@ -97,18 +91,18 @@ export default async function DashboardPage() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>Subscription</CardTitle>
+                <CardTitle>{t('subscription')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-6">
                   <p className="text-muted-foreground mb-4">
-                    You&apos;re on the free plan. Upgrade for more features.
+                    {t('freePlanDesc')}
                   </p>
                   <Button asChild>
-                    <Link href="/pricing">View Plans</Link>
+                    <Link href="/pricing">{t('viewPlans')}</Link>
                   </Button>
                   <p className="mt-4 text-sm text-muted-foreground">
-                    Questions?{' '}
+                    {t('questions')}{' '}
                     <a className="underline underline-offset-4" href={`mailto:${supportEmail}`}>
                       {supportEmail}
                     </a>
@@ -118,10 +112,9 @@ export default async function DashboardPage() {
             </Card>
           )}
 
-          {/* Recent Conversations */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Conversations</CardTitle>
+              <CardTitle>{t('recentConversations')}</CardTitle>
             </CardHeader>
             <CardContent>
               {conversations.data && conversations.data.length > 0 ? (
@@ -141,13 +134,12 @@ export default async function DashboardPage() {
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-6">
-                  No conversations yet. Start chatting!
+                  {t('noConversations')}
                 </p>
               )}
             </CardContent>
           </Card>
 
-          {/* Data Management */}
           <DataManagementCard conversationCount={conversations.data?.length || 0} />
         </div>
       </main>

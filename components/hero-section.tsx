@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button"
 import { Sparkles, MessageCircle } from "lucide-react"
 import Link from "next/link"
+import { getTranslations } from "next-intl/server"
 
-export function HeroSection() {
+export async function HeroSection() {
+  const t = await getTranslations("hero")
+
   return (
     <section className="relative overflow-hidden border-b border-border">
       {/* Background decoration */}
@@ -16,17 +19,17 @@ export function HeroSection() {
           {/* Badge */}
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
             <Sparkles className="h-4 w-4" />
-            <span>AI-Powered Spiritual Guidance</span>
+            <span>{t("titlePrefix")}</span>
           </div>
 
           {/* Heading */}
           <h1 className="mb-6 text-4xl font-bold tracking-tight text-foreground md:text-6xl lg:text-7xl text-balance">
-            Seek Wisdom, Find <span className="text-primary">Peace</span>
+            {t("title")} <span className="text-primary">{t("titleHighlight")}</span>
           </h1>
 
           {/* Description */}
           <p className="mb-10 text-lg text-muted-foreground md:text-xl max-w-3xl mx-auto text-balance leading-relaxed">
-            Experience thoughtful spiritual guidance through compassionate AI conversations. Spiritual practice is life's essential journey—a continuous exploration of human nature and refinement of character. Explore faith, prayer, and religious teachings in a safe and welcoming space.
+            {t("description")}
           </p>
 
           {/* CTA Buttons */}
@@ -34,11 +37,11 @@ export function HeroSection() {
             <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-8">
               <Link href="/chat">
                 <MessageCircle className="mr-2 h-5 w-5" />
-                Start a Conversation
+                {t("startCta")}
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="text-base px-8 bg-transparent">
-              <Link href="/blog">Explore Our Blog</Link>
+              <Link href="/blog">{t("exploreCta")}</Link>
             </Button>
           </div>
 
@@ -46,11 +49,11 @@ export function HeroSection() {
           <div className="mt-16 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-primary" />
-              <span>Confidential & Private</span>
+              <span>{t("confidential")}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-primary" />
-              <span>Available 24/7</span>
+              <span>{t("available")}</span>
             </div>
           </div>
         </div>

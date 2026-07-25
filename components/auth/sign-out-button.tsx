@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import { useTranslations } from 'next-intl'
 
 interface SignOutButtonProps {
   variant?: 'button' | 'dropdown'
@@ -12,6 +13,7 @@ interface SignOutButtonProps {
 
 export function SignOutButton({ variant = 'dropdown' }: SignOutButtonProps) {
   const router = useRouter()
+  const t = useTranslations('auth')
   const handleSignOut = async () => {
     const supabase = createClient()
     if (!supabase) {
@@ -30,7 +32,7 @@ export function SignOutButton({ variant = 'dropdown' }: SignOutButtonProps) {
         onClick={handleSignOut}
       >
         <LogOut className="mr-2 h-4 w-4" />
-        Sign Out
+        {t('signOut')}
       </Button>
     )
   }
@@ -38,7 +40,7 @@ export function SignOutButton({ variant = 'dropdown' }: SignOutButtonProps) {
   return (
     <DropdownMenuItem onClick={handleSignOut}>
       <LogOut className="mr-2 h-4 w-4" />
-      Sign Out
+      {t('signOut')}
     </DropdownMenuItem>
   )
 }
