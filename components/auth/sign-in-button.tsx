@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button'
 import { LogIn } from 'lucide-react'
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { useRouter } from '@/i18n/navigation'
 
 export function SignInButton() {
   const [isLoading, setIsLoading] = useState(false)
   const t = useTranslations('auth')
   const locale = useLocale()
+  const router = useRouter()
 
   const handleGoogleSignIn = async (e?: React.MouseEvent) => {
     e?.preventDefault()
@@ -68,27 +70,14 @@ export function SignInButton() {
     }
   }
 
-  const handleLogtoSignIn = async (connectorId?: string) => {
-    setIsLoading(true)
-    try {
-      const params = connectorId ? `?connector=${connectorId}` : ''
-      window.location.href = `${window.location.origin}/api/auth/logto/sign-in${params}`
-    } catch (error) {
-      console.error('Logto sign in error:', error)
-      setIsLoading(false)
-    }
-  }
-
   const handleSignIn = async (e?: React.MouseEvent) => {
     e?.preventDefault()
     if (locale === 'zh') {
-      await handleLogtoSignIn()
+      router.push('/auth/sign-in', { locale: 'zh' })
     } else {
       await handleGoogleSignIn(e)
     }
   }
-
-  const buttonText = locale === 'zh' ? t('signInWithWechat') : t('signIn')
 
   return (
     <Button
@@ -99,7 +88,7 @@ export function SignInButton() {
       disabled={isLoading}
     >
       <LogIn className="mr-2 h-4 w-4" />
-      {isLoading ? t('loading') : buttonText}
+      {isLoading ? t('loading') : t('signIn')}
     </Button>
   )
 }

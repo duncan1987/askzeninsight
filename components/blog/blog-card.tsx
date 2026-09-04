@@ -1,9 +1,12 @@
+'use client'
+
 import { Card } from '@/components/ui/card'
 import { Calendar, Clock } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import type { BlogPostMeta } from '@/lib/blog'
+import type { BlogPostMeta } from '@/lib/blog-types'
 import { CategoryBadge } from './category-badge'
+import { useTranslations } from 'next-intl'
 
 interface BlogCardProps {
   post: BlogPostMeta
@@ -11,6 +14,8 @@ interface BlogCardProps {
 }
 
 export function BlogCard({ post, featured = false }: BlogCardProps) {
+  const t = useTranslations('blog')
+
   return (
     <Card className="group overflow-hidden border border-border bg-card transition-all hover:shadow-lg hover:border-primary/30">
       <Link href={`/blog/${post.slug}`} className="block">
@@ -27,7 +32,7 @@ export function BlogCard({ post, featured = false }: BlogCardProps) {
           {post.featured && (
             <div className="absolute top-4 right-4">
               <span className="rounded-full bg-amber-500/90 px-3 py-1 text-xs font-medium text-white">
-                Featured
+                {t('featured')}
               </span>
             </div>
           )}
@@ -37,7 +42,7 @@ export function BlogCard({ post, featured = false }: BlogCardProps) {
         <div className="mb-3 flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            {new Date(post.date).toLocaleDateString('en-US', {
+            {new Date(post.date).toLocaleDateString(undefined, {
               month: 'short',
               day: 'numeric',
               year: 'numeric',
@@ -45,7 +50,7 @@ export function BlogCard({ post, featured = false }: BlogCardProps) {
           </span>
           <span className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
-            {post.readTime} min read
+            {post.readTime} {t('minRead')}
           </span>
         </div>
         <Link href={`/blog/${post.slug}`}>

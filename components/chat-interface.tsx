@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Send, Sparkles, RefreshCw, MessageSquare, Trash2, X, Zap, Brain, Flower2, Download, Share2, CheckSquare, Square, Image as ImageIcon, AlertTriangle, Check, Crown, ChevronLeft, ChevronRight } from "lucide-react"
+import { Send, Sparkles, RefreshCw, MessageSquare, Trash2, X, Zap, Brain, Flower2, Download, Share2, CheckSquare, Square, Image as ImageIcon, AlertTriangle, Check, Crown, ChevronLeft, ChevronRight, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ShareCard } from "@/components/share-card"
@@ -78,6 +78,7 @@ export function ChatInterface() {
     full_name: '',
   })
   const [fairUseNotice, setFairUseNotice] = useState<string | undefined>(undefined)
+  const [courseRefs, setCourseRefs] = useState<Array<{ id: string; title: string; similarity: number }>>([])
   const [showPrivacyWarning, setShowPrivacyWarning] = useState(false)
   const [isGeneratingCard, setIsGeneratingCard] = useState(false)
   const [shareCardPreview, setShareCardPreview] = useState<string | null>(null)
@@ -355,11 +356,12 @@ export function ChatInterface() {
       })
 
       if (!response.ok) {
-        if (response.status === 429) {
-          const errorData: ChatError = await response.json()
-          throw new Error(errorData.error || "Daily message limit exceeded")
-        }
-        throw new Error(`API error: ${response.statusText}`)
+        let errorMsg = `API error: ${response.statusText}`
+        try {
+          const errorData = await response.json()
+          if (errorData.error) errorMsg = errorData.error
+        } catch {}
+        throw new Error(errorMsg)
       }
 
       const fairUseNoticeHeader = response.headers.get("X-Fair-Use-Notice")
@@ -367,6 +369,16 @@ export function ChatInterface() {
         const decodedNotice = decodeURIComponent(fairUseNoticeHeader)
         setFairUseNotice(decodedNotice)
         setCurrentModel("glm-4-flash")
+      }
+
+      const courseRefsHeader = response.headers.get("X-Course-Refs")
+      if (courseRefsHeader) {
+        try {
+          const refs = JSON.parse(decodeURIComponent(courseRefsHeader))
+          setCourseRefs(refs)
+        } catch {}
+      } else {
+        setCourseRefs([])
       }
 
       const reader = response.body?.getReader()
@@ -845,6 +857,28 @@ export function ChatInterface() {
               >
                 <X className="h-4 w-4" />
               </button>
+            </div>
+          </div>
+        )}
+
+        {courseRefs.length > 0 && (
+          <div className="bg-blue-500/10 border-b border-blue-500/20 px-4 py-2">
+            <div className="flex items-start gap-2">
+              <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+              <div className="flex-1 text-sm text-blue-800 dark:text-blue-200">
+                <span className="font-medium">📚 参考课程：</span>
+                {courseRefs.map((ref, i) => (
+                  <span key={ref.id}>
+                    {i > 0 && "、"}
+                    <a
+                      href={`/study/${ref.id}`}
+                      className="underline hover:text-blue-600 dark:hover:text-blue-300"
+                    >
+                      《{ref.title}》
+                    </a>
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         )}

@@ -1,5 +1,5 @@
 import { Tag } from 'lucide-react'
-import { getCategoryName } from '@/lib/blog'
+import { getCategoryName } from '@/lib/blog-types'
 
 interface CategoryBadgeProps {
   category: string

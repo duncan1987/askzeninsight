@@ -34,11 +34,11 @@ Run a single test file: `pnpm test subscription-usage-limits.test.ts`
 
 | Tier | Daily limit | Model | API key env var | Save history |
 |------|------------|-------|-----------------|-------------|
-| Anonymous | 10 | glm-5 | `ZHIPU_API_FREE` | No |
-| Free (authed) | 10 | glm-5 | `ZHIPU_API_FREE` | No |
+| Anonymous | 10 | glm-4.7-flash | `ZHIPU_API_FREE` | No |
+| Free (authed) | 10 | glm-4.7-flash | `ZHIPU_API_FREE` | No |
 | Pro | 30 | glm-5 | `ZHIPU_API_KEY` | Yes |
 
-Pro users exceeding premium quota get downgraded to basic model mid-day (fair use policy).
+Pro users exceeding premium quota get downgraded to glm-4.7-flash mid-day (fair use policy).
 
 ### Key directories
 

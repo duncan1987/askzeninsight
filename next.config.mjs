@@ -17,6 +17,16 @@ const nextConfig = {
         destination: '/',
         permanent: true,
       },
+      {
+        source: '/meditation',
+        destination: '/study',
+        permanent: true,
+      },
+      {
+        source: '/meditation/:path*',
+        destination: '/study',
+        permanent: true,
+      },
     ]
   },
 }

@@ -1,0 +1,265 @@
+# PRD: 中文环境用户名+密码登录方案（含管理员审核 + 无限额度）
+
+## Goal
+
+在中文语言环境下，用 Supabase Auth 用户名+密码登录替代 Logto/微信登录。**英文环境的 Google OAuth 完全不变，Google 用户仍需订阅才能获得 Pro 额度**。中文环境新用户注册后需管理员审核通过才能登录，**审核通过后无需订阅即可畅享无限对话额度**。注册成功后浏览器自动记住账号密码，下次访问一键登录。
+
+## Scope / Non-goals
+
+### In Scope
+- 新建登录/注册页面（**仅 zh locale**）
+- 用户名+密码注册（含昵称，不要求邮箱）
+- 用户名+密码登录（**需审核通过**）
+- 管理员审核注册申请（批准/拒绝）
+- **审核通过 zh 用户无限对话额度**（不限制每日消息数）
+- 密码强度校验（实时反馈）
+- 浏览器密码管理器自动填充支持
+- SignInButton zh locale 行为改为跳转登录页（en locale 不变）
+- SignOutButton 移除 Logto 登出逻辑
+- i18n 翻译（auth namespace 扩展）
+- 移除 Logto 依赖及相关代码
+- 数据库迁移：profiles 表增加 `username` + `account_status` 列
+- 订阅系统改造：新增 `approved_zh` 层级
+
+### Non-goals
+- 手机号+验证码登录（已否决）
+- 微信登录（已否决）
+- 忘记密码/重置密码流程（后续迭代，本次预留入口）
+- en locale 登录方式变更（**完全不变**）
+- en locale 订阅机制变更（**Google 用户仍需 Creem 订阅才能 Pro**）
+- 邮箱登录（系统内部使用合成邮箱）
+- 拒绝后重新注册（被拒绝的用户名不可重新注册）
+- zh 用户 Creem 订阅功能（zh 用户无需订阅）
+
+## ⚠️ en 用户不受影响保证（关键约束）
+
+**Google OAuth 用户（en locale）完全不受本次变更影响**，通过以下五层保障实现：
+
+### 保障 1：数据库默认值
+```sql
+account_status TEXT NOT NULL DEFAULT 'approved'
+```
+- Google 用户注册时，`handle_new_user()` 触发器创建 profile 行
+- 触发器逻辑：`COALESCE(NEW.raw_user_meta_data->>'account_status', 'approved')`
+- Google OAuth 不传 `account_status` metadata，所以 **Google 用户自动为 `approved'**
+
+### 保障 2：登录路径完全隔离
+- **Google 用户**：走 Supabase 原生 OAuth → `/auth/callback/route.ts` → **不检查 `account_status`** → 直接登录
+- **zh 用户名用户**：走 `POST /api/auth/sign-in` → **检查 `account_status`** → pending/rejected/approved
+- **两条路径完全不交叉**
+
+### 保障 3：订阅层级隔离
+- **en 用户**：tier 由 Creem 订阅决定 → `free`（无订阅）或 `pro`（有订阅）
+- **zh 用户**：tier 由 `account_status + username` 决定 → `approved_zh`（审核通过，无需订阅）
+- `approved_zh` 仅在 `username IS NOT NULL` 时生效，Google 用户无 username，不会被误判
+
+### 保障 4：代码分支隔离
+```typescript
+// SignInButton - en 分支完全不变
+if (locale === 'zh') {
+  router.push(`/${locale}/auth/sign-in`)  // zh: 跳转登录页
+} else {
+  await handleGoogleSignIn(e)              // en: Google OAuth，完全不变
+}
+```
+
+### 保障 5：不修改的文件
+| 文件 | 说明 |
+|------|------|
+| `app/auth/callback/route.ts` | Google OAuth 回调，不修改 |
+| `components/auth/sign-in-button.tsx` (en 分支) | handleGoogleSignIn() 不变 |
+| `lib/creem.ts` | 支付配置，不修改 |
+| `app/api/creem/` | 支付相关路由，不修改 |
+
+## 用户层级体系
+
+### 改造前
+| Tier | 每日额度 | API Key | 保存历史 | 适用用户 |
+|------|---------|---------|---------|---------|
+| anonymous | 10 | ZHIPU_API_FREE | No | 未登录用户 |
+| free | 10 | ZHIPU_API_FREE | No | en 已登录无订阅 |
+| pro | 30 | ZHIPU_API_KEY | Yes | en 有 Creem 订阅 |
+
+### 改造后
+| Tier | 每日额度 | API Key | 保存历史 | 适用用户 |
+|------|---------|---------|---------|---------|
+| anonymous | 10 | ZHIPU_API_FREE | No | 未登录用户 |
+| free | 10 | ZHIPU_API_FREE | No | en 已登录无订阅 |
+| pro | 30 | ZHIPU_API_KEY | Yes | en 有 Creem 订阅 |
+| **approved_zh** | **无限** | **ZHIPU_API_KEY** | **Yes** | **zh 审核通过用户** |
+
+### 层级判定逻辑
+
+```
+getUserSubscription(userId):
+  if 无 userId → anonymous
+  if userId 存在:
+    查询 profiles (admin client): username, account_status
+    if username IS NOT NULL AND account_status = 'approved':
+      → approved_zh（无限额度，付费 API，保存历史）
+    else:
+      → 查 Creem 订阅 → 有订阅? pro : free
+```
+
+**关键**：`approved_zh` 判定优先于 Creem 订阅查询。zh 用户无需 Creem 订阅即可获得无限额度。
+
+## Design
+
+### 整体架构
+
+```
+=== zh 用户注册流程 ===
+zh 用户点击「登录」→ 跳转 /[locale]/auth/sign-in → 注册 tab
+→ 填写账号名+昵称+密码+确认密码 → POST /api/auth/register
+→ account_status='pending' → 显示"等待管理员审核"
+
+=== zh 用户登录流程 ===
+zh 用户访问登录页 → 填写账号名+密码 → POST /api/auth/sign-in
+→ 检查 account_status:
+  approved → 登录成功，tier='approved_zh'，无限额度
+  pending → "审核中"
+  rejected → "已拒绝"
+
+=== zh 用户对话流程 ===
+zh 审核通过用户发消息 → getUserSubscription → approved_zh
+→ checkUsageLimit: 无限制（canProceed = true, limit = Infinity）
+→ 使用付费 API Key (ZHIPU_API_KEY)
+→ 保存对话历史
+
+=== en 用户流程（完全不变）===
+en 用户点击 Sign In → Google OAuth → 直接登录
+→ getUserSubscription → free/pro（由 Creem 订阅决定）
+→ free: 10条/天 | pro: 30条/天
+
+=== 管理员审核流程 ===
+管理员访问 /admin/users → ADMIN_SECRET_KEY → 批准/拒绝
+→ 批准: account_status='approved' → 用户可登录 + 无限额度
+→ 拒绝: account_status='rejected' → 用户名保留
+```
+
+### 1. 合成邮箱映射机制
+
+| 概念 | 值 |
+|------|------|
+| 用户输入 | `myname` |
+| Supabase auth.users.email | `myname@users.internal` |
+| profiles.username | `myname` |
+| profiles.email | `myname@users.internal` |
+
+**设计要点**：
+- `@users.internal` 后缀标识合成邮箱，与 en 用户真实 Gmail 不冲突
+- 用户名统一转小写存储和查找
+- Supabase Dashboard 需关闭 "Confirm email"
+- **en 用户通过 Google OAuth 注册，email 是真实地址，不受影响**
+
+### 2. 数据库变更
+
+**新增迁移** `supabase/migrations/20260901_add_username_and_account_status.sql`
+
+### 3. 用户名校验规则
+
+| 规则 | 要求 |
+|------|------|
+| 长度 | 3-20 个字符 |
+| 字符集 | 仅允许字母（a-z, A-Z）、数字（0-9）、下划线（_） |
+| 唯一性 | 不与已有用户名重复（大小写不敏感） |
+| 保留词 | 禁止 `admin`、`system`、`root`、`support`、`help`、`moderator` |
+
+### 4. 密码强度规则
+
+| 规则 | 要求 |
+|------|------|
+| 最小长度 | ≥ 8 字符 |
+| 包含字母 | 至少 1 个英文字母 |
+| 包含数字 | 至少 1 个数字 |
+
+### 5. 注册 API（zh 专用）
+
+**路由**: `POST /api/auth/register`
+
+### 6. 登录 API（zh 专用）
+
+**路由**: `POST /api/auth/sign-in`
+
+### 7. 订阅系统改造
+
+- `lib/subscription.ts`：新增 `approved_zh` tier，优先于 Creem 订阅查询
+- `lib/usage-limits.ts`：`approved_zh` 用户无限额度（`Infinity`）
+- `app/api/chat/route.ts`：`approved_zh` 用户不降级，始终使用付费模型
+
+### 8. 管理员审核 API
+
+**路由**: `app/api/admin/user-review/route.ts`
+**鉴权**: `x-admin-key` = `ADMIN_SECRET_KEY`
+
+### 9. 管理员审核页面
+
+**路径**: `app/admin/users/page.tsx`
+
+### 10. 登录/注册页面
+
+**路径**: `app/[locale]/auth/sign-in/page.tsx`（仅 zh locale）
+
+### 11. SignInButton 修改
+
+**zh locale**: 跳转登录页
+**en locale**: 不变，仍走 Google OAuth
+
+### 12. SignOutButton 修改
+
+移除 Logto 登出逻辑。
+
+### 13. Logto 移除
+
+删除 `app/api/auth/logto/`、`lib/logto.ts`，卸载 `@logto/next`。
+
+### 14. i18n 扩展
+
+auth namespace 新增 30+ key（注册、登录、审核、密码强度等）。
+
+## Key Files
+
+| 文件 | 操作 | 说明 |
+|------|------|------|
+| `docs/ZH-AUTH-PRD.md` | 新建 | PRD 文档 |
+| `supabase/migrations/20260901_add_username_and_account_status.sql` | 新建 | 数据库迁移 |
+| `lib/password.ts` | 新建 | 密码校验 |
+| `lib/username.ts` | 新建 | 用户名校验 |
+| `app/api/auth/register/route.ts` | 新建 | 注册 API |
+| `app/api/auth/sign-in/route.ts` | 新建 | 登录 API |
+| `app/api/admin/user-review/route.ts` | 新建 | 管理员审核 API |
+| `app/admin/users/page.tsx` | 新建 | 管理员审核页面 |
+| `app/[locale]/auth/sign-in/page.tsx` | 新建 | 登录/注册页面 |
+| `lib/subscription.ts` | **修改** | 新增 approved_zh tier |
+| `lib/usage-limits.ts` | **修改** | 新增无限额度逻辑 |
+| `app/api/chat/route.ts` | **微调** | approved_zh 无降级 |
+| `components/auth/sign-in-button.tsx` | 修改 | zh 跳转登录页 |
+| `components/auth/sign-out-button.tsx` | 修改 | 移除 Logto |
+| `messages/zh.json` | 修改 | 扩展 auth namespace |
+| `messages/en.json` | 修改 | 扩展 auth namespace |
+| `app/api/auth/logto/` | 删除 | Logto 路由 |
+| `lib/logto.ts` | 删除 | Logto 配置 |
+| `.env.example` | 修改 | 移除 Logto 变量 |
+| `app/auth/callback/route.ts` | **不修改** | Google OAuth 回调 |
+| `lib/creem.ts` | **不修改** | 支付配置 |
+| `app/api/creem/` | **不修改** | 支付路由 |
+
+## Risks And Compatibility
+
+| 风险 | 影响 | 缓解 |
+|------|------|------|
+| zh 用户滥用无限额度 | 中 | 管理员审核是第一道门槛；可后续添加单日异常检测 |
+| 付费 API Key 成本上升 | 中 | zh 用户使用 ZHIPU_API_KEY，调用成本需监控 |
+| 已有 Logto 用户 | 中 | 无密码无法登录，需"忘记密码" |
+| Supabase "Confirm email" | 高 | 必须关闭 |
+| en 用户受影响 | **无** | 五层保障（见专节） |
+
+## Rollback
+
+1. `git revert` 相关 commits
+2. `pnpm add @logto/next` + 恢复 .env.example
+3. 恢复 `lib/subscription.ts` 和 `lib/usage-limits.ts` 原版
+4. 可选：`ALTER TABLE profiles DROP COLUMN username; DROP COLUMN account_status;`
+5. 恢复 `handle_new_user()` 原版
+6. 恢复 usage_records 的 user_tier CHECK 约束
+7. en 用户全程不受影响

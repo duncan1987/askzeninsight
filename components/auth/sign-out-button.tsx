@@ -14,13 +14,13 @@ interface SignOutButtonProps {
 export function SignOutButton({ variant = 'dropdown' }: SignOutButtonProps) {
   const router = useRouter()
   const t = useTranslations('auth')
+
   const handleSignOut = async () => {
     const supabase = createClient()
-    if (!supabase) {
-      router.push('/')
-      return
+    if (supabase) {
+      await supabase.auth.signOut()
     }
-    await supabase.auth.signOut()
+
     router.push('/')
   }
 
@@ -30,15 +30,16 @@ export function SignOutButton({ variant = 'dropdown' }: SignOutButtonProps) {
         variant="outline"
         size="sm"
         onClick={handleSignOut}
+        className="flex items-center gap-2"
       >
-        <LogOut className="mr-2 h-4 w-4" />
+        <LogOut className="h-4 w-4" />
         {t('signOut')}
       </Button>
     )
   }
 
   return (
-    <DropdownMenuItem onClick={handleSignOut}>
+    <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
       <LogOut className="mr-2 h-4 w-4" />
       {t('signOut')}
     </DropdownMenuItem>

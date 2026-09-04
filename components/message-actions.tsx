@@ -6,6 +6,7 @@ import { Check, Copy, Share2, ThumbsUp, ThumbsDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { FeedbackDialog } from "@/components/feedback-dialog"
+import { useTranslations } from "next-intl"
 
 interface MessageActionsProps {
   messageId: string
@@ -36,6 +37,7 @@ export function MessageActions({
   const [showFeedback, setShowFeedback] = useState(false)
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false)
   const [feedback, setFeedback] = useState<FeedbackState>({ type: initialFeedbackType })
+  const t = useTranslations("chat")
 
   // Update local state when initialFeedbackType changes
   useEffect(() => {
@@ -52,10 +54,10 @@ export function MessageActions({
     try {
       await navigator.clipboard.writeText(content)
       setCopied(true)
-      toast.success("Copied to clipboard")
+      toast.success(t("copiedToClipboard"))
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      toast.error("Failed to copy text")
+      toast.error(t("failedToCopy"))
     }
   }
 
@@ -88,13 +90,13 @@ export function MessageActions({
       if (!response.ok) {
         const errorData = await response.json()
         console.error('[MessageActions] Error response:', errorData)
-        throw new Error(errorData.error || "Failed to record feedback")
+        throw new Error(errorData.error || t("failedToRecordFeedback"))
       }
 
-      toast.success("Thank you for your feedback!")
+      toast.success(t("feedbackThanks"))
     } catch (error) {
       console.error("Failed to submit like:", error)
-      toast.error("Failed to record feedback")
+      toast.error(t("failedToRecordFeedback"))
       // Revert state on error
       updateFeedbackState(feedback.type)
     }
@@ -133,14 +135,14 @@ export function MessageActions({
       if (!response.ok) {
         const errorData = await response.json()
         console.error('[MessageActions] Error response:', errorData)
-        throw new Error(errorData.error || "Failed to submit feedback")
+        throw new Error(errorData.error || t("failedToSubmitFeedback"))
       }
 
-      toast.success("Thank you for your feedback!")
+      toast.success(t("feedbackThanks"))
       setShowFeedback(false)
     } catch (error) {
       console.error("Failed to submit feedback:", error)
-      toast.error("Failed to submit feedback")
+      toast.error(t("failedToSubmitFeedback"))
       updateFeedbackState(feedback.type)
     } finally {
       setIsSubmittingFeedback(false)
@@ -151,10 +153,10 @@ export function MessageActions({
   const handleShare = async () => {
     // Check if user is Pro for sharing
     if (userTier?.tier !== 'pro') {
-      toast.error("Sharing is available for Pro users", {
-        description: "Upgrade to Pro to unlock sharing features",
+      toast.error(t("sharingProOnly"), {
+        description: t("sharingProOnlyDesc"),
         action: {
-          label: "Upgrade",
+          label: t("upgrade"),
           onClick: () => (window.location.href = "/pricing"),
         },
       })
@@ -189,12 +191,12 @@ export function MessageActions({
       const shareUrl = `${window.location.origin}/share/${shareId}`
       await navigator.clipboard.writeText(shareUrl)
 
-      toast.success("Share link copied!", {
-        description: "The link has been copied to your clipboard",
+      toast.success(t("shareLinkCopied"), {
+        description: t("shareLinkCopiedDesc"),
       })
     } catch (error) {
       console.error("Failed to create share:", error)
-      toast.error("Failed to create share link")
+      toast.error(t("failedToCreateShare"))
     }
   }
 
@@ -209,14 +211,14 @@ export function MessageActions({
             "h-7 px-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground",
             copied && "text-green-600 dark:text-green-400"
           )}
-          title="Copy"
+          title={t("copyTitle")}
         >
           {copied ? (
             <Check className="h-3.5 w-3.5" />
           ) : (
             <Copy className="h-3.5 w-3.5" />
           )}
-          <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
+          <span className="hidden sm:inline">{copied ? t("copied") : t("copy")}</span>
         </Button>
 
         <Button
@@ -227,10 +229,10 @@ export function MessageActions({
             "h-7 px-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground",
             feedback.type === 'like' && "text-green-600 dark:text-green-400 bg-green-500/10"
           )}
-          title="Like"
+          title={t("likeTitle")}
         >
           <ThumbsUp className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Like</span>
+          <span className="hidden sm:inline">{t("like")}</span>
         </Button>
 
         <Button
@@ -241,10 +243,10 @@ export function MessageActions({
             "h-7 px-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground",
             feedback.type === 'dislike' && "text-red-600 dark:text-red-400 bg-red-500/10"
           )}
-          title="Dislike"
+          title={t("dislikeTitle")}
         >
           <ThumbsDown className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Dislike</span>
+          <span className="hidden sm:inline">{t("dislike")}</span>
         </Button>
 
         <Button
@@ -252,10 +254,10 @@ export function MessageActions({
           variant="ghost"
           size="sm"
           className="h-7 px-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-          title="Share"
+          title={t("shareTitle")}
         >
           <Share2 className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Share</span>
+          <span className="hidden sm:inline">{t("share")}</span>
         </Button>
       </div>
 

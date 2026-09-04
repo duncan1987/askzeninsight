@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
 
 interface TocItem {
   id: string
@@ -16,6 +17,7 @@ interface TableOfContentsProps {
 export function TableOfContents({ className }: TableOfContentsProps) {
   const [headings, setHeadings] = useState<TocItem[]>([])
   const [activeId, setActiveId] = useState<string>('')
+  const t = useTranslations('blog')
 
   useEffect(() => {
     const article = document.querySelector('[data-article-content]')
@@ -49,7 +51,7 @@ export function TableOfContents({ className }: TableOfContentsProps) {
   return (
     <nav className={cn('sticky top-24', className)} aria-label="Table of contents">
       <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-        On this page
+        {t('onThisPage')}
       </h4>
       <ul className="space-y-1 text-sm">
         {headings.map((heading) => (

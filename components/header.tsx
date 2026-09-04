@@ -8,11 +8,15 @@ import { getSiteConfig } from "@/lib/site"
 import { NotificationIcon } from "@/components/notification-icon"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { getTranslations } from "next-intl/server"
+import { cookies } from "next/headers"
 
 export async function Header() {
   const { siteName } = getSiteConfig()
   const t = await getTranslations("header")
   let session = null
+
+  const cookieStore = await cookies()
+  const locale = cookieStore.get("NEXT_LOCALE")?.value || "en"
 
   try {
     const supabase = await createClient()
@@ -42,17 +46,19 @@ export async function Header() {
           >
             {t("chat")}
           </Link>
+          {locale === "zh" && (
+            <Link
+              href="/study"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {t("course")}
+            </Link>
+          )}
           <Link
             href="/blog"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             {t("blog")}
-          </Link>
-          <Link
-            href="/meditation"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {t("course")}
           </Link>
           <Link
             href="/pricing"

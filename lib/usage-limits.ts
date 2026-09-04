@@ -2,9 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { getUserSubscription } from '@/lib/subscription'
 
 export const USAGE_LIMITS = {
-  ANONYMOUS_DAILY: 10, // 10 messages per day for anonymous users
-  FREE_DAILY: 10, // 10 messages per day for free authenticated users
-  PRO_DAILY: 30, // 30 messages per day for pro users (premium quota)
+  ANONYMOUS_DAILY: 10,
+  FREE_DAILY: 10,
+  PRO_DAILY: 30,
+  APPROVED_ZH_DAILY: Infinity,
 }
 
 export const MESSAGE_LENGTH_LIMIT = 10000 // Max characters per message to prevent abuse
@@ -43,6 +44,9 @@ export async function isWithinPremiumQuota(userId?: string): Promise<boolean> {
   }
 
   const subscription = await getUserSubscription(userId)
+  if (subscription.tier === 'approved_zh') {
+    return true
+  }
   if (subscription.tier !== 'pro') {
     return false // Free tier doesn't get premium quota
   }
@@ -66,9 +70,13 @@ export async function checkUsageLimit(
 ): Promise<{ canProceed: boolean; limit: number; remaining: number }> {
   const subscription = await getUserSubscription(userId)
 
+  if (subscription.tier === 'approved_zh') {
+    return { canProceed: true, limit: Infinity, remaining: Infinity }
+  }
+
   // Determine limit based on tier
   let limit: number
-  let currentTier: 'anonymous' | 'free' | 'pro'
+  let currentTier: 'anonymous' | 'free' | 'pro' | 'approved_zh'
   let currentSubscriptionId: string | undefined
 
   if (!userId || subscription.tier === 'anonymous') {
@@ -174,9 +182,13 @@ export async function checkUsageLimit(
 export async function getUsageStats(userId?: string) {
   const subscription = await getUserSubscription(userId)
 
+  if (subscription.tier === 'approved_zh') {
+    return { used: 0, limit: Infinity, remaining: Infinity, percentage: 0 }
+  }
+
   // Determine limit based on tier
   let limit: number
-  let currentTier: 'anonymous' | 'free' | 'pro'
+  let currentTier: 'anonymous' | 'free' | 'pro' | 'approved_zh'
   let currentSubscriptionId: string | undefined
 
   if (!userId || subscription.tier === 'anonymous') {
@@ -297,7 +309,7 @@ export async function recordUsage(
   }
 
   // Get user's current tier
-  let userTier: 'anonymous' | 'free' | 'pro' = 'anonymous'
+  let userTier: 'anonymous' | 'free' | 'pro' | 'approved_zh' = 'anonymous'
   let subscriptionId: string | undefined
 
   if (userId) {

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export type UserTier = 'anonymous' | 'free' | 'pro'
+export type UserTier = 'anonymous' | 'free' | 'pro' | 'approved_zh'
 export type PlanType = 'pro' | 'annual'
 
 export interface SubscriptionInfo {
@@ -9,6 +9,7 @@ export interface SubscriptionInfo {
   plan: PlanType | null
   model: string
   apiKey: string
+  apiUrl: string
   saveHistory: boolean
 }
 
@@ -17,26 +18,49 @@ export interface SubscriptionInfo {
  */
 export async function getUserSubscription(userId?: string): Promise<SubscriptionInfo> {
   // Anonymous users use free tier
+  const geminiKey = process.env.GEMINI_API_KEY
+  const useGemini = !!geminiKey
+
   if (!userId) {
     return {
       tier: 'anonymous',
       plan: null,
-      model: 'glm-5',
-      apiKey: process.env.ZHIPU_API_FREE || '',
+      model: useGemini ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash') : 'glm-4.7-flash',
+      apiKey: useGemini ? geminiKey : (process.env.ZHIPU_API_FREE || ''),
+      apiUrl: useGemini ? (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions') : 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
       saveHistory: false,
     }
   }
 
-  // Use admin client when userId is provided (for API routes/tests)
-  // This bypasses RLS and allows direct lookup by user_id
+  // Check if user is an approved zh user (username-based auth)
   const supabase = createAdminClient()
+
+  if (supabase) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username, account_status')
+      .eq('id', userId)
+      .single()
+
+    if (profile?.username && profile.account_status === 'approved') {
+      return {
+        tier: 'approved_zh',
+        plan: null,
+        model: useGemini ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash') : 'glm-4.7-flash',
+        apiKey: useGemini ? geminiKey : (process.env.ZHIPU_API_FREE || ''),
+        apiUrl: useGemini ? (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions') : 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+        saveHistory: true,
+      }
+    }
+  }
 
   if (!supabase) {
     return {
       tier: 'free',
       plan: null,
-      model: 'glm-5',
-      apiKey: process.env.ZHIPU_API_FREE || '',
+      model: useGemini ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash') : 'glm-4.7-flash',
+      apiKey: useGemini ? geminiKey : (process.env.ZHIPU_API_FREE || ''),
+      apiUrl: useGemini ? (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions') : 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
       saveHistory: false,
     }
   }
@@ -130,13 +154,18 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
     subscription.refund_status !== 'rejected'
   const plan = subscription?.plan as PlanType | null | undefined
 
+  const proKey = process.env.PRO_API_KEY || (useGemini ? geminiKey : process.env.ZHIPU_API_KEY)
+
   return {
     tier: isPro ? 'pro' : 'free',
     plan: isPro ? (plan || 'pro') : null,
-    model: isPro ? 'glm-5' : 'glm-5',
-    apiKey: isPro
-      ? (process.env.ZHIPU_API_KEY || '')
-      : (process.env.ZHIPU_API_FREE || ''),
+    model: isPro
+      ? (process.env.PRO_MODEL || (useGemini ? 'gemini-2.5-flash' : 'glm-5'))
+      : (useGemini ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash') : 'glm-4.7-flash'),
+    apiKey: isPro ? (proKey || '') : (useGemini ? geminiKey : (process.env.ZHIPU_API_FREE || '')),
+    apiUrl: isPro
+      ? (process.env.PRO_API_URL || (useGemini ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' : 'https://open.bigmodel.cn/api/paas/v4/chat/completions'))
+      : (useGemini ? (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions') : 'https://open.bigmodel.cn/api/paas/v4/chat/completions'),
     saveHistory: isPro,
   }
 }

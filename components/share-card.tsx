@@ -1,5 +1,9 @@
+"use client"
+
 import React from "react"
 import type { Message } from "@/components/chat-interface"
+import { useTranslations } from "next-intl"
+import { useLocale } from "next-intl"
 
 interface ShareCardProps {
   messages: Message[]
@@ -7,8 +11,11 @@ interface ShareCardProps {
 }
 
 export function ShareCard({ messages, username }: ShareCardProps) {
+  const t = useTranslations("share")
+  const locale = useLocale()
+
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString(locale === "zh" ? "zh-CN" : "en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -34,7 +41,6 @@ export function ShareCard({ messages, username }: ShareCardProps) {
         boxSizing: "border-box",
       }}
     >
-      {/* Header */}
       <div
         style={{
           all: "initial",
@@ -74,15 +80,14 @@ export function ShareCard({ messages, username }: ShareCardProps) {
             />
           </div>
           <div style={{ all: "initial" }}>
-            <h1 style={{ all: "initial", margin: 0, fontSize: "1.5rem", fontWeight: "bold", color: "#ffffff" }}>Spiritual Conversation</h1>
+            <h1 style={{ all: "initial", margin: 0, fontSize: "1.5rem", fontWeight: "bold", color: "#ffffff" }}>{t("cardTitle")}</h1>
             <p style={{ all: "initial", margin: "0.25rem 0 0 0", fontSize: "0.875rem", color: "#fef3c7" }}>
-              with koji • Emptiness and Stillness
+              {t("cardSubtitle")}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Content */}
       <div
         style={{
           all: "initial",
@@ -177,7 +182,6 @@ export function ShareCard({ messages, username }: ShareCardProps) {
         ))}
       </div>
 
-      {/* Footer */}
       <div
         style={{
           all: "initial",
@@ -190,17 +194,16 @@ export function ShareCard({ messages, username }: ShareCardProps) {
       >
         <div style={{ all: "initial", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ all: "initial", fontSize: "0.75rem", color: "#475569" }}>
-            <p style={{ all: "initial", margin: 0, fontWeight: "500" }}>{formatDate(new Date())}  •  {messages.length} messages</p>
+            <p style={{ all: "initial", margin: 0, fontWeight: "500" }}>{formatDate(new Date())}  •  {messages.length} {t("messages")}</p>
           </div>
           <div style={{ all: "initial", textAlign: "right" }}>
             <p style={{ all: "initial", margin: 0, fontSize: "0.75rem", fontWeight: "600", color: "#8B5A2B" }}>
-              Ask Zen Insight
+              {t("siteName")}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Decorative Elements */}
       <div
         style={{
           all: "initial",

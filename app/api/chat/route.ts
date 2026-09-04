@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/server'
 import { checkUsageLimit, recordUsage, isWithinPremiumQuota, MESSAGE_LENGTH_LIMIT } from '@/lib/usage-limits'
 import { getUserSubscription } from '@/lib/subscription'
 import { containsSensitiveKeywords, getCrisisResourcesMessage } from '@/lib/sensitive-keywords'
+import { searchRelevantCourses, buildCourseContext } from '@/lib/course-search'
 
 // Vercel Pro plan supports up to 60s timeout
 // If you're on Hobby plan, this will be limited to 10s
@@ -156,14 +157,17 @@ export async function POST(req: Request) {
 
   // Fair Use Policy: Check if pro user is within premium quota
   // If exceeded, downgrade to basic model (glm-5)
+  // approved_zh users are never downgraded
   let model = subscription.model
   let isPremiumModel = false
 
-  if (subscription.tier === 'pro') {
+  if (subscription.tier === 'approved_zh') {
+    isPremiumModel = true
+  } else if (subscription.tier === 'pro') {
     const withinPremiumQuota = await isWithinPremiumQuota(userId)
     if (!withinPremiumQuota) {
       console.log('[Chat API] Premium quota exceeded, downgrading to basic model')
-      model = 'glm-5'
+      model = 'glm-4.7-flash'
       isPremiumModel = false
     } else {
       isPremiumModel = true
@@ -171,6 +175,7 @@ export async function POST(req: Request) {
   }
 
   const apiKey = subscription.apiKey
+  const apiUrl = subscription.apiUrl
 
   if (!apiKey) {
     console.error('[Chat API] API key not configured for tier:', subscription.tier)
@@ -306,8 +311,25 @@ export async function POST(req: Request) {
       timeoutController.abort()
     })
 
-    // API endpoint from environment variable (supports different providers)
-    const apiUrl = process.env.AI_API_URL || "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+    // RAG: Search relevant courses for zh locale users
+    let systemPrompt = getSystemPrompt(locale)
+    let courseRefs: import('@/lib/course-search').CourseReference[] = []
+    if (locale === 'zh') {
+      try {
+        const lastUserMsg = [...openaiMessages].reverse().find(m => m.role === 'user')
+        if (lastUserMsg) {
+          courseRefs = await searchRelevantCourses(lastUserMsg.content, locale)
+          if (courseRefs.length > 0) {
+            systemPrompt += buildCourseContext(courseRefs, locale)
+            console.log('[Chat API] Injected', courseRefs.length, 'course references')
+          }
+        }
+      } catch (err) {
+        console.error('[Chat API] Course search error:', err)
+      }
+    }
+
+    // Use provider-specific API URL from subscription config
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -317,7 +339,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         model: model,
         messages: [
-          { role: "system", content: getSystemPrompt(locale) },
+          { role: "system", content: systemPrompt },
           ...openaiMessages,
         ],
         stream: true,
@@ -338,8 +360,8 @@ export async function POST(req: Request) {
       const errorText = await response.text()
       console.error('[Chat API] Zhipu API error:', response.status, errorText)
       return new Response(
-        JSON.stringify({ error: getRandomZenError() }),
-        { status: response.status, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ error: `AI service error (${response.status}): ${errorText.substring(0, 200)}` }),
+        { status: 502, headers: { "Content-Type": "application/json" } }
       )
     }
 
@@ -390,6 +412,12 @@ export async function POST(req: Request) {
     // Include fair use notice in response headers if applicable
     if (fairUseNotice) {
       headers["X-Fair-Use-Notice"] = encodeURIComponent(fairUseNotice)
+    }
+
+    if (courseRefs.length > 0) {
+      headers["X-Course-Refs"] = encodeURIComponent(JSON.stringify(
+        courseRefs.map(r => ({ id: r.id, title: r.title, similarity: Math.round(r.similarity * 100) / 100 }))
+      ))
     }
 
     const totalElapsed = Date.now() - startTime
