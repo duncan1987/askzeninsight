@@ -20,14 +20,19 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
   // Anonymous users use free tier
   const geminiKey = process.env.GEMINI_API_KEY
   const useGemini = !!geminiKey
+  const freeApiKey = process.env.ZHIPU_API_KEY || process.env.ZHIPU_API_FREE || ''
+  const freeModel = useGemini ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash') : 'glm-4-flash'
+  const freeApiUrl = useGemini
+    ? (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions')
+    : 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
 
   if (!userId) {
     return {
       tier: 'anonymous',
       plan: null,
-      model: useGemini ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash') : 'glm-4.7-flash',
-      apiKey: useGemini ? geminiKey : (process.env.ZHIPU_API_FREE || ''),
-      apiUrl: useGemini ? (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions') : 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+      model: freeModel,
+      apiKey: freeApiKey,
+      apiUrl: freeApiUrl,
       saveHistory: false,
     }
   }
@@ -46,9 +51,9 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
       return {
         tier: 'approved_zh',
         plan: null,
-        model: useGemini ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash') : 'glm-4.7-flash',
-        apiKey: useGemini ? geminiKey : (process.env.ZHIPU_API_FREE || ''),
-        apiUrl: useGemini ? (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions') : 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+        model: freeModel,
+        apiKey: freeApiKey,
+        apiUrl: freeApiUrl,
         saveHistory: true,
       }
     }
@@ -58,9 +63,9 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
     return {
       tier: 'free',
       plan: null,
-      model: useGemini ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash') : 'glm-4.7-flash',
-      apiKey: useGemini ? geminiKey : (process.env.ZHIPU_API_FREE || ''),
-      apiUrl: useGemini ? (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions') : 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+      model: freeModel,
+      apiKey: freeApiKey,
+      apiUrl: freeApiUrl,
       saveHistory: false,
     }
   }
@@ -155,17 +160,17 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
   const plan = subscription?.plan as PlanType | null | undefined
 
   const proKey = process.env.PRO_API_KEY || (useGemini ? geminiKey : process.env.ZHIPU_API_KEY)
+  const proModel = process.env.PRO_MODEL || (useGemini ? 'gemini-2.5-flash' : 'glm-4-flash')
+  const proApiUrl = process.env.PRO_API_URL || (useGemini
+    ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
+    : 'https://open.bigmodel.cn/api/paas/v4/chat/completions')
 
   return {
     tier: isPro ? 'pro' : 'free',
     plan: isPro ? (plan || 'pro') : null,
-    model: isPro
-      ? (process.env.PRO_MODEL || (useGemini ? 'gemini-2.5-flash' : 'glm-5'))
-      : (useGemini ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash') : 'glm-4.7-flash'),
-    apiKey: isPro ? (proKey || '') : (useGemini ? geminiKey : (process.env.ZHIPU_API_FREE || '')),
-    apiUrl: isPro
-      ? (process.env.PRO_API_URL || (useGemini ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' : 'https://open.bigmodel.cn/api/paas/v4/chat/completions'))
-      : (useGemini ? (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions') : 'https://open.bigmodel.cn/api/paas/v4/chat/completions'),
+    model: isPro ? proModel : freeModel,
+    apiKey: isPro ? (proKey || '') : freeApiKey,
+    apiUrl: isPro ? proApiUrl : freeApiUrl,
     saveHistory: isPro,
   }
 }
