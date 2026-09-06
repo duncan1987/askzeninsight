@@ -60,12 +60,14 @@ export async function Header() {
           >
             {t("blog")}
           </Link>
-          <Link
-            href="/pricing"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {t("pricing")}
-          </Link>
+          {locale !== "zh" && (
+            <Link
+              href="/pricing"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {t("pricing")}
+            </Link>
+          )}
           <Link
             href="/contact"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"

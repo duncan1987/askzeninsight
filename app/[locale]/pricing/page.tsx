@@ -5,6 +5,8 @@ import { PricingCard } from '@/components/pricing-card'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
+import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +21,13 @@ export const metadata: Metadata = {
 }
 
 export default async function PricingPage() {
+  const cookieStore = await cookies()
+  const locale = cookieStore.get('NEXT_LOCALE')?.value || 'en'
+
+  if (locale === 'zh') {
+    redirect('/')
+  }
+
   const t = await getTranslations('pricing')
   const tc = await getTranslations('common')
 

@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { Header } from "@/components/header"
 import { cookies } from "next/headers"
 import { CourseDetailClient } from "./course-detail-client"
@@ -21,7 +22,9 @@ export default async function CoursePage({ params }: CoursePageProps) {
   }
 
   const supabase = await createClient()
-  if (!supabase) {
+  const adminClient = createAdminClient()
+
+  if (!supabase && !adminClient) {
     notFound()
   }
 
@@ -36,8 +39,8 @@ export default async function CoursePage({ params }: CoursePageProps) {
     notFound()
   }
 
-  const { data: { user } } = await supabase.auth.getUser()
   let isCheckedIn = false
+  const { data: { user } } = await supabase.auth.getUser()
 
   if (user) {
     const { data: checkin } = await supabase

@@ -52,7 +52,12 @@ export function CourseDetailClient({ course, isCheckedIn, comments: initialComme
   const [contentHtml, setContentHtml] = useState(course.content_html)
   const [speechState, setSpeechState] = useState<SpeechState>("idle")
   const [copied, setCopied] = useState(false)
+  const [ttsSupported, setTtsSupported] = useState(false)
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
+
+  useEffect(() => {
+    setTtsSupported(typeof window !== "undefined" && "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined")
+  }, [])
 
   useEffect(() => {
     setCheckedIn(isCheckedIn)
@@ -221,31 +226,35 @@ export function CourseDetailClient({ course, isCheckedIn, comments: initialComme
                 <Share2 className="h-4 w-4" />
               )}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9"
-              onClick={handleSpeak}
-              title={speechState === "idle" ? "朗读课程" : speechState === "playing" ? "暂停" : "继续朗读"}
-            >
-              {speechState === "idle" ? (
-                <Volume2 className="h-4 w-4" />
-              ) : speechState === "playing" ? (
-                <Pause className="h-4 w-4" />
-              ) : (
-                <Volume2 className="h-4 w-4 text-amber-600" />
-              )}
-            </Button>
-            {speechState !== "idle" && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                onClick={handleStop}
-                title="停止朗读"
-              >
-                <Square className="h-4 w-4" />
-              </Button>
+            {ttsSupported && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={handleSpeak}
+                  title={speechState === "idle" ? "朗读课程" : speechState === "playing" ? "暂停" : "继续朗读"}
+                >
+                  {speechState === "idle" ? (
+                    <Volume2 className="h-4 w-4" />
+                  ) : speechState === "playing" ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Volume2 className="h-4 w-4 text-amber-600" />
+                  )}
+                </Button>
+                {speechState !== "idle" && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={handleStop}
+                    title="停止朗读"
+                  >
+                    <Square className="h-4 w-4" />
+                  </Button>
+                )}
+              </>
             )}
           </div>
         )}
