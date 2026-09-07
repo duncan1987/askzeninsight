@@ -167,7 +167,7 @@ export async function POST(req: Request) {
     const withinPremiumQuota = await isWithinPremiumQuota(userId)
     if (!withinPremiumQuota) {
       console.log('[Chat API] Premium quota exceeded, downgrading to basic model')
-      model = 'glm-4-flash'
+      model = 'glm-4-flash-250414'
       isPremiumModel = false
     } else {
       isPremiumModel = true

@@ -71,7 +71,7 @@ export function ChatInterface() {
   const [isSaving, setIsSaving] = useState(false)
   const [userTier, setUserTier] = useState<UserTier>({
     tier: 'anonymous',
-    model: 'glm-4-flash',
+    model: 'glm-4-flash-250414',
     saveHistory: false,
     authenticated: false,
     avatar_url: '',
@@ -89,7 +89,7 @@ export function ChatInterface() {
   const [showDisclaimer, setShowDisclaimer] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [shownToastThresholds, setShownToastThresholds] = useState<Set<number>>(new Set())
-  const [currentModel, setCurrentModel] = useState<string>("glm-4-flash")
+  const [currentModel, setCurrentModel] = useState<string>("glm-4-flash-250414")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const loadedFeedbackMessageIds = useRef<Set<string>>(new Set())
 
@@ -368,7 +368,7 @@ export function ChatInterface() {
       if (fairUseNoticeHeader) {
         const decodedNotice = decodeURIComponent(fairUseNoticeHeader)
         setFairUseNotice(decodedNotice)
-        setCurrentModel("glm-4-flash")
+        setCurrentModel("glm-4-flash-250414")
       }
 
       const courseRefsHeader = response.headers.get("X-Course-Refs")

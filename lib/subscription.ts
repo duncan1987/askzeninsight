@@ -21,7 +21,7 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
   const geminiKey = process.env.GEMINI_API_KEY
   const useGemini = !!geminiKey
   const freeApiKey = process.env.ZHIPU_API_KEY || process.env.ZHIPU_API_FREE || ''
-  const freeModel = useGemini ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash') : 'glm-4-flash'
+  const freeModel = useGemini ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash') : 'glm-4-flash-250414'
   const freeApiUrl = useGemini
     ? (process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions')
     : 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
@@ -160,7 +160,7 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
   const plan = subscription?.plan as PlanType | null | undefined
 
   const proKey = process.env.PRO_API_KEY || (useGemini ? geminiKey : process.env.ZHIPU_API_KEY)
-  const proModel = process.env.PRO_MODEL || (useGemini ? 'gemini-2.5-flash' : 'glm-4-flash')
+  const proModel = process.env.PRO_MODEL || (useGemini ? 'gemini-2.5-flash' : 'glm-4-flash-250414')
   const proApiUrl = process.env.PRO_API_URL || (useGemini
     ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
     : 'https://open.bigmodel.cn/api/paas/v4/chat/completions')
