@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createHash } from 'crypto'
+import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts'
+import { createClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-const TTS_API_URL = 'https://open.bigmodel.cn/api/paas/v4/audio/speech'
 const MAX_CHUNK_CHARS = 700
+const TTS_VOICE = process.env.TTS_EDGE_VOICE || 'zh-CN-XiaoxiaoNeural'
+const CACHE_BUCKET = 'tts-cache'
+const EDGE_TTS_RETRIES = 3
 
 function stripHtml(html: string): string {
   return html
@@ -57,44 +64,70 @@ function splitIntoChunks(text: string): string[] {
   return chunks
 }
 
-async function synthesizeChunk(text: string): Promise<Buffer> {
-  const apiKey = process.env.ZHIPU_API_KEY || process.env.ZHIPU_API_FREE
-  if (!apiKey) {
-    throw new Error('TTS API key is not configured')
-  }
+// The text is embedded in an SSML XML document, so XML-special characters must be escaped
+function xmlEscape(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
 
-  const response = await fetch(TTS_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'cogtts',
-      input: text,
-      voice: 'tongtong',
-      response_format: 'wav',
-    }),
+async function synthesizeChunkOnce(text: string): Promise<Buffer> {
+  const tts = new MsEdgeTTS()
+  await tts.setMetadata(TTS_VOICE, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3)
+  const { audioStream } = tts.toStream(text)
+
+  const chunks: Buffer[] = []
+  await new Promise<void>((resolve, reject) => {
+    audioStream.on('data', (d: Buffer) => chunks.push(d))
+    audioStream.on('close', () => resolve())
+    audioStream.on('end', () => resolve())
+    audioStream.on('error', reject)
   })
 
-  if (!response.ok) {
-    const errText = await response.text().catch(() => '')
-    console.error('[Study TTS] Zhipu API error:', response.status, errText.slice(0, 200))
-    throw new Error(`TTS API returned ${response.status}`)
-  }
-
-  const buffer = Buffer.from(await response.arrayBuffer())
+  const buffer = Buffer.concat(chunks)
   if (buffer.length < 100) {
-    throw new Error('TTS API returned empty audio')
+    throw new Error('Edge TTS returned empty audio')
   }
-
   return buffer
+}
+
+async function synthesizeChunk(text: string): Promise<Buffer> {
+  let lastError: unknown = null
+  for (let attempt = 1; attempt <= EDGE_TTS_RETRIES; attempt++) {
+    try {
+      return await synthesizeChunkOnce(text)
+    } catch (error) {
+      lastError = error
+      console.error(`[Study TTS] Edge TTS attempt ${attempt}/${EDGE_TTS_RETRIES} failed:`, error)
+      if (attempt < EDGE_TTS_RETRIES) {
+        await new Promise((r) => setTimeout(r, 1000 * attempt))
+      }
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Edge TTS synthesis failed')
+}
+
+function audioResponse(audio: Buffer, totalChunks: number, chunkIndex: number, cached: boolean): NextResponse {
+  return new NextResponse(new Uint8Array(audio), {
+    status: 200,
+    headers: {
+      'Content-Type': 'audio/mpeg',
+      'Content-Length': String(audio.length),
+      'X-Total-Chunks': String(totalChunks),
+      'X-Chunk-Index': String(chunkIndex),
+      'X-Cache': cached ? 'hit' : 'miss',
+      'Cache-Control': 'no-store',
+    },
+  })
 }
 
 export async function POST(req: Request) {
   try {
     // 1. Auth check
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     if (!supabase) {
       return NextResponse.json(
         { error: 'Database is not configured' },
@@ -103,13 +136,49 @@ export async function POST(req: Request) {
     }
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    if (!authError && user) {
+      return handleTtsRequest(supabase, user.id, req)
     }
 
+    // Cookie session missing: try Bearer token from Authorization header.
+    // Requests authenticated this way get a user-context client so that
+    // RLS policies evaluate queries as the token's user.
+    const authHeader = req.headers.get('authorization')
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      const { data: { user: tokenUser } } = await supabase.auth.getUser(token)
+      if (tokenUser) {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        if (url && anonKey) {
+          const userClient = createClient(url, anonKey, {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: `Bearer ${token}` } },
+          })
+          return handleTtsRequest(userClient, tokenUser.id, req)
+        }
+      }
+    }
+
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    )
+  } catch (error) {
+    console.error('[Study TTS] POST error:', error)
+    return NextResponse.json(
+      { error: 'Failed to synthesize audio' },
+      { status: 500 }
+    )
+  }
+}
+
+async function handleTtsRequest(
+  supabase: SupabaseClient,
+  userId: string,
+  req: Request
+): Promise<NextResponse> {
+  try {
     const body = await req.json()
     const { courseId, chunkIndex } = body as { courseId: string; chunkIndex: number }
 
@@ -124,7 +193,7 @@ export async function POST(req: Request) {
     const { data: checkin, error: checkinError } = await supabase
       .from('study_checkins')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('course_id', courseId)
       .maybeSingle()
 
@@ -169,19 +238,52 @@ export async function POST(req: Request) {
       )
     }
 
-    // 5. Synthesize the requested chunk
-    const audio = await synthesizeChunk(chunks[chunkIndex])
+    // 5. Cache lookup: path keyed by course id + content hash + chunk index,
+    //    so edited content naturally invalidates old cache entries
+    const contentHash = createHash('sha256').update(fullText).digest('hex').slice(0, 16)
+    const objectPath = `${courseId}/${contentHash}/chunk_${chunkIndex}.mp3`
 
-    return new NextResponse(new Uint8Array(audio), {
-      status: 200,
-      headers: {
-        'Content-Type': 'audio/wav',
-        'Content-Length': String(audio.length),
-        'X-Total-Chunks': String(chunks.length),
-        'X-Chunk-Index': String(chunkIndex),
-        'Cache-Control': 'no-store',
-      },
-    })
+    const admin = createAdminClient()
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Database is not configured' },
+        { status: 500 }
+      )
+    }
+
+    const { data: cachedBlob, error: cacheError } = await admin.storage
+      .from(CACHE_BUCKET)
+      .download(objectPath)
+
+    if (!cacheError && cachedBlob) {
+      const audio = Buffer.from(await cachedBlob.arrayBuffer())
+      if (audio.length > 100) {
+        return audioResponse(audio, chunks.length, chunkIndex, true)
+      }
+    }
+    if (cacheError) {
+      // Expected for cache misses, but log unexpected storage errors
+      const msg = String(cacheError.message || cacheError)
+      if (!/not found|does not exist|404/i.test(msg)) {
+        console.error('[Study TTS] cache download error:', msg.slice(0, 200))
+      }
+    }
+
+    // 6. Synthesize with Edge TTS (free, no API key) and update the cache
+    const audio = await synthesizeChunk(xmlEscape(chunks[chunkIndex]))
+
+    const { error: uploadError } = await admin.storage
+      .from(CACHE_BUCKET)
+      .upload(objectPath, new Uint8Array(audio), {
+        contentType: 'audio/mpeg',
+        upsert: true,
+      })
+    if (uploadError) {
+      // Cache write failure must not break playback
+      console.error('[Study TTS] cache upload failed (non-fatal):', String(uploadError).slice(0, 200))
+    }
+
+    return audioResponse(audio, chunks.length, chunkIndex, false)
   } catch (error) {
     console.error('[Study TTS] POST error:', error)
     return NextResponse.json(

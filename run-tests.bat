@@ -7,4 +7,11 @@ for /f "tokens=1,2 delims==" %%a in (.env.local) do (
 )
 
 REM Run Jest with the loaded environment variables
-"C:\Program Files\nodejs\node.exe" node_modules\jest\bin\jest.js %*
+where node >nul 2>&1
+if %errorlevel%==0 (
+    node node_modules\jest\bin\jest.js %*
+) else if exist "C:\nvm4w\nodejs\node.exe" (
+    "C:\nvm4w\nodejs\node.exe" node_modules\jest\bin\jest.js %*
+) else (
+    "C:\Program Files\nodejs\node.exe" node_modules\jest\bin\jest.js %*
+)
