@@ -224,7 +224,7 @@ export default function SignInPage() {
                 <button
                   type="button"
                   className="text-xs text-gray-400 hover:text-gray-600"
-                  onClick={() => alert(t('forgotPasswordHint'))}
+                  onClick={() => router.push('/auth/forgot-password')}
                 >
                   {t('forgotPassword')}
                 </button>

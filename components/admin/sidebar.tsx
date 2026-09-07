@@ -12,6 +12,7 @@ import {
   BarChart3,
   FileText,
   LogOut,
+  UsersRound,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -22,6 +23,7 @@ const menuItems = [
   { href: "/admin/study/courses", label: "课程管理", icon: BookOpen },
   { href: "/admin/study/comments", label: "评论审核", icon: MessageSquare },
   { href: "/admin/study/checkins", label: "打卡统计", icon: BarChart3 },
+  { href: "/admin/study/groups", label: "用户组管理", icon: UsersRound },
   { href: "/admin/blog", label: "博客管理", icon: FileText },
 ]
 

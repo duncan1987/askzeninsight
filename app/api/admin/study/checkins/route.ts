@@ -27,6 +27,37 @@ export async function GET(req: Request) {
       )
     }
 
+    const { searchParams } = new URL(req.url)
+    const groupId = searchParams.get('group')
+
+    // Fetch available groups for the filter dropdown
+    const { data: groups, error: groupsError } = await adminClient
+      .from('user_groups')
+      .select('id, name')
+      .order('created_at', { ascending: true })
+
+    if (groupsError) {
+      console.error('[Admin Study Checkins] Groups fetch error:', groupsError)
+    }
+
+    // If a group filter is set, get its member user IDs
+    let groupUserIds: string[] | null = null
+    if (groupId) {
+      const { data: members, error: membersError } = await adminClient
+        .from('user_group_members')
+        .select('user_id')
+        .eq('group_id', groupId)
+
+      if (membersError) {
+        console.error('[Admin Study Checkins] Group members fetch error:', membersError)
+        return NextResponse.json(
+          { error: 'Failed to fetch group members' },
+          { status: 500 }
+        )
+      }
+      groupUserIds = (members || []).map((m) => m.user_id)
+    }
+
     const { data: courses, error: coursesError } = await adminClient
       .from('study_courses')
       .select('id, title')
@@ -40,9 +71,15 @@ export async function GET(req: Request) {
       )
     }
 
-    const { data: checkinUserIds, error: checkinUserIdsError } = await adminClient
+    let checkinQuery = adminClient
       .from('study_checkins')
       .select('user_id')
+
+    if (groupUserIds) {
+      checkinQuery = checkinQuery.in('user_id', groupUserIds)
+    }
+
+    const { data: checkinUserIds, error: checkinUserIdsError } = await checkinQuery
 
     if (checkinUserIdsError) {
       console.error('[Admin Study Checkins] Checkin user IDs fetch error:', checkinUserIdsError)
@@ -56,10 +93,12 @@ export async function GET(req: Request) {
 
     let users: { id: string; username: string | null }[] = []
     if (distinctUserIds.length > 0) {
-      const { data: profiles, error: profilesError } = await adminClient
+      let profilesQuery = adminClient
         .from('profiles')
         .select('id, username')
         .in('id', distinctUserIds)
+
+      const { data: profiles, error: profilesError } = await profilesQuery
 
       if (profilesError) {
         console.error('[Admin Study Checkins] Profiles fetch error:', profilesError)
@@ -67,9 +106,15 @@ export async function GET(req: Request) {
       users = (profiles || []) as { id: string; username: string | null }[]
     }
 
-    const { data: checkins, error: checkinsError } = await adminClient
+    let checkinsQuery = adminClient
       .from('study_checkins')
       .select('user_id, course_id')
+
+    if (groupUserIds) {
+      checkinsQuery = checkinsQuery.in('user_id', groupUserIds)
+    }
+
+    const { data: checkins, error: checkinsError } = await checkinsQuery
 
     if (checkinsError) {
       console.error('[Admin Study Checkins] Checkins fetch error:', checkinsError)
@@ -127,6 +172,7 @@ export async function GET(req: Request) {
         totalCourses,
         avgRate,
       },
+      groups: (groups || []).map((g) => ({ id: g.id, name: g.name })),
     })
   } catch (error) {
     console.error('[Admin Study Checkins] GET error:', error)

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, Lock, Volume2, Pause, Square, Share2, Check } from "lucide-react"
+import { ArrowLeft, Lock, Volume2, Pause, Square, Share2, Check, Loader2 } from "lucide-react"
 import { useRouter } from "@/i18n/navigation"
 
 interface Course {
@@ -28,7 +28,7 @@ interface CourseDetailClientProps {
   comments: Comment[]
 }
 
-type SpeechState = "idle" | "playing" | "paused"
+type SpeechState = "idle" | "loading" | "playing" | "paused"
 
 function stripHtml(html: string): string {
   return html
@@ -53,10 +53,23 @@ export function CourseDetailClient({ course, isCheckedIn, comments: initialComme
   const [speechState, setSpeechState] = useState<SpeechState>("idle")
   const [copied, setCopied] = useState(false)
   const [ttsSupported, setTtsSupported] = useState(false)
+  const [useServerTts, setUseServerTts] = useState(false)
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
+  const audioUrlsRef = useRef<Map<number, string>>(new Map())
+  const totalChunksRef = useRef(0)
+  const audioElRef = useRef<HTMLAudioElement | null>(null)
+  const serverTtsStoppedRef = useRef(false)
 
   useEffect(() => {
-    setTtsSupported(typeof window !== "undefined" && "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined")
+    const webSpeechOk =
+      typeof window !== "undefined" &&
+      "speechSynthesis" in window &&
+      typeof SpeechSynthesisUtterance !== "undefined"
+    // WeChat built-in browser has unreliable Web Speech support — always use server TTS there
+    const isWeChat =
+      typeof navigator !== "undefined" && /MicroMessenger/i.test(navigator.userAgent)
+    setTtsSupported(webSpeechOk)
+    setUseServerTts(!webSpeechOk || isWeChat)
   }, [])
 
   useEffect(() => {
@@ -70,11 +83,131 @@ export function CourseDetailClient({ course, isCheckedIn, comments: initialComme
       if (typeof window !== "undefined" && window.speechSynthesis) {
         window.speechSynthesis.cancel()
       }
+      serverTtsStoppedRef.current = true
+      if (audioElRef.current) {
+        audioElRef.current.pause()
+        audioElRef.current = null
+      }
+      for (const url of audioUrlsRef.current.values()) {
+        URL.revokeObjectURL(url)
+      }
+      audioUrlsRef.current.clear()
     }
   }, [])
 
+  const fetchServerChunk = useCallback(
+    async (index: number): Promise<string | null> => {
+      const cached = audioUrlsRef.current.get(index)
+      if (cached) return cached
+
+      const res = await fetch("/api/study/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId: course.id, chunkIndex: index }),
+      })
+
+      if (res.status === 401) {
+        router.push(`/auth/sign-in?redirect=/study/${course.id}`)
+        return null
+      }
+      if (!res.ok) return null
+
+      const contentType = res.headers.get("content-type") || ""
+      if (!contentType.includes("audio")) return null
+
+      totalChunksRef.current = parseInt(res.headers.get("x-total-chunks") || "0", 10)
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      audioUrlsRef.current.set(index, url)
+      return url
+    },
+    [course.id, router]
+  )
+
+  const playServerChunk = useCallback(
+    (index: number, url: string) => {
+      const audio = new Audio(url)
+      audioElRef.current = audio
+
+      audio.onended = () => {
+        if (serverTtsStoppedRef.current) return
+        const next = index + 1
+        if (next < totalChunksRef.current) {
+          setSpeechState("loading")
+          fetchServerChunk(next)
+            .then((nextUrl) => {
+              if (serverTtsStoppedRef.current) return
+              if (nextUrl) {
+                playServerChunk(next, nextUrl)
+              } else {
+                setSpeechState("idle")
+              }
+            })
+            .catch(() => {
+              if (!serverTtsStoppedRef.current) setSpeechState("idle")
+            })
+        } else {
+          setSpeechState("idle")
+        }
+      }
+      audio.onerror = () => {
+        if (!serverTtsStoppedRef.current) setSpeechState("idle")
+      }
+      audio.play().catch(() => {
+        if (!serverTtsStoppedRef.current) setSpeechState("idle")
+      })
+      setSpeechState("playing")
+
+      // Prefetch the next chunk while this one plays
+      const prefetchIdx = index + 1
+      if (prefetchIdx < totalChunksRef.current && !audioUrlsRef.current.has(prefetchIdx)) {
+        fetchServerChunk(prefetchIdx).catch(() => {})
+      }
+    },
+    [fetchServerChunk]
+  )
+
+  const handleServerSpeak = useCallback(async () => {
+    if (speechState === "playing") {
+      audioElRef.current?.pause()
+      setSpeechState("paused")
+      return
+    }
+
+    if (speechState === "paused") {
+      audioElRef.current?.play().catch(() => setSpeechState("idle"))
+      setSpeechState("playing")
+      return
+    }
+
+    // idle → start from the first chunk
+    serverTtsStoppedRef.current = false
+    setSpeechState("loading")
+    try {
+      const url = await fetchServerChunk(0)
+      if (serverTtsStoppedRef.current) return
+      if (!url) {
+        setSpeechState("idle")
+        alert("语音合成失败，请稍后重试")
+        return
+      }
+      playServerChunk(0, url)
+    } catch {
+      if (!serverTtsStoppedRef.current) {
+        setSpeechState("idle")
+        alert("语音合成失败，请稍后重试")
+      }
+    }
+  }, [speechState, fetchServerChunk, playServerChunk])
+
   const handleSpeak = useCallback(() => {
     if (!checkedIn) return
+
+    if (useServerTts) {
+      handleServerSpeak()
+      return
+    }
+
     const synth = window.speechSynthesis
 
     if (speechState === "playing") {
@@ -107,14 +240,24 @@ export function CourseDetailClient({ course, isCheckedIn, comments: initialComme
     utteranceRef.current = utterance
     synth.speak(utterance)
     setSpeechState("playing")
-  }, [checkedIn, contentHtml, speechState])
+  }, [checkedIn, contentHtml, speechState, useServerTts, handleServerSpeak])
 
   const handleStop = useCallback(() => {
+    if (useServerTts) {
+      serverTtsStoppedRef.current = true
+      if (audioElRef.current) {
+        audioElRef.current.pause()
+        audioElRef.current = null
+      }
+      setSpeechState("idle")
+      return
+    }
+
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel()
     }
     setSpeechState("idle")
-  }, [])
+  }, [useServerTts])
 
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/study/${course.id}`
@@ -226,16 +369,27 @@ export function CourseDetailClient({ course, isCheckedIn, comments: initialComme
                 <Share2 className="h-4 w-4" />
               )}
             </Button>
-            {ttsSupported && (
+            {(ttsSupported || useServerTts) && (
               <>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9"
                   onClick={handleSpeak}
-                  title={speechState === "idle" ? "朗读课程" : speechState === "playing" ? "暂停" : "继续朗读"}
+                  disabled={speechState === "loading"}
+                  title={
+                    speechState === "idle"
+                      ? "朗读课程"
+                      : speechState === "loading"
+                        ? "正在合成语音..."
+                        : speechState === "playing"
+                          ? "暂停"
+                          : "继续朗读"
+                  }
                 >
-                  {speechState === "idle" ? (
+                  {speechState === "loading" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : speechState === "idle" ? (
                     <Volume2 className="h-4 w-4" />
                   ) : speechState === "playing" ? (
                     <Pause className="h-4 w-4" />

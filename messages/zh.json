@@ -144,7 +144,7 @@
     "generating": "生成中...",
     "downloadCard": "下载卡片",
     "copyShareLink": "复制分享链接",
-    "copied": "已复制！",
+    "copied": "已复制",
     "shareCardPreview": "分享卡片预览",
     "shareCardPreviewDesc": "预览你的心灵对话卡片",
     "theImageWillBe": "图片将以 PNG 格式下载",
@@ -196,7 +196,6 @@
     "messageTooLong": "消息过长。最多允许 {limit} 个字符。",
     "totalTooLong": "消息总内容过长。所有用户消息合计最多允许 {limit} 个字符。",
     "copy": "复制",
-    "copied": "已复制",
     "copyTitle": "复制",
     "like": "赞",
     "likeTitle": "赞",
@@ -268,7 +267,21 @@
     "notConfigured": "登录未配置。请检查环境变量。",
     "signInFailed": "登录失败",
     "signInError": "登录错误",
-    "loading": "加载中..."
+    "loading": "加载中...",
+    "forgotPasswordTitle": "找回密码",
+    "submitResetRequest": "提交重置请求",
+    "resetRequestSubmitted": "重置请求已提交。请联系管理员获取重置链接，链接 24 小时内有效。",
+    "resetRequestHint": "提交后请联系管理员（微信）获取重置链接",
+    "resetRequestFailed": "提交失败，请稍后重试",
+    "resetPasswordTitle": "设置新密码",
+    "newPassword": "新密码",
+    "resetPasswordSubmit": "重置密码",
+    "resetSuccess": "密码重置成功，请使用新密码登录。",
+    "resetTokenInvalid": "重置链接无效",
+    "resetTokenExpired": "重置链接已过期，请重新提交重置请求",
+    "resetTokenUsed": "该重置链接已被使用",
+    "resetTokenMissing": "缺少重置链接参数，请通过管理员提供的链接打开此页面",
+    "resetFailed": "重置失败，请稍后重试"
   },
   "pricing": {
     "title": "选择你的方案",
@@ -836,13 +849,34 @@
           "情绪调节技能"
         ],
         "daily": [
-          { "title": "认识你的呼吸", "focus": "呼吸觉察入门" },
-          { "title": "找到你的节奏", "focus": "自然呼吸模式" },
-          { "title": "游走的心念", "focus": "温柔应对分心" },
-          { "title": "身体-呼吸连接", "focus": "躯体觉察" },
-          { "title": "日常生活中的呼吸", "focus": "迷你冥想" },
-          { "title": "深化练习", "focus": "更长的练习" },
-          { "title": "整合日", "focus": "回顾与反思" }
+          {
+            "title": "认识你的呼吸",
+            "focus": "呼吸觉察入门"
+          },
+          {
+            "title": "找到你的节奏",
+            "focus": "自然呼吸模式"
+          },
+          {
+            "title": "游走的心念",
+            "focus": "温柔应对分心"
+          },
+          {
+            "title": "身体-呼吸连接",
+            "focus": "躯体觉察"
+          },
+          {
+            "title": "日常生活中的呼吸",
+            "focus": "迷你冥想"
+          },
+          {
+            "title": "深化练习",
+            "focus": "更长的练习"
+          },
+          {
+            "title": "整合日",
+            "focus": "回顾与反思"
+          }
         ]
       },
       "week2": {
@@ -869,13 +903,34 @@
           "更强的内感受觉察"
         ],
         "daily": [
-          { "title": "身体地图", "focus": "了解身体扫描基础" },
-          { "title": "上半身关注", "focus": "头部、颈部和肩部" },
-          { "title": "核心与背部", "focus": "躯干和脊柱觉察" },
-          { "title": "下半身之旅", "focus": "臀部、腿部和足部" },
-          { "title": "全身整合", "focus": "完整身体扫描" },
-          { "title": "与感受共处", "focus": "愉快与不愉快的感受" },
-          { "title": "身心和谐", "focus": "回顾与整合" }
+          {
+            "title": "身体地图",
+            "focus": "了解身体扫描基础"
+          },
+          {
+            "title": "上半身关注",
+            "focus": "头部、颈部和肩部"
+          },
+          {
+            "title": "核心与背部",
+            "focus": "躯干和脊柱觉察"
+          },
+          {
+            "title": "下半身之旅",
+            "focus": "臀部、腿部和足部"
+          },
+          {
+            "title": "全身整合",
+            "focus": "完整身体扫描"
+          },
+          {
+            "title": "与感受共处",
+            "focus": "愉快与不愉快的感受"
+          },
+          {
+            "title": "身心和谐",
+            "focus": "回顾与整合"
+          }
         ]
       },
       "week3": {
@@ -902,13 +957,34 @@
           "更强的思维清晰度"
         ],
         "daily": [
-          { "title": "观察心念", "focus": "念头观察入门" },
-          { "title": "标记技巧", "focus": "基本念头标记" },
-          { "title": "常见思维模式", "focus": "识别反复出现的念头" },
-          { "title": "情绪化念头", "focus": "应对带情绪的思维" },
-          { "title": "讲故事的心", "focus": "叙事和身份念头" },
-          { "title": "创造空间", "focus": "进阶认知解离" },
-          { "title": "毕业", "focus": "回顾与未来练习" }
+          {
+            "title": "观察心念",
+            "focus": "念头观察入门"
+          },
+          {
+            "title": "标记技巧",
+            "focus": "基本念头标记"
+          },
+          {
+            "title": "常见思维模式",
+            "focus": "识别反复出现的念头"
+          },
+          {
+            "title": "情绪化念头",
+            "focus": "应对带情绪的思维"
+          },
+          {
+            "title": "讲故事的心",
+            "focus": "叙事和身份念头"
+          },
+          {
+            "title": "创造空间",
+            "focus": "进阶认知解离"
+          },
+          {
+            "title": "毕业",
+            "focus": "回顾与未来练习"
+          }
         ]
       }
     },

@@ -144,7 +144,7 @@
     "generating": "Generating...",
     "downloadCard": "Download Card",
     "copyShareLink": "Copy Share Link",
-    "copied": "Copied!",
+    "copied": "Copied",
     "shareCardPreview": "Share Card Preview",
     "shareCardPreviewDesc": "Preview your spiritual conversation card",
     "theImageWillBe": "The image will be downloaded as a PNG file",
@@ -196,7 +196,6 @@
     "messageTooLong": "Message too long. Maximum {limit} characters allowed.",
     "totalTooLong": "Total message content too long. Maximum {limit} characters allowed for all user messages combined.",
     "copy": "Copy",
-    "copied": "Copied",
     "copyTitle": "Copy",
     "like": "Like",
     "likeTitle": "Like",
@@ -268,7 +267,21 @@
     "notConfigured": "Authentication not configured. Please check environment variables.",
     "signInFailed": "Sign In Failed",
     "signInError": "Sign In Error",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "forgotPasswordTitle": "Reset Password",
+    "submitResetRequest": "Submit Reset Request",
+    "resetRequestSubmitted": "Reset request submitted. Please contact the administrator to receive your reset link (valid for 24 hours).",
+    "resetRequestHint": "After submitting, contact the administrator (WeChat) to get your reset link",
+    "resetRequestFailed": "Submission failed, please try again later",
+    "resetPasswordTitle": "Set New Password",
+    "newPassword": "New Password",
+    "resetPasswordSubmit": "Reset Password",
+    "resetSuccess": "Password reset successful. Please sign in with your new password.",
+    "resetTokenInvalid": "Invalid reset link",
+    "resetTokenExpired": "This reset link has expired. Please submit a new reset request.",
+    "resetTokenUsed": "This reset link has already been used",
+    "resetTokenMissing": "Reset token is missing. Please open this page from the link provided by the administrator.",
+    "resetFailed": "Reset failed, please try again later"
   },
   "pricing": {
     "title": "Choose Your Plan",
@@ -836,13 +849,34 @@
           "Emotional regulation skills"
         ],
         "daily": [
-          { "title": "Meeting Your Breath", "focus": "Introduction to breath awareness" },
-          { "title": "Finding Your Rhythm", "focus": "Natural breathing patterns" },
-          { "title": "The Wandering Mind", "focus": "Handling distractions gently" },
-          { "title": "Body-Breath Connection", "focus": "Somatic awareness" },
-          { "title": "Breath in Daily Life", "focus": "Mini-meditations" },
-          { "title": "Deepening Practice", "focus": "Longer sessions" },
-          { "title": "Integration Day", "focus": "Review and reflection" }
+          {
+            "title": "Meeting Your Breath",
+            "focus": "Introduction to breath awareness"
+          },
+          {
+            "title": "Finding Your Rhythm",
+            "focus": "Natural breathing patterns"
+          },
+          {
+            "title": "The Wandering Mind",
+            "focus": "Handling distractions gently"
+          },
+          {
+            "title": "Body-Breath Connection",
+            "focus": "Somatic awareness"
+          },
+          {
+            "title": "Breath in Daily Life",
+            "focus": "Mini-meditations"
+          },
+          {
+            "title": "Deepening Practice",
+            "focus": "Longer sessions"
+          },
+          {
+            "title": "Integration Day",
+            "focus": "Review and reflection"
+          }
         ]
       },
       "week2": {
@@ -869,13 +903,34 @@
           "Greater interoceptive awareness"
         ],
         "daily": [
-          { "title": "Body Mapping", "focus": "Understanding body scan basics" },
-          { "title": "Upper Body Focus", "focus": "Head, neck, and shoulders" },
-          { "title": "Core and Back", "focus": "Torso and spine awareness" },
-          { "title": "Lower Body Journey", "focus": "Hips, legs, and feet" },
-          { "title": "Full Body Integration", "focus": "Complete body scan" },
-          { "title": "Working with Sensations", "focus": "Pleasant and unpleasant feelings" },
-          { "title": "Body-Mind Harmony", "focus": "Review and integration" }
+          {
+            "title": "Body Mapping",
+            "focus": "Understanding body scan basics"
+          },
+          {
+            "title": "Upper Body Focus",
+            "focus": "Head, neck, and shoulders"
+          },
+          {
+            "title": "Core and Back",
+            "focus": "Torso and spine awareness"
+          },
+          {
+            "title": "Lower Body Journey",
+            "focus": "Hips, legs, and feet"
+          },
+          {
+            "title": "Full Body Integration",
+            "focus": "Complete body scan"
+          },
+          {
+            "title": "Working with Sensations",
+            "focus": "Pleasant and unpleasant feelings"
+          },
+          {
+            "title": "Body-Mind Harmony",
+            "focus": "Review and integration"
+          }
         ]
       },
       "week3": {
@@ -902,13 +957,34 @@
           "Greater mental clarity"
         ],
         "daily": [
-          { "title": "Watching the Mind", "focus": "Introduction to thought observation" },
-          { "title": "The Labeling Technique", "focus": "Basic thought labeling" },
-          { "title": "Common Thought Patterns", "focus": "Recognizing recurring thoughts" },
-          { "title": "Emotional Thoughts", "focus": "Working with charged thinking" },
-          { "title": "The Storyteller Mind", "focus": "Narrative and identity thoughts" },
-          { "title": "Creating Space", "focus": "Advanced cognitive defusion" },
-          { "title": "Graduation", "focus": "Review and future practice" }
+          {
+            "title": "Watching the Mind",
+            "focus": "Introduction to thought observation"
+          },
+          {
+            "title": "The Labeling Technique",
+            "focus": "Basic thought labeling"
+          },
+          {
+            "title": "Common Thought Patterns",
+            "focus": "Recognizing recurring thoughts"
+          },
+          {
+            "title": "Emotional Thoughts",
+            "focus": "Working with charged thinking"
+          },
+          {
+            "title": "The Storyteller Mind",
+            "focus": "Narrative and identity thoughts"
+          },
+          {
+            "title": "Creating Space",
+            "focus": "Advanced cognitive defusion"
+          },
+          {
+            "title": "Graduation",
+            "focus": "Review and future practice"
+          }
         ]
       }
     },
