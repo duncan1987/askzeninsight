@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Send, Sparkles, RefreshCw, MessageSquare, Trash2, X, Zap, Brain, Flower2, Download, Share2, CheckSquare, Square, Image as ImageIcon, AlertTriangle, Check, Crown, ChevronLeft, ChevronRight, BookOpen } from "lucide-react"
+import { Send, Sparkles, RefreshCw, MessageSquare, Trash2, X, Zap, Download, Share2, CheckSquare, Square, Image as ImageIcon, AlertTriangle, Check, Crown, ChevronLeft, ChevronRight, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ShareCard } from "@/components/share-card"
@@ -55,13 +55,7 @@ const getUserInitials = (fullName?: string) => {
 export function ChatInterface() {
   const t = useTranslations('chat')
   const [input, setInput] = useState("")
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content: t("welcome"),
-    },
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set())
@@ -97,17 +91,6 @@ export function ChatInterface() {
   const getRandomZenError = () => {
     return zenErrors[Math.floor(Math.random() * zenErrors.length)]
   }
-
-  const exampleQuestions = [
-    {
-      icon: Brain,
-      text: t("exampleQ1"),
-    },
-    {
-      icon: Flower2,
-      text: t("exampleQ2"),
-    },
-  ]
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -436,23 +419,10 @@ export function ChatInterface() {
     }
   }
 
-  const handleExampleQuestion = (question: string) => {
-    setInput(question)
-    setTimeout(() => {
-      handleSend()
-    }, 100)
-  }
-
   const handleNewConversation = () => {
     if (isLoading) return
     setCurrentConversationId(undefined)
-    setMessages([
-      {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: t("welcome"),
-      },
-    ])
+    setMessages([])
     setInput("")
     setShowHistory(false)
     setIsSelectionMode(false)
@@ -1115,31 +1085,6 @@ export function ChatInterface() {
               </div>
             )}
           </div>
-
-          {/* Example Questions - Only show on initial state */}
-          {messages.length === 1 && (
-            <div className="mb-4 space-y-2">
-              {exampleQuestions.map((question, index) => {
-                const IconComponent = question.icon
-                return (
-                  <button
-                    key={index}
-                    onClick={() => handleExampleQuestion(question.text)}
-                    disabled={isLoading}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-muted/50 hover:bg-muted/80 hover:border-primary/30 transition-all duration-200 text-left group disabled:opacity-50 disabled:cursor-not-allowed",
-                      "hover:shadow-sm"
-                    )}
-                  >
-                    <IconComponent className="h-4 w-4 text-primary shrink-0" />
-                    <span className="text-sm text-foreground">
-                      {question.text}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
 
           <div className="flex gap-3">
             <Input
