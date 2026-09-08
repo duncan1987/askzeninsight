@@ -80,7 +80,12 @@ export default function UserReviewPage() {
     }
   }, [adminKey])
 
-  const handleReview = async (userId: string, action: "approve" | "reject", notes?: string) => {
+  const handleReview = async (
+    userId: string,
+    username: string,
+    action: "approve" | "reject",
+    notes?: string
+  ) => {
     if (!adminKey) return
     setProcessing(userId)
     try {
@@ -90,15 +95,23 @@ export default function UserReviewPage() {
         body: JSON.stringify({ userId, action, notes }),
       })
       if (response.ok) {
-        const data = await response.json()
-        alert(`${action === "approve" ? "✓ 已批准" : "✕ 已拒绝"}: ${data.username}`)
+        // 不依赖响应体（本地已有用户名），避免响应被网络截断时误报失败
+        alert(`${action === "approve" ? "✓ 已批准" : "✕ 已拒绝"}: ${username}`)
         fetchUsers()
       } else {
-        const error = await response.json()
-        alert(`错误: ${error.error}`)
+        const error = await response.json().catch(() => ({ error: "服务器返回异常响应" }))
+        alert(`错误 (HTTP ${response.status}): ${error.error}`)
       }
-    } catch {
-      alert("操作失败，请重试。")
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        // 请求已到达服务器但响应体被截断 —— 操作大概率已成功
+        alert("网络波动导致响应不完整，操作很可能已成功，正在刷新列表确认…")
+        fetchUsers()
+      } else {
+        alert(
+          `操作失败（网络错误）: ${e instanceof Error ? e.message : "无法连接服务器"}\n操作可能已成功，请刷新列表确认后再决定是否重试。`
+        )
+      }
     } finally {
       setProcessing(null)
     }
@@ -120,11 +133,11 @@ export default function UserReviewPage() {
         prompt(`用户 "${username}" 的重置链接（已复制到剪贴板）：`, resetUrl)
         fetchResetRequests()
       } else {
-        const error = await response.json()
-        alert(`错误: ${error.error}`)
+        const error = await response.json().catch(() => ({ error: "服务器返回异常响应" }))
+        alert(`错误 (HTTP ${response.status}): ${error.error}`)
       }
     } catch {
-      alert("操作失败，请重试。")
+      alert("操作失败（网络错误），请重试。")
     } finally {
       setProcessing(null)
     }
@@ -310,7 +323,7 @@ export default function UserReviewPage() {
                           const confirmed = confirm(`批准用户 "${user.username}"？批准后将获得无限对话额度。`)
                           if (confirmed) {
                             const notes = prompt("备注（可选）：")
-                            if (notes !== null) handleReview(user.id, "approve", notes || undefined)
+                            if (notes !== null) handleReview(user.id, user.username, "approve", notes || undefined)
                           }
                         }}
                         disabled={processing === user.id}
@@ -325,7 +338,7 @@ export default function UserReviewPage() {
                           const confirmed = confirm(`拒绝用户 "${user.username}"？拒绝后该用户名不可重新注册。`)
                           if (confirmed) {
                             const notes = prompt("拒绝原因（可选）：")
-                            if (notes !== null) handleReview(user.id, "reject", notes || undefined)
+                            if (notes !== null) handleReview(user.id, user.username, "reject", notes || undefined)
                           }
                         }}
                         disabled={processing === user.id}

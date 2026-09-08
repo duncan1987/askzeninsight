@@ -110,7 +110,11 @@ export default function NewBlogPage() {
         alert(`保存失败 (HTTP ${res.status}): ${err.error}`)
       }
     } catch (e) {
-      alert(`保存失败（网络错误）: ${e instanceof Error ? e.message : '无法连接服务器，请检查网络后重试'}`)
+      if (e instanceof SyntaxError) {
+        alert("网络波动导致响应不完整——文章很可能已保存，请返回博客列表确认，勿直接重复提交（可能造成重复文章）。")
+      } else {
+        alert(`保存失败（网络错误）: ${e instanceof Error ? e.message : '无法连接服务器，请检查网络后重试'}`)
+      }
     } finally {
       setSaving(false)
     }

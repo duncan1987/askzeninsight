@@ -76,7 +76,11 @@ export default function EditCoursePage() {
         alert(`保存失败 (HTTP ${res.status}): ${err.error}`)
       }
     } catch (e) {
-      alert(`保存失败（网络错误）: ${e instanceof Error ? e.message : '无法连接服务器，请检查网络后重试'}`)
+      if (e instanceof SyntaxError) {
+        alert("网络波动导致响应不完整——保存很可能已成功，请返回课程列表确认。")
+      } else {
+        alert(`保存失败（网络错误）: ${e instanceof Error ? e.message : '无法连接服务器，请检查网络后重试'}`)
+      }
     } finally {
       setSaving(false)
     }

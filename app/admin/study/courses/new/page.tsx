@@ -38,14 +38,18 @@ export default function NewCoursePage() {
         }),
       })
       if (res.ok) {
-        const data = await res.json()
+        // 不解析响应体，避免响应被网络截断时误报保存失败
         router.push("/admin/study/courses")
       } else {
         const err = await res.json().catch(() => ({ error: '响应格式错误' }))
         alert(`保存失败 (HTTP ${res.status}): ${err.error}`)
       }
     } catch (e) {
-      alert(`保存失败（网络错误）: ${e instanceof Error ? e.message : '无法连接服务器，请检查网络后重试'}`)
+      if (e instanceof SyntaxError) {
+        alert("网络波动导致响应不完整——课程很可能已保存，请返回课程列表确认，勿直接重复提交（可能造成重复课程）。")
+      } else {
+        alert(`保存失败（网络错误）: ${e instanceof Error ? e.message : '无法连接服务器，请检查网络后重试'}`)
+      }
     } finally {
       setSaving(false)
     }
