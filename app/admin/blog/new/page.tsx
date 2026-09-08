@@ -106,11 +106,11 @@ export default function NewBlogPage() {
       if (res.ok) {
         router.push("/admin/blog")
       } else {
-        const err = await res.json()
-        alert(`保存失败: ${err.error}`)
+        const err = await res.json().catch(() => ({ error: '响应格式错误' }))
+        alert(`保存失败 (HTTP ${res.status}): ${err.error}`)
       }
-    } catch {
-      alert("保存失败，请重试")
+    } catch (e) {
+      alert(`保存失败（网络错误）: ${e instanceof Error ? e.message : '无法连接服务器，请检查网络后重试'}`)
     } finally {
       setSaving(false)
     }
