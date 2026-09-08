@@ -1,17 +1,30 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validatePassword } from '@/lib/password'
+import { decryptIncomingPassword } from '@/lib/auth-crypto'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { token, password } = body as { token: string; password: string }
+    const { token, password: rawPassword } = body as { token: string; password: string }
 
-    if (!token || !password) {
+    if (!token || !rawPassword) {
       return NextResponse.json(
         { error: 'invalidRequest' },
+        { status: 400 }
+      )
+    }
+
+    // Decrypt the transport-encrypted password (plaintext passes through)
+    let password: string
+    try {
+      password = await decryptIncomingPassword(rawPassword)
+    } catch (error) {
+      console.error('[Reset Password] Password decryption failed:', error)
+      return NextResponse.json(
+        { error: 'resetFailed' },
         { status: 400 }
       )
     }

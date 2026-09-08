@@ -2,21 +2,34 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validateUsername } from '@/lib/username'
 import { validatePassword } from '@/lib/password'
+import { decryptIncomingPassword } from '@/lib/auth-crypto'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { username, nickname, password } = body as {
+    const { username, nickname, password: rawPassword } = body as {
       username: string
       nickname: string
       password: string
     }
 
-    if (!username || !nickname || !password) {
+    if (!username || !nickname || !rawPassword) {
       return NextResponse.json(
         { error: 'username, nickname, and password are required' },
+        { status: 400 }
+      )
+    }
+
+    // Decrypt the transport-encrypted password (plaintext passes through)
+    let password: string
+    try {
+      password = await decryptIncomingPassword(rawPassword)
+    } catch (error) {
+      console.error('[Register] Password decryption failed:', error)
+      return NextResponse.json(
+        { error: 'registerFailed' },
         { status: 400 }
       )
     }

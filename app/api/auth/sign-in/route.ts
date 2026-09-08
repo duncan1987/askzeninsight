@@ -2,18 +2,31 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { decryptIncomingPassword } from '@/lib/auth-crypto'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { username, password } = body as {
+    const { username, password: rawPassword } = body as {
       username: string
       password: string
     }
 
-    if (!username || !password) {
+    if (!username || !rawPassword) {
+      return NextResponse.json(
+        { error: 'invalidCredentials' },
+        { status: 400 }
+      )
+    }
+
+    // Decrypt the transport-encrypted password (plaintext passes through)
+    let password: string
+    try {
+      password = await decryptIncomingPassword(rawPassword)
+    } catch (error) {
+      console.error('[Sign-In] Password decryption failed:', error)
       return NextResponse.json(
         { error: 'invalidCredentials' },
         { status: 400 }

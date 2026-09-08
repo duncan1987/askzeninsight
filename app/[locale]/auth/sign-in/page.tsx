@@ -7,6 +7,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { validatePassword, type PasswordRule } from '@/lib/password'
 import { validateUsername } from '@/lib/username'
+import { encryptPasswordForTransport } from '@/lib/encrypt-password-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -42,7 +43,7 @@ export default function SignInPage() {
       const response = await fetch('/api/auth/sign-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password: await encryptPasswordForTransport(password) }),
       })
 
       const data = await response.json()
@@ -89,7 +90,7 @@ export default function SignInPage() {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, nickname, password }),
+        body: JSON.stringify({ username, nickname, password: await encryptPasswordForTransport(password) }),
       })
 
       const data = await response.json()
