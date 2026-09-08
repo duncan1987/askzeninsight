@@ -95,6 +95,43 @@ export function CourseDetailClient({ course, isCheckedIn, comments: initialComme
     }
   }, [])
 
+  // Auto check-in after returning from login via a shared "打卡解锁" click:
+  // the redirect URL carries ?autocheckin=1; once the user is back (and
+  // logged in), complete the check-in so the full content expands.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("autocheckin") !== "1") return
+
+    // Strip the flag from the URL so a later share/refresh doesn't repeat it
+    params.delete("autocheckin")
+    const cleanUrl = params.toString()
+      ? `${window.location.pathname}?${params.toString()}`
+      : window.location.pathname
+    window.history.replaceState(null, "", cleanUrl)
+
+    if (isCheckedIn) return
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch("/api/study/checkin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ courseId: course.id }),
+        })
+        if (!cancelled && res.ok) {
+          router.refresh()
+        }
+      } catch {
+        // Silently ignore — the user can still tap the unlock button
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [course.id, isCheckedIn, router])
+
   const fetchServerChunk = useCallback(
     async (index: number): Promise<string | null> => {
       const cached = audioUrlsRef.current.get(index)
@@ -301,7 +338,7 @@ export function CourseDetailClient({ course, isCheckedIn, comments: initialComme
         body: JSON.stringify({ courseId: course.id }),
       })
       if (res.status === 401) {
-        router.push(`/auth/sign-in?redirect=/study/${course.id}`)
+        router.push(`/auth/sign-in?redirect=${encodeURIComponent(`/study/${course.id}?autocheckin=1`)}`)
         return
       }
       if (res.ok) {

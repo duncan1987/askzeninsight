@@ -872,6 +872,8 @@ export function ChatInterface() {
                     {i > 0 && "、"}
                     <a
                       href={`/study/${ref.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="underline hover:text-blue-600 dark:hover:text-blue-300"
                     >
                       《{ref.title}》

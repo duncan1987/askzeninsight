@@ -18,7 +18,7 @@ export interface SubscriptionInfo {
  */
 export async function getUserSubscription(userId?: string): Promise<SubscriptionInfo> {
   // Anonymous users use free tier
-  const geminiKey = process.env.GEMINI_API_KEY
+  const geminiKey = process.env.GEMINI_API_KEY?.trim()
   const useGemini = !!geminiKey
   const freeApiKey = process.env.ZHIPU_API_KEY || process.env.ZHIPU_API_FREE || ''
   const freeModel = useGemini ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash') : 'glm-4-flash-250414'

@@ -132,6 +132,8 @@ function getSystemPrompt(locale: string): string {
   return SYSTEM_PROMPTS[locale === 'zh' ? 'zh' : 'en']
 }
 
+const ZHIPU_CHAT_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
+
 export async function POST(req: Request) {
   const startTime = Date.now()
   console.log('[Chat API] Request started')
@@ -330,35 +332,77 @@ export async function POST(req: Request) {
     }
 
     // Use provider-specific API URL from subscription config
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...openaiMessages,
-        ],
-        stream: true,
-        max_tokens: isPremiumModel ? 4096 : 2048, // Reduced for faster generation
-        temperature: 0.5, // Lower temperature = faster, more focused
-        top_p: 0.9, // Add top_p sampling for better speed/quality balance
-      }),
-      signal: timeoutController.signal,
+    const buildRequestBody = (mdl: string) => JSON.stringify({
+      model: mdl,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...openaiMessages,
+      ],
+      stream: true,
+      max_tokens: isPremiumModel ? 4096 : 2048, // Reduced for faster generation
+      temperature: 0.5, // Lower temperature = faster, more focused
+      top_p: 0.9, // Add top_p sampling for better speed/quality balance
     })
+
+    let response: Response
+    const zhipuKey = process.env.ZHIPU_API_KEY || process.env.ZHIPU_API_FREE
+    const canFallback = apiUrl !== ZHIPU_CHAT_API_URL && !!zhipuKey
+
+    const fallBackToZhipu = async (): Promise<Response> => {
+      console.warn('[Chat API] Falling back to Zhipu (glm-4-flash-250414)')
+      model = 'glm-4-flash-250414'
+      isPremiumModel = false
+      return fetch(ZHIPU_CHAT_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${zhipuKey}`,
+        },
+        body: buildRequestBody(model),
+        signal: timeoutController.signal,
+      })
+    }
+
+    try {
+      response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: buildRequestBody(model),
+        signal: timeoutController.signal,
+      })
+    } catch (fetchError) {
+      // Network failure reaching the primary provider (e.g. Gemini endpoint
+      // unreachable). Fall back to Zhipu unless it was an abort/timeout.
+      if (!canFallback || (fetchError instanceof Error && fetchError.name === 'AbortError')) {
+        throw fetchError
+      }
+      console.warn('[Chat API] Primary provider unreachable:', fetchError)
+      response = await fallBackToZhipu()
+    }
+
+    // Auth failure from the primary provider (e.g. an invalid/stale
+    // GEMINI_API_KEY on Vercel returning 400 "Please pass a valid API key"):
+    // retry once with Zhipu and the free model.
+    if (!response.ok && [400, 401, 403].includes(response.status) && canFallback) {
+      const primaryError = await response.text()
+      if (/api\s*key|invalid_argument|unauthenticated|permission/i.test(primaryError)) {
+        console.warn('[Chat API] Primary provider auth failed:', response.status, primaryError.substring(0, 200))
+        response = await fallBackToZhipu()
+      }
+    }
 
     // Clear timeout as we got response
     clearTimeout(timeoutId)
 
     const apiElapsedTime = Date.now() - apiStartTime
-    console.log('[Chat API] Zhipu AI response received', { status: response.status, elapsed: `${apiElapsedTime}ms` })
+    console.log('[Chat API] AI response received', { status: response.status, model, elapsed: `${apiElapsedTime}ms` })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('[Chat API] Zhipu API error:', response.status, errorText)
+      console.error('[Chat API] AI API error:', response.status, errorText)
       return new Response(
         JSON.stringify({ error: `AI service error (${response.status}): ${errorText.substring(0, 200)}` }),
         { status: 502, headers: { "Content-Type": "application/json" } }

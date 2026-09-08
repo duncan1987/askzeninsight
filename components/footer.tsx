@@ -1,12 +1,14 @@
 import Link from "next/link"
 import { Sparkles } from "lucide-react"
 import { getSiteConfig } from "@/lib/site"
-import { getTranslations } from "next-intl/server"
+import { getTranslations, getLocale } from "next-intl/server"
 
 export async function Footer() {
   const t = await getTranslations("footer")
   const { siteName, supportEmail } = getSiteConfig()
   const year = new Date().getFullYear()
+  // Pricing page is en-only (zh redirects home) — hide its links in zh
+  const showPricingLinks = (await getLocale()) !== "zh"
 
   return (
     <footer className="border-t border-border bg-muted/30">
@@ -32,10 +34,14 @@ export async function Footer() {
               {t("features")}
             </Link>
             <span className="text-muted-foreground/30">|</span>
-            <Link href="/pricing" className="hover:text-foreground transition-colors">
-              {t("pricing")}
-            </Link>
-            <span className="text-muted-foreground/30">|</span>
+            {showPricingLinks && (
+              <>
+                <Link href="/pricing" className="hover:text-foreground transition-colors">
+                  {t("pricing")}
+                </Link>
+                <span className="text-muted-foreground/30">|</span>
+              </>
+            )}
             <Link href="/blog" className="hover:text-foreground transition-colors">
               {t("blog")}
             </Link>
@@ -44,10 +50,14 @@ export async function Footer() {
               {t("course")}
             </Link>
             <span className="text-muted-foreground/30">|</span>
-            <Link href="/pricing#faq" className="hover:text-foreground transition-colors">
-              {t("faq")}
-            </Link>
-            <span className="text-muted-foreground/30">|</span>
+            {showPricingLinks && (
+              <>
+                <Link href="/pricing#faq" className="hover:text-foreground transition-colors">
+                  {t("faq")}
+                </Link>
+                <span className="text-muted-foreground/30">|</span>
+              </>
+            )}
             <Link href="/contact" className="hover:text-foreground transition-colors">
               {t("contact")}
             </Link>
