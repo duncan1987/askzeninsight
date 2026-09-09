@@ -58,12 +58,20 @@ export default async function CoursePage({ params }: CoursePageProps) {
     course.content_html = truncateHtml(html, course.truncation_index)
   }
 
-  const { data: comments } = await supabase
-    .from("study_comments")
-    .select("id, content, created_at, user:profiles!study_comments_user_id_fkey(username, avatar_url)")
-    .eq("course_id", courseId)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: true })
+  // Fetch comments via the admin client: profiles RLS only allows users to
+  // read their own profile, so a user-scoped join would return user: null
+  // for other users' comments and crash the client render. Published-course
+  // comments are public content; only public fields (username, avatar_url)
+  // are selected.
+  const commentsClient = adminClient ?? supabase
+  const { data: comments } = commentsClient
+    ? await commentsClient
+        .from("study_comments")
+        .select("id, content, created_at, user:profiles!study_comments_user_id_fkey(username, avatar_url)")
+        .eq("course_id", courseId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true })
+    : { data: null }
 
   return (
     <div className="min-h-screen bg-background">

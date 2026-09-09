@@ -19,7 +19,7 @@ interface Comment {
   id: string
   content: string
   created_at: string
-  user: { username: string; avatar_url: string | null }
+  user: { username: string; avatar_url: string | null } | null
 }
 
 interface CourseDetailClientProps {
@@ -494,9 +494,9 @@ export function CourseDetailClient({ course, isCheckedIn, comments: initialComme
                 <Card key={comment.id} className="p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
-                      {comment.user.username?.charAt(0) || "?"}
+                      {comment.user?.username?.charAt(0) || "?"}
                     </div>
-                    <span className="font-medium text-sm">{comment.user.username}</span>
+                    <span className="font-medium text-sm">{comment.user?.username || "已注销用户"}</span>
                     <span className="text-xs text-muted-foreground">
                       {new Date(comment.created_at).toLocaleDateString("zh-CN")}
                     </span>
