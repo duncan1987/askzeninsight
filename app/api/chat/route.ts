@@ -334,7 +334,7 @@ export async function POST(req: Request) {
     // Use provider-specific API URL from subscription config
     // When RAG course hits are injected, lower temperature for faithful
     // quoting of course content instead of improvisation
-    const temperature = courseRefs.length > 0 ? 0.3 : 0.5
+    const temperature = courseRefs.length > 0 ? 0.35 : 0.5
     const buildRequestBody = (mdl: string) => JSON.stringify({
       model: mdl,
       messages: [

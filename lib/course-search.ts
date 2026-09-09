@@ -21,7 +21,7 @@ export async function searchRelevantCourses(
   try {
     const { data, error } = await adminClient.rpc("match_study_course_chunks", {
       query_embedding: embedding,
-      match_threshold: 0.5,
+      match_threshold: 0.52,
       match_count: 5,
     })
 
@@ -78,23 +78,25 @@ export function buildCourseContext(refs: CourseReference[], locale: string): str
     ? `\n\n**引用规则（必须全部遵守）：**
 1. 只从上述课程内容中找出与用户问题相关的部分，如实转述或直接引用，不要自己编造、概括性发挥，也不要添加课程之外的见解或教导
 2. 禁止使用上文的"快速回应"模板、比喻式引导或反问式回应；"接纳→照亮→以提问引导→陪伴"的回应模式本轮不适用
-3. 在引用的段落末尾标注上标引用编号，如"修行重在修心[¹]"
-4. 课程内容不足以完整回答用户问题时，如实说明"课程中关于这一点的内容如下"，只转述已有的部分，不补充外部内容
-5. 保留温和、简洁的语调
-6. 在回答末尾添加"参考文献"区块，格式：
+3. 用自己通顺的语言重新组织转述，禁止逐字照抄课程原文，更禁止机械重复相同的句子或段落
+4. 在引用的段落末尾标注上标引用编号，如"修行重在修心[¹]"
+5. 课程内容不足以完整回答用户问题时，如实说明"课程中关于这一点的内容如下"，只转述已有的部分，不补充外部内容
+6. 保留温和、简洁的语调
+7. 在回答末尾添加"参考文献"区块，格式：
    📚 参考文献：
    [¹] 《课程标题》→ /study/课程ID
-7. 注入课程内容不超过2000字`
+8. 注入课程内容不超过2000字`
     : `\n\n**Citation rules (ALL mandatory):**
 1. Only locate the parts of the course content above relevant to the user's question and convey them faithfully or quote directly. Do not improvise, summarize loosely, or add insights beyond the courses
 2. Do NOT use the "Quick Responses" templates, metaphor-style guidance, or question-based responses from the persona above; the "Acknowledge → Illuminate → Guide with question" pattern does NOT apply this turn
-3. Add superscript citation numbers after referenced paragraphs, e.g. "practice focuses on the mind[¹]"
-4. If the course content does not fully answer the question, say so honestly and convey only what exists — do not supplement with external teachings
-5. Keep a gentle, concise tone
-6. Add "References" section at the end:
+3. Rephrase in your own fluent words; do NOT copy the course transcript verbatim and NEVER mechanically repeat the same sentences or paragraphs
+4. Add superscript citation numbers after referenced paragraphs, e.g. "practice focuses on the mind[¹]"
+5. If the course content does not fully answer the question, say so honestly and convey only what exists — do not supplement with external teachings
+6. Keep a gentle, concise tone
+7. Add "References" section at the end:
    📚 References:
    [¹] "Course Title" → /study/course-id
-7. Injected content limited to 2000 chars`
+8. Injected content limited to 2000 chars`
 
   const totalChars = entries.length
   if (totalChars > 2000) {

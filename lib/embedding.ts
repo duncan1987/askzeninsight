@@ -102,11 +102,14 @@ async function embedViaCloudflare(inputs: string[], cf: CloudflareConfig): Promi
   }
 
   const data = await response.json()
-  if (!data?.success || !data?.result?.data) {
+  if (!data?.success || !Array.isArray(data?.result?.data)) {
     console.error("[Embedding] Cloudflare unexpected response:", JSON.stringify(data).slice(0, 200))
     return []
   }
-  return (data.result.data || []).map((item: { embedding: number[] }) => item.embedding)
+  // Workers AI returns number[][] directly; tolerate {embedding: []} rows too
+  return (data.result.data || []).map((row: number[] | { embedding: number[] }) =>
+    Array.isArray(row) ? row : row.embedding
+  )
 }
 
 async function embedViaZhipu(inputs: string[]): Promise<number[][]> {
