@@ -1,61 +1,184 @@
-const EMBEDDING_API_URL = "https://open.bigmodel.cn/api/paas/v4/embeddings"
-const EMBEDDING_MODEL = "embedding-3"
+/*
+ * Embedding providers (all 1024-dim).
+ *
+ * Priority chain:
+ *   1. SiliconFlow BAAI/bge-m3 — free (primary)
+ *   2. Cloudflare Workers AI bge-m3 — free (fallback; SAME model as #1,
+ *      same vector space, safe to mix)
+ *   3. Zhipu embedding-3 — paid legacy (used ONLY when neither free
+ *      provider is configured, i.e. the pre-migration index)
+ *
+ * Vector-space safety: when a free provider is configured, a failure never
+ * falls through to Zhipu — mixing embedding-3 vectors with a bge-m3 index
+ * (or vice versa) would silently corrupt retrieval. Failures degrade to
+ * an empty vector, and the RAG layer skips course injection.
+ */
+
+const SILICONFLOW_EMBEDDING_URL = "https://api.siliconflow.cn/v1/embeddings"
+const SILICONFLOW_EMBEDDING_MODEL = "BAAI/bge-m3"
+
+const CLOUDFLARE_AI_RUN_URL = "https://api.cloudflare.com/client/v4/accounts"
+const CLOUDFLARE_EMBEDDING_MODEL = "@cf/baai/bge-m3"
+
+const ZHIPU_EMBEDDING_API_URL = "https://open.bigmodel.cn/api/paas/v4/embeddings"
+const ZHIPU_EMBEDDING_MODEL = "embedding-3"
+
 const EMBEDDING_DIMENSIONS = 1024
+const REQUEST_TIMEOUT_MS = 15000
 
-export async function getEmbedding(text: string): Promise<number[]> {
-  const apiKey = process.env.ZHIPU_API_KEY || process.env.ZHIPU_API_FREE
-  if (!apiKey) {
-    console.warn("[Embedding] No API key configured")
-    return []
+interface CloudflareConfig {
+  accountId: string
+  token: string
+}
+
+function getSiliconFlowKey(): string | null {
+  return process.env.SILICONFLOW_API_KEY || null
+}
+
+function getCloudflareConfig(): CloudflareConfig | null {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
+  const token = process.env.CLOUDFLARE_API_TOKEN
+  return accountId && token ? { accountId, token } : null
+}
+
+function getZhipuKey(): string | null {
+  return process.env.ZHIPU_API_KEY || process.env.ZHIPU_API_FREE || null
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timer)
   }
+}
 
-  const response = await fetch(EMBEDDING_API_URL, {
+async function embedViaSiliconFlow(inputs: string[]): Promise<number[][]> {
+  const key = getSiliconFlowKey()
+  if (!key) return []
+
+  const response = await fetchWithTimeout(SILICONFLOW_EMBEDDING_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({
-      model: EMBEDDING_MODEL,
-      input: text,
+      model: SILICONFLOW_EMBEDDING_MODEL,
+      input: inputs,
+      encoding_format: "float",
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.text()
+    console.error("[Embedding] SiliconFlow error:", response.status, error.slice(0, 200))
+    return []
+  }
+
+  const data = await response.json()
+  return (data.data || []).map((item: { embedding: number[] }) => item.embedding)
+}
+
+async function embedViaCloudflare(inputs: string[], cf: CloudflareConfig): Promise<number[][]> {
+  const response = await fetchWithTimeout(
+    `${CLOUDFLARE_AI_RUN_URL}/${cf.accountId}/ai/run/${CLOUDFLARE_EMBEDDING_MODEL}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${cf.token}`,
+      },
+      body: JSON.stringify({ text: inputs }),
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.text()
+    console.error("[Embedding] Cloudflare error:", response.status, error.slice(0, 200))
+    return []
+  }
+
+  const data = await response.json()
+  if (!data?.success || !data?.result?.data) {
+    console.error("[Embedding] Cloudflare unexpected response:", JSON.stringify(data).slice(0, 200))
+    return []
+  }
+  return (data.result.data || []).map((item: { embedding: number[] }) => item.embedding)
+}
+
+async function embedViaZhipu(inputs: string[]): Promise<number[][]> {
+  const key = getZhipuKey()
+  if (!key) return []
+
+  const response = await fetchWithTimeout(ZHIPU_EMBEDDING_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      model: ZHIPU_EMBEDDING_MODEL,
+      input: inputs,
       dimensions: EMBEDDING_DIMENSIONS,
     }),
   })
 
   if (!response.ok) {
     const error = await response.text()
-    console.error("[Embedding] API error:", response.status, error)
-    return []
-  }
-
-  const data = await response.json()
-  return data.data?.[0]?.embedding || []
-}
-
-export async function getEmbeddings(texts: string[]): Promise<number[][]> {
-  const apiKey = process.env.ZHIPU_API_KEY || process.env.ZHIPU_API_FREE
-  if (!apiKey) return []
-
-  const response = await fetch(EMBEDDING_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: EMBEDDING_MODEL,
-      input: texts,
-      dimensions: EMBEDDING_DIMENSIONS,
-    }),
-  })
-
-  if (!response.ok) {
-    console.error("[Embedding] Batch API error:", response.status)
+    console.error("[Embedding] Zhipu error:", response.status, error.slice(0, 200))
     return []
   }
 
   const data = await response.json()
   return (data.data || []).map((item: { embedding: number[] }) => item.embedding)
+}
+
+async function embed(inputs: string[]): Promise<number[][]> {
+  if (inputs.length === 0) return []
+
+  const sfKey = getSiliconFlowKey()
+  const cf = getCloudflareConfig()
+
+  // Free bge-m3 chain (same vector space, safe fallback within the chain)
+  if (sfKey) {
+    try {
+      const out = await embedViaSiliconFlow(inputs)
+      if (out.length === inputs.length) return out
+    } catch (err) {
+      console.error("[Embedding] SiliconFlow request failed:", err)
+    }
+  }
+  if (cf) {
+    try {
+      const out = await embedViaCloudflare(inputs, cf)
+      if (out.length === inputs.length) return out
+    } catch (err) {
+      console.error("[Embedding] Cloudflare request failed:", err)
+    }
+  }
+
+  // No free provider configured at all -> legacy Zhipu path (pre-migration
+  // index is embedding-3, so this keeps RAG working until migration).
+  if (!sfKey && !cf) {
+    return embedViaZhipu(inputs)
+  }
+
+  // A free provider IS configured but failed: never fall through to Zhipu
+  // (incompatible vector space). RAG degrades gracefully instead.
+  console.warn("[Embedding] All free providers failed; skipping embeddings")
+  return []
+}
+
+export async function getEmbedding(text: string): Promise<number[]> {
+  const vectors = await embed([text])
+  return vectors[0] || []
+}
+
+export async function getEmbeddings(texts: string[]): Promise<number[][]> {
+  return embed(texts)
 }
 
 function stripHtml(html: string): string {
