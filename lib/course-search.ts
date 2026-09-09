@@ -40,7 +40,7 @@ export async function searchRelevantCourses(
       results.push({
         id: row.course_id,
         title: row.course_title,
-        excerpt: row.content.slice(0, 300),
+        excerpt: row.content.slice(0, 800),
         similarity: row.similarity,
       })
 
@@ -59,8 +59,8 @@ export function buildCourseContext(refs: CourseReference[], locale: string): str
 
   const isZh = locale === "zh"
   const header = isZh
-    ? "\n\n## 相关课程参考（必须优先引用）\n\n**重要指令：以下课程内容与用户问题高度相关，你必须优先参考这些内容来回答，而不是自行发挥。回答时请在相关段落末尾用上标标注引用来源，格式如[¹]、[²]，并在回答最后列出参考文献。**\n"
-    : "\n\n## Related Course References (MUST prioritize)\n\n**IMPORTANT: The following course content is highly relevant. You MUST prioritize referencing this content over generating your own. Add superscript citations like [¹], [²] after relevant paragraphs, and list references at the end.**\n"
+    ? "\n\n## 相关课程参考（本轮回答的最高优先级指令，覆盖上文所有教导风格要求）\n\n**重要：以下课程内容与用户问题高度相关。本轮回答中你不再是引导式导师，而是课程内容的忠实转述者。**\n"
+    : "\n\n## Related Course References (HIGHEST-PRIORITY instruction, overriding the teaching style above)\n\n**IMPORTANT: The following course content is highly relevant. For this turn you are NOT a guiding mentor but a faithful conveyor of the course content.**\n"
 
   const entries = refs
     .map((ref, idx) => {
@@ -75,24 +75,30 @@ export function buildCourseContext(refs: CourseReference[], locale: string): str
     .join("\n\n")
 
   const instruction = isZh
-    ? `\n\n**引用规则：**
-1. 回答时必须优先使用上述课程内容，不要自己编造
-2. 在引用的段落末尾标注上标引用编号，如"修行重在修心[¹]"
-3. 在回答末尾添加"参考文献"区块，格式：
+    ? `\n\n**引用规则（必须全部遵守）：**
+1. 只从上述课程内容中找出与用户问题相关的部分，如实转述或直接引用，不要自己编造、概括性发挥，也不要添加课程之外的见解或教导
+2. 禁止使用上文的"快速回应"模板、比喻式引导或反问式回应；"接纳→照亮→以提问引导→陪伴"的回应模式本轮不适用
+3. 在引用的段落末尾标注上标引用编号，如"修行重在修心[¹]"
+4. 课程内容不足以完整回答用户问题时，如实说明"课程中关于这一点的内容如下"，只转述已有的部分，不补充外部内容
+5. 保留温和、简洁的语调
+6. 在回答末尾添加"参考文献"区块，格式：
    📚 参考文献：
    [¹] 《课程标题》→ /study/课程ID
-4. 注入课程内容不超过1000字`
-    : `\n\n**Citation rules:**
-1. MUST prioritize the course content above over your own knowledge
-2. Add superscript citation numbers after referenced paragraphs, e.g. "practice focuses on the mind[¹]"
-3. Add "References" section at the end:
+7. 注入课程内容不超过2000字`
+    : `\n\n**Citation rules (ALL mandatory):**
+1. Only locate the parts of the course content above relevant to the user's question and convey them faithfully or quote directly. Do not improvise, summarize loosely, or add insights beyond the courses
+2. Do NOT use the "Quick Responses" templates, metaphor-style guidance, or question-based responses from the persona above; the "Acknowledge → Illuminate → Guide with question" pattern does NOT apply this turn
+3. Add superscript citation numbers after referenced paragraphs, e.g. "practice focuses on the mind[¹]"
+4. If the course content does not fully answer the question, say so honestly and convey only what exists — do not supplement with external teachings
+5. Keep a gentle, concise tone
+6. Add "References" section at the end:
    📚 References:
    [¹] "Course Title" → /study/course-id
-4. Injected content limited to 1000 chars`
+7. Injected content limited to 2000 chars`
 
   const totalChars = entries.length
-  if (totalChars > 1000) {
-    return header + entries.slice(0, 1000) + "..." + instruction
+  if (totalChars > 2000) {
+    return header + entries.slice(0, 2000) + "..." + instruction
   }
 
   return header + entries + instruction
