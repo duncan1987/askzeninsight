@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { getSiteConfig } from '@/lib/site'
+import { isAdminGroupUser } from '@/lib/admin-auth'
 import { getTranslations } from 'next-intl/server'
 import { cookies } from 'next/headers'
 
@@ -62,18 +63,29 @@ export default async function DashboardPage() {
     usageCount = usageRecords?.length || 0
   }
 
+  const isAdmin = await isAdminGroupUser()
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto space-y-8">
           <div>
-            <h1 className="text-3xl font-bold mb-2">
-              {t('welcomeBack', { name: user.user_metadata?.name?.split(' ')[0] || 'User' })}
-            </h1>
-            <p className="text-muted-foreground">
-              {t('manageJourney')}
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">
+                  {t('welcomeBack', { name: user.user_metadata?.name?.split(' ')[0] || 'User' })}
+                </h1>
+                <p className="text-muted-foreground">
+                  {t('manageJourney')}
+                </p>
+              </div>
+              {isAdmin && (
+                <Button asChild variant="outline">
+                  <Link href="/admin">后台管理</Link>
+                </Button>
+              )}
+            </div>
           </div>
 
           <Card>

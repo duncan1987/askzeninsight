@@ -25,7 +25,6 @@ export default function AdminGroupsPage() {
   const [creating, setCreating] = useState(false)
 
   const fetchGroups = async () => {
-    if (!adminKey) return
     setLoading(true)
     try {
       const res = await fetch("/api/admin/study/groups?with_members=true", {
@@ -43,7 +42,7 @@ export default function AdminGroupsPage() {
   }
 
   const handleCreate = async () => {
-    if (!adminKey || !newName.trim()) return
+    if (!newName.trim()) return
     setCreating(true)
     try {
       const res = await fetch("/api/admin/study/groups", {
@@ -68,7 +67,6 @@ export default function AdminGroupsPage() {
   }
 
   const handleDelete = async (groupId: string, name: string) => {
-    if (!adminKey) return
     if (!confirm(`确认删除用户组"${name}"？成员将被移除但不删除用户。`)) return
     try {
       const res = await fetch(`/api/admin/study/groups/${groupId}`, {

@@ -33,7 +33,7 @@ export default function EditCoursePage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (!adminKey || !courseId) return
+    if (!courseId) return
     fetch(`/api/admin/study/courses/${courseId}`, {
       headers: { "x-admin-key": adminKey },
     })

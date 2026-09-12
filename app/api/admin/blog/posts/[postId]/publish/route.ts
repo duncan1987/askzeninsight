@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { verifyAdminAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
@@ -8,13 +9,8 @@ export async function POST(
   { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
-    const adminKey = req.headers.get('x-admin-key')
-    if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Admin access required.' },
-        { status: 401 }
-      )
-    }
+    const authError = await verifyAdminAccess(req)
+    if (authError) return authError
 
     const { postId } = await params
     const body = await req.json()

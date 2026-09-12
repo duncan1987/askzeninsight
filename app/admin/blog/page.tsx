@@ -32,7 +32,6 @@ export default function AdminBlogPage() {
   const [loading, setLoading] = useState(true)
 
   const fetchPosts = async () => {
-    if (!adminKey) return
     setLoading(true)
     try {
       const res = await fetch("/api/admin/blog/posts", {

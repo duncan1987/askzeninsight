@@ -28,7 +28,6 @@ export default function AdminCheckinsPage() {
 
   const fetchStats = useCallback(
     (groupId: string) => {
-      if (!adminKey) return
       setLoading(true)
       const url = groupId
         ? `/api/admin/study/checkins?group=${encodeURIComponent(groupId)}`

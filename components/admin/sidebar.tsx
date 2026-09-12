@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useAdminAuth } from "./admin-auth-provider"
+import { createClient } from "@/lib/supabase/client"
 import {
   LayoutDashboard,
   Users,
@@ -13,6 +14,7 @@ import {
   FileText,
   LogOut,
   UsersRound,
+  Home,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -29,7 +31,18 @@ const menuItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { logout } = useAdminAuth()
+
+  const handleLogout = async () => {
+    logout()
+    const supabase = createClient()
+    if (supabase) {
+      await supabase.auth.signOut()
+    }
+    router.push("/")
+    router.refresh()
+  }
 
   return (
     <aside className="w-60 min-h-screen bg-muted/50 border-r flex flex-col">
@@ -59,9 +72,16 @@ export function AdminSidebar() {
           )
         })}
       </nav>
-      <div className="p-2 border-t">
+      <div className="p-2 border-t space-y-1">
+        <Link
+          href="/"
+          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors"
+        >
+          <Home className="h-4 w-4" />
+          回到首页
+        </Link>
         <button
-          onClick={logout}
+          onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted w-full transition-colors"
         >
           <LogOut className="h-4 w-4" />

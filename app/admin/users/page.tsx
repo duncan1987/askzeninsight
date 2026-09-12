@@ -44,7 +44,6 @@ export default function UserReviewPage() {
   const [resetLoading, setResetLoading] = useState(false)
 
   const fetchUsers = async (status?: string) => {
-    if (!adminKey) return
     setLoading(true)
     try {
       const response = await fetch(`/api/admin/user-review?status=${status || activeTab}`, {
@@ -63,7 +62,6 @@ export default function UserReviewPage() {
   }
 
   const fetchResetRequests = useCallback(async () => {
-    if (!adminKey) return
     setResetLoading(true)
     try {
       const response = await fetch("/api/admin/password-resets", {
@@ -86,7 +84,6 @@ export default function UserReviewPage() {
     action: "approve" | "reject",
     notes?: string
   ) => {
-    if (!adminKey) return
     setProcessing(userId)
     try {
       const response = await fetch("/api/admin/user-review", {
@@ -118,7 +115,6 @@ export default function UserReviewPage() {
   }
 
   const handleGenerateResetLink = async (userId: string, username: string) => {
-    if (!adminKey) return
     setProcessing(userId)
     try {
       const response = await fetch("/api/admin/password-resets", {

@@ -77,7 +77,17 @@ async function refreshSupabaseSession(request: NextRequest) {
       },
     })
 
-    await supabase.auth.getUser()
+    // getSession() reads the session from cookies without a network call
+    // while the access token is still valid, and transparently refreshes
+    // (network) only when expired. The previous per-request getUser() made
+    // every single request depend on a cross-border call to the Supabase
+    // Auth endpoint, which intermittently stalls and hangs requests.
+    // The timeout guard prevents a stalled refresh from hanging the
+    // request; routes perform their own session verification.
+    await Promise.race([
+      supabase.auth.getSession(),
+      new Promise((resolve) => setTimeout(resolve, 8000)),
+    ])
   } catch (e) {
     console.error('[Middleware] Supabase session refresh failed:', e)
   }

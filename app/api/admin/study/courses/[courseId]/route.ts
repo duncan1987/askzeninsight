@@ -1,25 +1,16 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { verifyAdminAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
-function verifyAdmin(req: Request) {
-  const adminKey = req.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-    return NextResponse.json(
-      { error: 'Unauthorized. Admin access required.' },
-      { status: 401 }
-    )
-  }
-  return null
-}
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ courseId: string }> }
 ) {
   try {
-    const authError = verifyAdmin(req)
+    const authError = await verifyAdminAccess(req)
     if (authError) return authError
 
     const { courseId } = await params
@@ -60,7 +51,7 @@ export async function PUT(
   { params }: { params: Promise<{ courseId: string }> }
 ) {
   try {
-    const authError = verifyAdmin(req)
+    const authError = await verifyAdminAccess(req)
     if (authError) return authError
 
     const { courseId } = await params
@@ -128,7 +119,7 @@ export async function DELETE(
   { params }: { params: Promise<{ courseId: string }> }
 ) {
   try {
-    const authError = verifyAdmin(req)
+    const authError = await verifyAdminAccess(req)
     if (authError) return authError
 
     const { courseId } = await params

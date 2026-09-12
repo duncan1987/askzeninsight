@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateCourseEmbeddings } from '@/lib/embedding'
+import { verifyAdminAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -10,13 +11,8 @@ export const maxDuration = 60
 // configured embedding provider. Run once after switching embedding
 // models (vector spaces are model-specific and must not be mixed).
 export async function POST(req: Request) {
-  const adminKey = req.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-    return NextResponse.json(
-      { error: 'Unauthorized. Admin access required.' },
-      { status: 401 }
-    )
-  }
+  const authError = await verifyAdminAccess(req)
+  if (authError) return authError
 
   // Require at least one free provider to be configured; refuse to run on
   // the legacy Zhipu path by accident (that would just rebuild the old

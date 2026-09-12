@@ -1,17 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { verifyAdminAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
 export async function GET(req: Request) {
   try {
-    const adminKey = req.headers.get('x-admin-key')
-    if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Admin access required.' },
-        { status: 401 }
-      )
-    }
+    const authError = await verifyAdminAccess(req)
+    if (authError) return authError
 
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status') || 'pending'
@@ -63,13 +59,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const adminKey = req.headers.get('x-admin-key')
-    if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Admin access required.' },
-        { status: 401 }
-      )
-    }
+    const authError = await verifyAdminAccess(req)
+    if (authError) return authError
 
     const body = await req.json()
     const { userId, action, notes } = body as {

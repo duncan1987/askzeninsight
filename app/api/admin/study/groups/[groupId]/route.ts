@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { verifyAdminAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
@@ -7,10 +8,8 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ groupId: string }> }
 ) {
-  const adminKey = req.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = await verifyAdminAccess(req)
+  if (authError) return authError
 
   const { groupId } = await params
   const adminClient = createAdminClient()
@@ -54,10 +53,8 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ groupId: string }> }
 ) {
-  const adminKey = req.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = await verifyAdminAccess(req)
+  if (authError) return authError
 
   const { groupId } = await params
   const adminClient = createAdminClient()
@@ -106,10 +103,8 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ groupId: string }> }
 ) {
-  const adminKey = req.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = await verifyAdminAccess(req)
+  if (authError) return authError
 
   const { groupId } = await params
   const adminClient = createAdminClient()

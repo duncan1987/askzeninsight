@@ -16,6 +16,10 @@ interface Course {
   checkin_count: number
   published_at: string | null
   created_at: string
+  course_type?: string
+  cocreate_status?: string | null
+  section_filled?: number | null
+  section_total?: number | null
 }
 
 export default function AdminCoursesPage() {
@@ -24,7 +28,6 @@ export default function AdminCoursesPage() {
   const [loading, setLoading] = useState(true)
 
   const fetchCourses = async () => {
-    if (!adminKey) return
     setLoading(true)
     try {
       const res = await fetch("/api/admin/study/courses", {
@@ -99,6 +102,18 @@ export default function AdminCoursesPage() {
                   >
                     {course.is_published ? "已发布" : "草稿"}
                   </span>
+                  {course.course_type === "cocreate" && (
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        course.cocreate_status === "merged"
+                          ? "bg-indigo-100 text-indigo-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {course.cocreate_status === "merged" ? "共创·已合并" : "共创·进行中"}
+                      {course.section_total != null && ` ${course.section_filled ?? 0}/${course.section_total}块`}
+                    </span>
+                  )}
                 </div>
                 <div className="flex gap-4 mt-1 text-sm text-muted-foreground">
                   <span>排序: {course.sort_order}</span>
@@ -110,11 +125,19 @@ export default function AdminCoursesPage() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Link href={`/admin/study/courses/${course.id}/edit`}>
-                  <Button variant="outline" size="sm">
-                    编辑
-                  </Button>
-                </Link>
+                {course.course_type === "cocreate" ? (
+                  <Link href={`/admin/study/cocreate/${course.id}`}>
+                    <Button variant="outline" size="sm">
+                      管理
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href={`/admin/study/courses/${course.id}/edit`}>
+                    <Button variant="outline" size="sm">
+                      编辑
+                    </Button>
+                  </Link>
+                )}
                 <Link href={`/study/${course.id}`} target="_blank">
                   <Button variant="ghost" size="sm">
                     <Eye className="h-4 w-4" />

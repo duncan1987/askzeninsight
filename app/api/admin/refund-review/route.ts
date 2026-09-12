@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { cancelSubscription } from '@/lib/creem'
 import { sendRefundReviewEmail } from '@/lib/email'
+import { verifyAdminAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
@@ -25,13 +26,8 @@ export const runtime = 'nodejs'
 export async function POST(req: Request) {
   try {
     // Verify admin authentication
-    const adminKey = req.headers.get('x-admin-key')
-    if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Admin access required.' },
-        { status: 401 }
-      )
-    }
+    const authError = await verifyAdminAccess(req)
+    if (authError) return authError
 
     const supabase = await createClient()
     if (!supabase) {
@@ -210,13 +206,8 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     // Verify admin authentication
-    const adminKey = req.headers.get('x-admin-key')
-    if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Admin access required.' },
-        { status: 401 }
-      )
-    }
+    const authError = await verifyAdminAccess(req)
+    if (authError) return authError
 
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status') || 'requested'

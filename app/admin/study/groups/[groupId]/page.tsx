@@ -41,7 +41,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
   }, [params])
 
   useEffect(() => {
-    if (!adminKey || !groupId) return
+    if (!groupId) return
     setLoading(true)
     fetch(`/api/admin/study/groups/${groupId}`, {
       headers: { "x-admin-key": adminKey },
@@ -55,7 +55,6 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
   }, [adminKey, groupId])
 
   const loadAllUsers = async () => {
-    if (!adminKey) return
     try {
       const res = await fetch("/api/admin/user-review?status=approved&limit=200", {
         headers: { "x-admin-key": adminKey },
@@ -70,7 +69,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
   }
 
   const handleAddMembers = async () => {
-    if (!adminKey || selectedUsers.size === 0) return
+    if (selectedUsers.size === 0) return
     setSaving(true)
     try {
       const res = await fetch(`/api/admin/study/groups/${groupId}`, {
@@ -95,7 +94,6 @@ export default function GroupDetailPage({ params }: { params: Promise<{ groupId:
   }
 
   const handleRemoveMember = async (userId: string, username: string) => {
-    if (!adminKey) return
     if (!confirm(`确认将"${username}"移出该组？`)) return
     try {
       const res = await fetch(`/api/admin/study/groups/${groupId}`, {

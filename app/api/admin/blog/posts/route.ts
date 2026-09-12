@@ -1,24 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { verifyAdminAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
 const VALID_CATEGORIES = ['meditation', 'zen-philosophy', 'mindfulness', 'spiritual-growth', 'practice-guide']
 
-function verifyAdmin(req: Request) {
-  const adminKey = req.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-    return NextResponse.json(
-      { error: 'Unauthorized. Admin access required.' },
-      { status: 401 }
-    )
-  }
-  return null
-}
 
 export async function GET(req: Request) {
   try {
-    const authError = verifyAdmin(req)
+    const authError = await verifyAdminAccess(req)
     if (authError) return authError
 
     const adminClient = createAdminClient()
@@ -71,7 +62,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const authError = verifyAdmin(req)
+    const authError = await verifyAdminAccess(req)
     if (authError) return authError
 
     const body = await req.json()

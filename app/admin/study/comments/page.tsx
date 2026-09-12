@@ -23,7 +23,6 @@ export default function AdminCommentsPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
 
   const fetchComments = async () => {
-    if (!adminKey) return
     setLoading(true)
     try {
       const res = await fetch("/api/admin/study/comments", {

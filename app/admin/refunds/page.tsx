@@ -25,7 +25,6 @@ export default function RefundReviewPage() {
   const [processing, setProcessing] = useState<string | null>(null)
 
   const fetchSubscriptions = async () => {
-    if (!adminKey) return
     setLoading(true)
     try {
       const response = await fetch(`/api/admin/refund-review?status=requested`, {
@@ -43,7 +42,6 @@ export default function RefundReviewPage() {
   }
 
   const handleReview = async (subscriptionId: string, action: "approve" | "reject", notes?: string) => {
-    if (!adminKey) return
     setProcessing(subscriptionId)
     try {
       const response = await fetch("/api/admin/refund-review", {

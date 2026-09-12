@@ -1,22 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sectionIsFilled } from '@/lib/cocourse'
+import { verifyAdminAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
-function verifyAdmin(req: Request) {
-  const adminKey = req.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-    return NextResponse.json(
-      { error: 'Unauthorized. Admin access required.' },
-      { status: 401 }
-    )
-  }
-  return null
-}
 
 export async function GET(req: Request) {
   try {
-    const authError = verifyAdmin(req)
+    const authError = await verifyAdminAccess(req)
     if (authError) return authError
 
     const adminClient = createAdminClient()
@@ -29,7 +21,7 @@ export async function GET(req: Request) {
 
     const { data: courses, error: coursesError } = await adminClient
       .from('study_courses')
-      .select('id, title, is_published, sort_order, truncation_index, published_at, created_at, updated_at')
+      .select('id, title, is_published, sort_order, truncation_index, published_at, created_at, updated_at, course_type, cocreate_status')
       .order('sort_order', { ascending: true })
 
     if (coursesError) {
@@ -38,6 +30,22 @@ export async function GET(req: Request) {
         { error: 'Failed to fetch courses' },
         { status: 500 }
       )
+    }
+
+    // Co-create progress: fetch section contents for cocreate courses only
+    const cocreateIds = (courses || []).filter((c) => c.course_type === 'cocreate').map((c) => c.id)
+    const sectionProgress = new Map<string, { filled: number; total: number }>()
+    if (cocreateIds.length > 0) {
+      const { data: sectionRows } = await adminClient
+        .from('study_course_sections')
+        .select('course_id, content_html')
+        .in('course_id', cocreateIds)
+      for (const row of sectionRows || []) {
+        const progress = sectionProgress.get(row.course_id) || { filled: 0, total: 0 }
+        progress.total += 1
+        if (sectionIsFilled(row.content_html || '')) progress.filled += 1
+        sectionProgress.set(row.course_id, progress)
+      }
     }
 
     const { data: commentCounts, error: commentError } = await adminClient
@@ -76,6 +84,10 @@ export async function GET(req: Request) {
       published_at: course.published_at,
       created_at: course.created_at,
       updated_at: course.updated_at,
+      course_type: course.course_type,
+      cocreate_status: course.cocreate_status,
+      section_filled: sectionProgress.get(course.id)?.filled ?? null,
+      section_total: sectionProgress.get(course.id)?.total ?? null,
       comment_count: commentMap.get(course.id) || 0,
       checkin_count: checkinMap.get(course.id) || 0,
     }))
@@ -92,7 +104,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const authError = verifyAdmin(req)
+    const authError = await verifyAdminAccess(req)
     if (authError) return authError
 
     const body = await req.json()

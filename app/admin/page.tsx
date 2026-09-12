@@ -20,7 +20,6 @@ export default function AdminOverviewPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!adminKey) return
     setLoading(true)
     fetch("/api/admin/stats", {
       headers: { "x-admin-key": adminKey },

@@ -1,13 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { verifyAdminAccess } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
 export async function GET(req: Request) {
-  const adminKey = req.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = await verifyAdminAccess(req)
+  if (authError) return authError
 
   const adminClient = createAdminClient()
   if (!adminClient) {
@@ -38,10 +37,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const adminKey = req.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_SECRET_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = await verifyAdminAccess(req)
+  if (authError) return authError
 
   const adminClient = createAdminClient()
   if (!adminClient) {

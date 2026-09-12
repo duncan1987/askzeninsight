@@ -59,7 +59,7 @@ export default function EditBlogPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (!adminKey || !postId) return
+    if (!postId) return
     fetch(`/api/admin/blog/posts/${postId}`, {
       headers: { "x-admin-key": adminKey },
     })
