@@ -8,7 +8,8 @@ export async function Footer() {
   const { siteName, supportEmail } = getSiteConfig()
   const year = new Date().getFullYear()
   // Pricing page is en-only (zh redirects home) — hide its links in zh
-  const showPricingLinks = (await getLocale()) !== "zh"
+  const locale = await getLocale()
+  const showPricingLinks = locale !== "zh"
 
   return (
     <footer className="border-t border-border bg-muted/30">
@@ -45,10 +46,14 @@ export async function Footer() {
             <Link href="/blog" className="hover:text-foreground transition-colors">
               {t("blog")}
             </Link>
-            <span className="text-muted-foreground/30">|</span>
-            <Link href="/meditation" className="hover:text-foreground transition-colors">
-              {t("course")}
-            </Link>
+            {locale === "zh" && (
+              <>
+                <span className="text-muted-foreground/30">|</span>
+                <Link href="/study" className="hover:text-foreground transition-colors">
+                  {t("course")}
+                </Link>
+              </>
+            )}
             <span className="text-muted-foreground/30">|</span>
             {showPricingLinks && (
               <>
@@ -69,10 +74,14 @@ export async function Footer() {
             <Link href="/terms" className="hover:text-foreground transition-colors">
               {t("terms")}
             </Link>
-            <span className="text-muted-foreground/30">|</span>
-            <Link href="/refund" className="hover:text-foreground transition-colors">
-              {t("refund")}
-            </Link>
+            {showPricingLinks && (
+              <>
+                <span className="text-muted-foreground/30">|</span>
+                <Link href="/refund" className="hover:text-foreground transition-colors">
+                  {t("refund")}
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Copyright */}

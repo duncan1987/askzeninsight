@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Check, Lock, Search, MessageCircle, Clock, TrendingUp } from "lucide-react"
+import { Check, Lock, Search, MessageCircle, Clock, TrendingUp, PencilLine } from "lucide-react"
 
 type SortType = "default" | "popular" | "newest"
 
@@ -17,6 +17,11 @@ interface Course {
   created_at: string
   comment_count: number
   is_checked_in?: boolean
+  course_type?: string
+  cocreate_status?: string | null
+  is_published?: boolean
+  section_filled?: number
+  section_total?: number
 }
 
 interface StudyPageClientProps {
@@ -111,7 +116,22 @@ export function StudyPageClient({ courses }: StudyPageClientProps) {
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div>
-                    <h3 className="font-semibold text-lg">{course.title}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-lg">{course.title}</h3>
+                      {course.course_type === "cocreate" && (
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium shrink-0 ${
+                            !course.is_published
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-indigo-100 text-indigo-700"
+                          }`}
+                        >
+                          {!course.is_published
+                            ? `共创中${course.section_total != null ? ` ${course.section_filled ?? 0}/${course.section_total} 块` : ""}`
+                            : "共创"}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
                       <span>
                         {course.published_at
@@ -126,7 +146,14 @@ export function StudyPageClient({ courses }: StudyPageClientProps) {
                   </div>
                 </div>
                 <div>
-                  {course.is_checked_in ? (
+                  {course.course_type === "cocreate" && !course.is_published ? (
+                    <Link href={`/study/${course.id}`}>
+                      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors cursor-pointer">
+                        <PencilLine className="h-4 w-4" />
+                        进入协作
+                      </span>
+                    </Link>
+                  ) : course.is_checked_in ? (
                     <Link href={`/study/${course.id}`}>
                       <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200 transition-colors cursor-pointer">
                         <Check className="h-4 w-4" />

@@ -61,6 +61,7 @@
     "dompurify": "^3.4.14",
     "embla-carousel-react": "8.5.1",
     "gray-matter": "^4.0.3",
+    "html-to-docx": "^1.8.0",
     "html2canvas": "^1.4.1",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",

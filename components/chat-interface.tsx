@@ -80,7 +80,6 @@ export function ChatInterface() {
   const [copiedLink, setCopiedLink] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [upgradeFeature, setUpgradeFeature] = useState<string>("")
-  const [showDisclaimer, setShowDisclaimer] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [shownToastThresholds, setShownToastThresholds] = useState<Set<number>>(new Set())
   const [currentModel, setCurrentModel] = useState<string>("glm-4-flash-250414")
@@ -771,8 +770,7 @@ export function ChatInterface() {
                   </Button>
                 )}
                 <div className="text-center flex-1 lg:text-left">
-                  <h1 className="text-3xl font-bold text-foreground mb-2">{t("title")}</h1>
-                  <p className="text-muted-foreground">{t("subtitle")}</p>
+                  <p className="text-lg text-muted-foreground">{t("subtitle")}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -1057,35 +1055,6 @@ export function ChatInterface() {
 
         {/* Input Area */}
         <div className="border-t border-border bg-background p-4">
-          {/* AI Guidance Disclaimer - Compact */}
-          <div className="mb-3">
-            <button
-              onClick={() => setShowDisclaimer(!showDisclaimer)}
-              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 hover:border-blue-500/20 transition-colors text-left group"
-            >
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span className="text-xs text-blue-700 dark:text-blue-300">
-                  {t("disclaimer")}
-                  <span className="text-blue-600 dark:text-blue-400 font-medium"> {t("disclaimerHighlight")}</span>
-                </span>
-              </div>
-              <span className="text-xs text-blue-600 dark:text-blue-400 opacity-60 group-hover:opacity-100 transition-opacity">
-                {showDisclaimer ? '▲' : '▼'}
-              </span>
-            </button>
-            {showDisclaimer && (
-              <div className="mt-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
-                <p className="text-xs text-slate-700 dark:text-slate-300 font-medium mb-1">
-                  {t("disclaimerTitle")}
-                </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  {t("disclaimerContent")}
-                </p>
-              </div>
-            )}
-          </div>
-
           <div className="flex gap-3">
             <Input
               value={input}
