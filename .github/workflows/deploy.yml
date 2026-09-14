@@ -1,0 +1,57 @@
+name: Deploy to EC2 (Hong Kong)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Write .env.production
+        run: echo "${{ secrets.ENV_PRODUCTION }}" > .env.production
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload build artifacts
+        run: |
+          rsync -az --delete .next/standalone/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/askzen/app/
+          rsync -az --delete .next/static/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/askzen/app/.next/static/
+          rsync -az --delete public/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/askzen/app/public/
+
+      - name: Upload env file and restart service
+        run: |
+          scp .env.production ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/askzen/.env
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo systemctl restart askzen"
+
+      - name: Health check
+        run: |
+          sleep 5
+          curl -fsS -o /dev/null -w "HTTP %{http_code}\n" "http://${{ secrets.SSH_HOST }}/" || echo "::warning::Health check failed - check service logs: ssh + journalctl -u askzen -n 50"

@@ -1,0 +1,23 @@
+[Unit]
+Description=Ask Zen Insight (Next.js standalone)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/askzen/app
+EnvironmentFile=/opt/askzen/.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=0.0.0.0
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+# Give the app 30s to finish in-flight requests on restart/deploy
+KillSignal=SIGTERM
+TimeoutStopSec=30
+# Basic memory guard on small instances
+MemoryMax=1200M
+
+[Install]
+WantedBy=multi-user.target

@@ -4,6 +4,11 @@ const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Standalone output for self-hosted deployment (EC2). Skipped on Windows
+  // because copying pnpm's symlinked node_modules layout requires symlink
+  // privileges (EPERM); CI builds on Linux where this works normally.
+  // Vercel ignores this option, so production deploys are unaffected.
+  ...(process.platform === 'win32' ? {} : { output: 'standalone' }),
   typescript: {
     ignoreBuildErrors: true,
   },
