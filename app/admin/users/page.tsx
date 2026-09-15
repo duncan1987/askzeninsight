@@ -150,14 +150,12 @@ export default function UserReviewPage() {
   }, [adminKey])
 
   useEffect(() => {
-    if (adminKey) {
-      if (activeTab === "resets") {
-        fetchResetRequests()
-      } else {
-        fetchUsers()
-      }
+    if (activeTab === "resets") {
+      fetchResetRequests()
+    } else {
+      fetchUsers()
     }
-  }, [activeTab, adminKey, fetchResetRequests])
+  }, [activeTab, fetchResetRequests])
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("zh-CN", {

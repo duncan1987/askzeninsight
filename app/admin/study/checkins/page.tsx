@@ -47,8 +47,8 @@ export default function AdminCheckinsPage() {
   )
 
   useEffect(() => {
-    if (adminKey) fetchStats("")
-  }, [adminKey, fetchStats])
+    fetchStats("")
+  }, [fetchStats])
 
   const handleGroupChange = (groupId: string) => {
     setSelectedGroup(groupId)
