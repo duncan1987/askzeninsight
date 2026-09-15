@@ -2,12 +2,13 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { useTranslations } from "next-intl"
+import { useTranslations, useLocale } from "next-intl"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Send, Sparkles, RefreshCw, MessageSquare, Trash2, X, Zap, Download, Share2, CheckSquare, Square, Image as ImageIcon, AlertTriangle, Check, Crown, ChevronLeft, ChevronRight, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -54,7 +55,9 @@ const getUserInitials = (fullName?: string) => {
 
 export function ChatInterface() {
   const t = useTranslations('chat')
+  const locale = useLocale()
   const [input, setInput] = useState("")
+  const [chatMode, setChatMode] = useState<'search' | 'summary'>('search')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSelectionMode, setIsSelectionMode] = useState(false)
@@ -334,6 +337,7 @@ export function ChatInterface() {
             role: msg.role,
             parts: [{ type: "text", text: msg.content }],
           })),
+          mode: chatMode,
         }),
       })
 
@@ -1064,6 +1068,22 @@ export function ChatInterface() {
               className="flex-1"
               disabled={isLoading}
             />
+            {locale === 'zh' && (
+              <RadioGroup
+                value={chatMode}
+                onValueChange={(v) => setChatMode(v === 'summary' ? 'summary' : 'search')}
+                className="flex items-center gap-4 shrink-0"
+              >
+                <label className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer">
+                  <RadioGroupItem value="search" disabled={isLoading} />
+                  {t("modeSearch")}
+                </label>
+                <label className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer">
+                  <RadioGroupItem value="summary" disabled={isLoading} />
+                  {t("modeSummary")}
+                </label>
+              </RadioGroup>
+            )}
             <Button
               onClick={handleSend}
               disabled={isLoading || !input.trim()}

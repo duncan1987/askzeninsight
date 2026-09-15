@@ -227,8 +227,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
     const messages = body.messages || []
-
-    console.log('[Chat API] Messages received:', messages.length)
+    const mode: 'search' | 'summary' = body.mode === 'summary' ? 'summary' : 'search'
+    console.log('[Chat API] Messages received:', messages.length, 'Mode:', mode)
 
     // Fair Use Policy: Validate message length to prevent abuse
     // Check total content length of user messages
@@ -322,13 +322,29 @@ export async function POST(req: Request) {
         if (lastUserMsg) {
           courseRefs = await searchRelevantCourses(lastUserMsg.content, locale)
           if (courseRefs.length > 0) {
-            systemPrompt += buildCourseContext(courseRefs, locale)
+            systemPrompt += buildCourseContext(courseRefs, locale, mode)
             console.log('[Chat API] Injected', courseRefs.length, 'course references')
           }
         }
       } catch (err) {
         console.error('[Chat API] Course search error:', err)
       }
+    }
+
+    // Search mode (zh): strict RAG-only answering. No course hits means
+    // nothing in the knowledge base is relevant — return the fixed
+    // not-found message instead of calling the AI model.
+    if (locale === 'zh' && mode === 'search' && courseRefs.length === 0) {
+      console.log('[Chat API] Search mode with no course hits, returning not-found message')
+      recordUsage(userId, 'assistant').catch((err) => {
+        console.error('[Chat API] Failed to record assistant usage:', err)
+      })
+      return new Response('没有在知识库中找到相关内容。', {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "no-cache",
+        },
+      })
     }
 
     // Use provider-specific API URL from subscription config
