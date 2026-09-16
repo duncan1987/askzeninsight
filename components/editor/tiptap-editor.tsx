@@ -1,10 +1,19 @@
 "use client"
 
-import { useEditor, EditorContent, BubbleMenu } from "@tiptap/react"
+import { useState } from "react"
+import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Image from "@tiptap/extension-image"
 import Placeholder from "@tiptap/extension-placeholder"
 import { TruncationLine } from "./truncation-line-extension"
+import {
+  TypoHighlight,
+  buildTextMap,
+  mapTypoFindings,
+  setTypoHighlights,
+  clearTypoHighlights,
+  type TypoFinding,
+} from "./typo-check-extension"
 import { Button } from "@/components/ui/button"
 import {
   Bold,
@@ -15,6 +24,9 @@ import {
   ListOrdered,
   Scissors,
   ImageIcon,
+  SpellCheck,
+  Eraser,
+  Loader2,
 } from "lucide-react"
 
 interface TiptapEditorProps {
@@ -30,6 +42,10 @@ export function TiptapEditor({
   showTruncationLine = true,
   placeholder = "开始编写内容...",
 }: TiptapEditorProps) {
+  const [checking, setChecking] = useState(false)
+  const [typoCount, setTypoCount] = useState<number | null>(null)
+  const [typoMessage, setTypoMessage] = useState<string | null>(null)
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -37,6 +53,7 @@ export function TiptapEditor({
       }),
       Image.configure({ inline: false, allowBase64: true }),
       Placeholder.configure({ placeholder }),
+      TypoHighlight,
       ...(showTruncationLine ? [TruncationLine] : []),
     ],
     content,
@@ -58,6 +75,49 @@ export function TiptapEditor({
     if (url) {
       editor.chain().focus().setImage({ src: url }).run()
     }
+  }
+
+  const handleTypoCheck = async () => {
+    if (checking || !editor) return
+    const textMap = buildTextMap(editor)
+    if (!textMap.plain.trim()) {
+      setTypoCount(null)
+      setTypoMessage("没有可校验的文字")
+      return
+    }
+    setChecking(true)
+    setTypoMessage("校验中...")
+    clearTypoHighlights(editor)
+    try {
+      const res = await fetch("/api/typos/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: textMap.plain }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        setTypoCount(null)
+        setTypoMessage(data?.error || `校验失败 (HTTP ${res.status})`)
+        return
+      }
+      const findings: TypoFinding[] = Array.isArray(data?.typos) ? data.typos : []
+      const ranges = mapTypoFindings(textMap, findings)
+      setTypoHighlights(editor, ranges)
+      setTypoCount(ranges.length)
+      setTypoMessage(null)
+    } catch {
+      setTypoCount(null)
+      setTypoMessage("校验失败，请检查网络后重试")
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  const handleClearTypos = () => {
+    if (!editor) return
+    clearTypoHighlights(editor)
+    setTypoCount(null)
+    setTypoMessage(null)
   }
 
   return (
@@ -120,6 +180,21 @@ export function TiptapEditor({
         <Button type="button" variant="ghost" size="sm" onClick={addImage}>
           <ImageIcon className="h-4 w-4" />
         </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleTypoCheck}
+          disabled={checking}
+          title="错别字校验：只标黄提示，不做任何改动"
+        >
+          {checking ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <SpellCheck className="h-4 w-4" />
+          )}
+          <span className="hidden sm:inline text-xs ml-1">错别字校验</span>
+        </Button>
         {showTruncationLine && (
           <Button
             type="button"
@@ -131,6 +206,29 @@ export function TiptapEditor({
             <Scissors className="h-4 w-4" />
           </Button>
         )}
+        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground pl-2">
+          {typoMessage && <span>{typoMessage}</span>}
+          {typoCount !== null && typoMessage === null && (
+            <>
+              {typoCount > 0 ? (
+                <span>
+                  发现 <span className="font-medium text-amber-600 dark:text-amber-400">{typoCount}</span> 处疑似错别字（已标黄），请自行修改
+                </span>
+              ) : (
+                <span>未发现明显错别字</span>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleClearTypos}
+                title="清除错别字标记"
+              >
+                <Eraser className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          )}
+        </div>
       </div>
       <EditorContent editor={editor} />
     </div>

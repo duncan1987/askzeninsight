@@ -123,3 +123,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* 错别字校验高亮（TiptapEditor 装饰层，不改动文档内容） */
+.typo-highlight {
+  background-color: #fef08a;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(202, 138, 4, 0.35);
+}
+.dark .typo-highlight {
+  background-color: rgba(202, 138, 4, 0.45);
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.3);
+}
