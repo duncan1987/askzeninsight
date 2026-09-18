@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Send, Sparkles, RefreshCw, MessageSquare, Trash2, X, Zap, Download, Share2, CheckSquare, Square, Image as ImageIcon, AlertTriangle, Check, Crown, ChevronLeft, ChevronRight, BookOpen } from "lucide-react"
+import { Send, Sparkles, RefreshCw, MessageSquare, Trash2, X, Zap, Download, Share2, CheckSquare, Square, Image as ImageIcon, AlertTriangle, Check, Crown, ChevronLeft, ChevronRight, BookOpen, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ShareCard } from "@/components/share-card"
@@ -76,6 +76,7 @@ export function ChatInterface() {
   })
   const [fairUseNotice, setFairUseNotice] = useState<string | undefined>(undefined)
   const [courseRefs, setCourseRefs] = useState<Array<{ id: string; title: string; similarity: number }>>([])
+  const [kbRefs, setKbRefs] = useState<Array<{ id: string; title: string; similarity: number }>>([])
   const [showPrivacyWarning, setShowPrivacyWarning] = useState(false)
   const [isGeneratingCard, setIsGeneratingCard] = useState(false)
   const [shareCardPreview, setShareCardPreview] = useState<string | null>(null)
@@ -365,6 +366,16 @@ export function ChatInterface() {
         } catch {}
       } else {
         setCourseRefs([])
+      }
+
+      const kbRefsHeader = response.headers.get("X-Kb-Refs")
+      if (kbRefsHeader) {
+        try {
+          const refs = JSON.parse(decodeURIComponent(kbRefsHeader))
+          setKbRefs(refs)
+        } catch {}
+      } else {
+        setKbRefs([])
       }
 
       const reader = response.body?.getReader()
@@ -829,6 +840,23 @@ export function ChatInterface() {
               >
                 <X className="h-4 w-4" />
               </button>
+            </div>
+          </div>
+        )}
+
+        {kbRefs.length > 0 && (
+          <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-2">
+            <div className="flex items-start gap-2">
+              <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+              <div className="flex-1 text-sm text-emerald-800 dark:text-emerald-200">
+                <span className="font-medium">📚 参考文档：</span>
+                {kbRefs.map((ref, i) => (
+                  <span key={ref.id}>
+                    {i > 0 && "、"}
+                    《{ref.title}》
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         )}

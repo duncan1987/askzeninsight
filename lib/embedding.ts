@@ -184,7 +184,7 @@ export async function getEmbeddings(texts: string[]): Promise<number[][]> {
   return embed(texts)
 }
 
-function stripHtml(html: string): string {
+export function stripHtml(html: string): string {
   return html
     .replace(/<[^>]*>/g, "")
     .replace(/&nbsp;/g, " ")
@@ -196,7 +196,7 @@ function stripHtml(html: string): string {
     .trim()
 }
 
-function chunkText(text: string, chunkSize = 500, overlap = 50): string[] {
+export function chunkText(text: string, chunkSize = 500, overlap = 50): string[] {
   if (text.length <= chunkSize) return [text]
 
   const chunks: string[] = []

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Loader2, Plus, FileText, Eye } from "lucide-react"
+import { Loader2, Plus, FileText, Eye, BookPlus } from "lucide-react"
 import { useAdminAuth } from "@/components/admin/admin-auth-provider"
 
 interface Course {
@@ -26,6 +26,7 @@ export default function AdminCoursesPage() {
   const { adminKey } = useAdminAuth()
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
+  const [mergingId, setMergingId] = useState<string | null>(null)
 
   const fetchCourses = async () => {
     setLoading(true)
@@ -55,6 +56,30 @@ export default function AdminCoursesPage() {
       else alert("删除失败")
     } catch {
       alert("删除失败")
+    }
+  }
+
+  const handleMergeToKb = async (id: string, title: string) => {
+    setMergingId(id)
+    try {
+      const res = await fetch("/api/admin/kb/from-course", {
+        method: "POST",
+        headers: {
+          "x-admin-key": adminKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ courseId: id }),
+      })
+      const data = await res.json().catch(() => null)
+      if (res.ok) {
+        alert(`已将「${title}」并入知识库：${data?.document?.chunkCount ?? 0} 个向量分块`)
+      } else {
+        alert(data?.error || "加入知识库失败")
+      }
+    } catch {
+      alert("加入知识库失败，请检查网络")
+    } finally {
+      setMergingId(null)
     }
   }
 
@@ -148,6 +173,19 @@ export default function AdminCoursesPage() {
                     发布为博客
                   </Button>
                 </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={mergingId !== null}
+                  onClick={() => handleMergeToKb(course.id, course.title)}
+                >
+                  {mergingId === course.id ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <BookPlus className="h-4 w-4 mr-1" />
+                  )}
+                  加入知识库
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"

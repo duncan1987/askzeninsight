@@ -12,6 +12,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // pdf-parse v2 is a CommonMode native-ish package that must stay external
+  // so the Next.js server runtime can load it at runtime.
+  serverExternalPackages: ['pdf-parse'],
   images: {
     unoptimized: true,
   },

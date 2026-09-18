@@ -13,6 +13,7 @@ import { checkUsageLimit, recordUsage, isWithinPremiumQuota, MESSAGE_LENGTH_LIMI
 import { getUserSubscription } from '@/lib/subscription'
 import { containsSensitiveKeywords, getCrisisResourcesMessage } from '@/lib/sensitive-keywords'
 import { searchRelevantCourses, buildCourseContext } from '@/lib/course-search'
+import { searchKnowledgeBase, buildKbContext } from '@/lib/kb-search'
 
 // Vercel Pro plan supports up to 60s timeout
 // If you're on Hobby plan, this will be limited to 10s
@@ -313,28 +314,41 @@ export async function POST(req: Request) {
       timeoutController.abort()
     })
 
-    // RAG: Search relevant courses for zh locale users
+    // RAG (zh): knowledge base (PDFs + merged courses) is searched FIRST;
+    // course RAG only runs as fallback when the KB has no relevant hit,
+    // so the existing course extraction logic is completely unaffected.
     let systemPrompt = getSystemPrompt(locale)
     let courseRefs: import('@/lib/course-search').CourseReference[] = []
+    let kbRefs: import('@/lib/kb-search').KbReference[] = []
     if (locale === 'zh') {
-      try {
-        const lastUserMsg = [...openaiMessages].reverse().find(m => m.role === 'user')
-        if (lastUserMsg) {
-          courseRefs = await searchRelevantCourses(lastUserMsg.content, locale)
-          if (courseRefs.length > 0) {
-            systemPrompt += buildCourseContext(courseRefs, locale, mode)
-            console.log('[Chat API] Injected', courseRefs.length, 'course references')
+      const lastUserMsg = [...openaiMessages].reverse().find(m => m.role === 'user')
+      if (lastUserMsg) {
+        try {
+          kbRefs = await searchKnowledgeBase(lastUserMsg.content)
+        } catch (err) {
+          console.error('[Chat API] KB search error:', err)
+        }
+        if (kbRefs.length > 0) {
+          systemPrompt += buildKbContext(kbRefs, locale, mode)
+          console.log('[Chat API] Injected', kbRefs.length, 'knowledge base references')
+        } else {
+          try {
+            courseRefs = await searchRelevantCourses(lastUserMsg.content, locale)
+            if (courseRefs.length > 0) {
+              systemPrompt += buildCourseContext(courseRefs, locale, mode)
+              console.log('[Chat API] Injected', courseRefs.length, 'course references')
+            }
+          } catch (err) {
+            console.error('[Chat API] Course search error:', err)
           }
         }
-      } catch (err) {
-        console.error('[Chat API] Course search error:', err)
       }
     }
 
-    // Search mode (zh): strict RAG-only answering. No course hits means
-    // nothing in the knowledge base is relevant — return the fixed
+    // Search mode (zh): strict RAG-only answering. Neither the knowledge
+    // base nor the courses produced a relevant hit — return the fixed
     // not-found message instead of calling the AI model.
-    if (locale === 'zh' && mode === 'search' && courseRefs.length === 0) {
+    if (locale === 'zh' && mode === 'search' && kbRefs.length === 0 && courseRefs.length === 0) {
       console.log('[Chat API] Search mode with no course hits, returning not-found message')
       recordUsage(userId, 'assistant').catch((err) => {
         console.error('[Chat API] Failed to record assistant usage:', err)
@@ -348,9 +362,9 @@ export async function POST(req: Request) {
     }
 
     // Use provider-specific API URL from subscription config
-    // When RAG course hits are injected, lower temperature for faithful
-    // quoting of course content instead of improvisation
-    const temperature = courseRefs.length > 0 ? 0.35 : 0.5
+    // When RAG hits (knowledge base or course), lower temperature for
+    // faithful quoting of the source content instead of improvisation
+    const temperature = courseRefs.length > 0 || kbRefs.length > 0 ? 0.35 : 0.5
     const buildRequestBody = (mdl: string) => JSON.stringify({
       model: mdl,
       messages: [
@@ -480,6 +494,12 @@ export async function POST(req: Request) {
     if (courseRefs.length > 0) {
       headers["X-Course-Refs"] = encodeURIComponent(JSON.stringify(
         courseRefs.map(r => ({ id: r.id, title: r.title, similarity: Math.round(r.similarity * 100) / 100 }))
+      ))
+    }
+
+    if (kbRefs.length > 0) {
+      headers["X-Kb-Refs"] = encodeURIComponent(JSON.stringify(
+        kbRefs.map(r => ({ id: r.id, title: r.title, similarity: Math.round(r.similarity * 100) / 100 }))
       ))
     }
 
