@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Loader2, Search } from "lucide-react"
 import { useAdminAuth } from "@/components/admin/admin-auth-provider"
 
 interface CheckinStats {
@@ -19,6 +20,10 @@ interface Group {
   name: string
 }
 
+function formatDate(d: Date): string {
+  return d.toISOString().slice(0, 10)
+}
+
 export default function AdminCheckinsPage() {
   const { adminKey } = useAdminAuth()
   const [stats, setStats] = useState<CheckinStats | null>(null)
@@ -26,13 +31,20 @@ export default function AdminCheckinsPage() {
   const [selectedGroup, setSelectedGroup] = useState<string>("")
   const [loading, setLoading] = useState(true)
 
+  // 默认统计范围：最近 1 个月
+  const monthAgo = new Date()
+  monthAgo.setMonth(monthAgo.getMonth() - 1)
+  const [dateFrom, setDateFrom] = useState(formatDate(monthAgo))
+  const [dateTo, setDateTo] = useState(formatDate(new Date()))
+
   const fetchStats = useCallback(
-    (groupId: string) => {
+    (groupId: string, from: string, to: string) => {
       setLoading(true)
-      const url = groupId
-        ? `/api/admin/study/checkins?group=${encodeURIComponent(groupId)}`
-        : "/api/admin/study/checkins"
-      fetch(url, {
+      const params = new URLSearchParams()
+      if (groupId) params.set("group", groupId)
+      params.set("from", from)
+      params.set("to", to)
+      fetch(`/api/admin/study/checkins?${params.toString()}`, {
         headers: { "x-admin-key": adminKey },
       })
         .then((r) => r.json())
@@ -47,20 +59,35 @@ export default function AdminCheckinsPage() {
   )
 
   useEffect(() => {
-    fetchStats("")
+    fetchStats("", dateFrom, dateTo)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchStats])
 
   const handleGroupChange = (groupId: string) => {
     setSelectedGroup(groupId)
-    fetchStats(groupId)
+    fetchStats(groupId, dateFrom, dateTo)
+  }
+
+  const handleAnalyze = () => {
+    if (!dateFrom || !dateTo) {
+      alert("请选择开始与结束日期")
+      return
+    }
+    if (dateFrom > dateTo) {
+      alert("开始日期不能晚于结束日期")
+      return
+    }
+    fetchStats(selectedGroup, dateFrom, dateTo)
   }
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-2">打卡统计</h1>
-      <p className="text-muted-foreground mb-6">学员×课程打卡情况</p>
+      <p className="text-muted-foreground mb-6">
+        学员×课程打卡情况（课程按发布时间、打卡按打卡时间筛选；默认最近 1 个月）
+      </p>
 
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
         <label htmlFor="group-filter" className="text-sm font-medium">
           用户组筛选
         </label>
@@ -85,6 +112,35 @@ export default function AdminCheckinsPage() {
             清除筛选
           </button>
         )}
+        <div className="w-px h-6 bg-border mx-1 hidden md:block" />
+        <label htmlFor="date-from" className="text-sm font-medium">
+          开始日期
+        </label>
+        <input
+          id="date-from"
+          type="date"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          className="border rounded-md px-3 py-1.5 text-sm bg-background"
+        />
+        <label htmlFor="date-to" className="text-sm font-medium">
+          结束日期
+        </label>
+        <input
+          id="date-to"
+          type="date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          className="border rounded-md px-3 py-1.5 text-sm bg-background"
+        />
+        <Button size="sm" onClick={handleAnalyze} disabled={loading}>
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+          ) : (
+            <Search className="h-4 w-4 mr-1" />
+          )}
+          分析
+        </Button>
       </div>
 
       {loading ? (

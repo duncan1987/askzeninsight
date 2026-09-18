@@ -20,6 +20,36 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url)
     const groupId = searchParams.get('group')
+    const fromStr = searchParams.get('from')
+    const toStr = searchParams.get('to')
+
+    // 日期范围：未传参数时默认最近 1 个月
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+    let fromIso: string
+    let toIso: string
+    if (fromStr || toStr) {
+      if (!fromStr || !toStr || !DATE_RE.test(fromStr) || !DATE_RE.test(toStr)) {
+        return NextResponse.json(
+          { error: '日期参数格式错误，应为 YYYY-MM-DD' },
+          { status: 400 }
+        )
+      }
+      if (fromStr > toStr) {
+        return NextResponse.json(
+          { error: '开始日期不能晚于结束日期' },
+          { status: 400 }
+        )
+      }
+      // 用北京时间（UTC+8）作为自然日边界，与用户所选日期一致
+      fromIso = `${fromStr}T00:00:00+08:00`
+      toIso = `${toStr}T23:59:59+08:00`
+    } else {
+      const now = new Date()
+      const from = new Date(now)
+      from.setMonth(from.getMonth() - 1)
+      fromIso = from.toISOString()
+      toIso = now.toISOString()
+    }
 
     // Fetch available groups for the filter dropdown
     const { data: groups, error: groupsError } = await adminClient
@@ -53,6 +83,8 @@ export async function GET(req: Request) {
       .from('study_courses')
       .select('id, title')
       .eq('is_published', true)
+      .gte('published_at', fromIso)
+      .lte('published_at', toIso)
 
     if (coursesError) {
       console.error('[Admin Study Checkins] Courses fetch error:', coursesError)
@@ -65,6 +97,8 @@ export async function GET(req: Request) {
     let checkinQuery = adminClient
       .from('study_checkins')
       .select('user_id')
+      .gte('created_at', fromIso)
+      .lte('created_at', toIso)
 
     if (groupUserIds) {
       checkinQuery = checkinQuery.in('user_id', groupUserIds)
@@ -100,6 +134,8 @@ export async function GET(req: Request) {
     let checkinsQuery = adminClient
       .from('study_checkins')
       .select('user_id, course_id')
+      .gte('created_at', fromIso)
+      .lte('created_at', toIso)
 
     if (groupUserIds) {
       checkinsQuery = checkinsQuery.in('user_id', groupUserIds)
