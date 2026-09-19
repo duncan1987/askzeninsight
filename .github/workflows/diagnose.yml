@@ -1,0 +1,24 @@
+name: EC2 Diagnostics
+
+# TEMPORARY: prints tightly-filtered askzen service logs so the standalone
+# pdf-parse crash can be diagnosed without manual SSH. Only lines matching
+# pdf/kb/error markers are printed to avoid leaking user data into public
+# Actions logs. Remove once the KB upload 500 is resolved.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  logs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Print filtered askzen logs
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo journalctl -u askzen --no-pager -n 400 | grep -iE 'pdf|kb|error|warn' | tail -60" || true
