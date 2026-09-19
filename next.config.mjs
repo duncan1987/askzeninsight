@@ -13,13 +13,19 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   // pdf-parse v2 embeds pdf.js as data-URL modules and must stay external.
-  // pdf.js lazily imports pdfjs-dist's worker ("fake worker" setup) via a
-  // dynamic path that static tracing cannot see — without this include the
-  // standalone build throws "Cannot find module .../legacy/build/pdf.worker.mjs"
-  // at getText(). Browser globals (DOMMatrix et al.) come from lib/pdf-globals.
+  // Specifying includes for this route REPLACES Next's automatic externals
+  // tracing for it, so BOTH packages must be listed explicitly:
+  //   - pdf-parse: the parser itself (CJS bundle + worker, data-URL embedded)
+  //   - pdfjs-dist: pdf.js lazily imports its "fake worker" via a dynamic
+  //     path that tracing cannot see ("Cannot find module .../pdf.worker.mjs")
+  // Browser globals (DOMMatrix et al.) come from lib/pdf-globals instead —
+  // @napi-rs/canvas is unresolvable in the standalone pnpm layout.
   serverExternalPackages: ['pdf-parse'],
   outputFileTracingIncludes: {
-    '/api/admin/kb/upload': ['./node_modules/pdfjs-dist/**/*.{js,mjs,cjs}'],
+    '/api/admin/kb/upload': [
+      './node_modules/pdf-parse/dist/**/*.{js,cjs,mjs}',
+      './node_modules/pdfjs-dist/**/*.{js,mjs,cjs}',
+    ],
   },
   images: {
     unoptimized: true,
