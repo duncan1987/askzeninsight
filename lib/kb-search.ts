@@ -18,6 +18,13 @@ export interface KbReference {
 
 export type KbContextMode = 'search' | 'summary'
 
+// Retrieval sizing: with a 128K-token model context window, injecting a few
+// thousand characters of source text costs almost nothing but dramatically
+// improves answer completeness (a single ~500-char chunk starves the model).
+const KB_MAX_CHUNKS = 6 // total chunks injected per query
+const KB_MAX_CHUNKS_PER_DOC = 4 // per-document cap for cross-doc diversity
+const KB_EXCERPT_LIMIT = 2200 // chars per merged document excerpt
+
 export async function searchKnowledgeBase(userMessage: string): Promise<KbReference[]> {
   const embedding = await getEmbedding(userMessage)
   if (embedding.length === 0) return []
@@ -29,7 +36,7 @@ export async function searchKnowledgeBase(userMessage: string): Promise<KbRefere
     const { data, error } = await adminClient.rpc("match_kb_chunks", {
       query_embedding: embedding,
       match_threshold: 0.52,
-      match_count: 5,
+      match_count: 10,
     })
 
     if (error || !data) {
@@ -37,21 +44,49 @@ export async function searchKnowledgeBase(userMessage: string): Promise<KbRefere
       return []
     }
 
-    const seen = new Set<string>()
-    const results: KbReference[] = []
+    // Take up to KB_MAX_CHUNKS chunks overall, with a per-document cap.
+    // Multiple chunks from the same document are allowed (a whole book may
+    // have many relevant passages) and are merged into one excerpt, ordered
+    // by chunk_index so the text reads coherently.
+    const chunksPerDoc = new Map<string, number>()
+    const selected: Array<{ documentId: string, documentTitle: string, similarity: number, chunkIndex: number, content: string }> = []
 
     for (const row of data) {
-      if (seen.has(row.document_id)) continue
-      seen.add(row.document_id)
+      if (selected.length >= KB_MAX_CHUNKS) break
+      const count = chunksPerDoc.get(row.document_id) || 0
+      if (count >= KB_MAX_CHUNKS_PER_DOC) continue
 
-      results.push({
-        id: row.document_id,
-        title: row.document_title,
-        excerpt: row.content.slice(0, 800),
+      chunksPerDoc.set(row.document_id, count + 1)
+      selected.push({
+        documentId: row.document_id,
+        documentTitle: row.document_title,
         similarity: row.similarity,
+        chunkIndex: row.chunk_index,
+        content: row.content,
       })
+    }
 
-      if (results.length >= 2) break
+    // Group selected chunks by document (keeping first-seen order)
+    const byDoc = new Map<string, typeof selected>()
+    for (const chunk of selected) {
+      const list = byDoc.get(chunk.documentId) || []
+      list.push(chunk)
+      byDoc.set(chunk.documentId, list)
+    }
+
+    const results: KbReference[] = []
+    for (const [documentId, chunks] of byDoc) {
+      chunks.sort((a, b) => a.chunkIndex - b.chunkIndex)
+      const mergedExcerpt = chunks
+        .map(c => c.content)
+        .join("\n……\n")
+        .slice(0, KB_EXCERPT_LIMIT)
+      results.push({
+        id: documentId,
+        title: chunks[0].documentTitle,
+        excerpt: mergedExcerpt,
+        similarity: chunks[0].similarity,
+      })
     }
 
     return results
@@ -96,16 +131,16 @@ export function buildKbContext(refs: KbReference[], locale: string, mode: KbCont
    [¹] 《文档标题》
 8. 注入内容不超过2000字`
       : `\n\n**引用规则（必须全部遵守）：**
-1. 只从上述文档内容中找出与用户问题相关的部分，如实转述或直接引用，不要自己编造、概括性发挥，也不要添加文档之外的见解或教导
+1. 将上述文档内容中与用户问题相关的**全部**内容完整转述，分段或分点组织，不要遗漏相关要点，也不要只回答一句话；不得编造，也不得添加文档之外的见解或教导
 2. 禁止使用上文的"快速回应"模板、比喻式引导或反问式回应；"接纳→照亮→以提问引导→陪伴"的回应模式本轮不适用
 3. 用自己通顺的语言重新组织转述，禁止逐字照抄文档原文，更禁止机械重复相同的句子或段落
 4. 在引用的段落末尾标注上标引用编号，如"修行重在修心[¹]"
 5. 文档内容不足以完整回答用户问题时，如实说明"文档中关于这一点的内容如下"，只转述已有的部分，不补充外部内容
 6. 保留温和、简洁的语调
-7. 在回答末尾添加"参考文献"区块，格式：
+7. 在回答末尾**必须**添加"参考文献"区块（不可省略），格式：
    📚 参考文献：
    [¹] 《文档标题》
-8. 注入内容不超过2000字`
+8. 注入内容不超过6000字`
     : mode === 'summary'
       ? `\n\n**Citation rules (ALL mandatory):**
 1. The document content above is the ONLY basis for your answer: you may organize, condense, and summarize it appropriately to help the user understand
@@ -114,25 +149,25 @@ export function buildKbContext(refs: KbReference[], locale: string, mode: KbCont
 4. Add superscript citation numbers after referenced paragraphs, e.g. "practice focuses on the mind[¹]"
 5. If the document content does not fully answer the question, say so honestly and summarize only what exists — do not supplement with external teachings
 6. Keep a gentle, concise tone
-7. Add "References" section at the end:
+7. You MUST add a "References" section at the end (never omit it):
    📚 References:
    [¹] "Document Title"
-8. Injected content limited to 2000 chars`
+8. Injected content limited to 6000 chars`
       : `\n\n**Citation rules (ALL mandatory):**
-1. Only locate the parts of the document content above relevant to the user's question and convey them faithfully or quote directly. Do not improvise, summarize loosely, or add insights beyond the documents
+1. Convey ALL parts of the document content above that are relevant to the user's question, organized in paragraphs or bullet points. Do not omit relevant points and do NOT answer with just a single sentence; do not improvise or add insights beyond the documents
 2. Do NOT use the "Quick Responses" templates, metaphor-style guidance, or question-based responses from the persona above; the "Acknowledge → Illuminate → Guide with question" pattern does NOT apply this turn
 3. Rephrase in your own fluent words; do NOT copy the document verbatim and NEVER mechanically repeat the same sentences or paragraphs
 4. Add superscript citation numbers after referenced paragraphs, e.g. "practice focuses on the mind[¹]"
 5. If the document content does not fully answer the question, say so honestly and convey only what exists — do not supplement with external teachings
 6. Keep a gentle, concise tone
-7. Add "References" section at the end:
+7. You MUST add a "References" section at the end (never omit it):
    📚 References:
    [¹] "Document Title"
-8. Injected content limited to 2000 chars`
+8. Injected content limited to 6000 chars`
 
   const totalChars = entries.length
-  if (totalChars > 2000) {
-    return header + entries.slice(0, 2000) + "..." + instruction
+  if (totalChars > 6000) {
+    return header + entries.slice(0, 6000) + "..." + instruction
   }
 
   return header + entries + instruction

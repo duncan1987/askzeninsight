@@ -372,7 +372,7 @@ export async function POST(req: Request) {
         ...openaiMessages,
       ],
       stream: true,
-      max_tokens: isPremiumModel ? 4096 : 2048, // Reduced for faster generation
+      max_tokens: 4096, // glm-4-flash accepts up to 16K; 4096 keeps answers complete at negligible cost
       temperature, // Lower temperature = faster, more focused
       top_p: 0.9, // Add top_p sampling for better speed/quality balance
     })
@@ -442,37 +442,45 @@ export async function POST(req: Request) {
       )
     }
 
-    // Create a TransformStream to convert OpenAI SSE format to plain text
+    // Create a TransformStream to convert OpenAI SSE format to plain text.
+    // A single TextDecoder with { stream: true } keeps multi-byte UTF-8
+    // sequences intact, and a line buffer prevents JSON lines split across
+    // network chunks from being silently dropped.
+    const sseDecoder = new TextDecoder()
+    let sseLineBuffer = ''
     const transformStream = new TransformStream({
       transform(chunk, controller) {
-        const decoder = new TextDecoder()
-        const text = decoder.decode(chunk)
+        sseLineBuffer += sseDecoder.decode(chunk, { stream: true })
 
-        // Split by lines
-        const lines = text.split('\n').filter(line => line.trim() !== '')
+        // Split by lines; keep the last (possibly partial) line in the buffer
+        const lines = sseLineBuffer.split('\n')
+        sseLineBuffer = lines.pop() ?? ''
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6)
+          if (!line.startsWith('data: ')) continue
+          const data = line.slice(6)
 
-            // Skip [DONE] message
-            if (data === '[DONE]') continue
+          // Skip [DONE] message
+          if (data.trim() === '[DONE]') continue
 
-            try {
-              const parsed = JSON.parse(data)
+          try {
+            const parsed = JSON.parse(data)
 
-              // Extract content from OpenAI format
-              const content = parsed.choices?.[0]?.delta?.content
+            // Extract content from OpenAI format
+            const content = parsed.choices?.[0]?.delta?.content
 
-              if (content) {
-                // Enqueue the text content directly
-                controller.enqueue(new TextEncoder().encode(content))
-              }
-            } catch (e) {
-              // Skip invalid JSON
+            if (content) {
+              // Enqueue the text content directly
+              controller.enqueue(new TextEncoder().encode(content))
             }
+          } catch (e) {
+            // Skip invalid JSON
           }
         }
+      },
+      flush() {
+        // Drain the decoder in case a multi-byte sequence is still pending
+        sseDecoder.decode()
       },
     })
 
