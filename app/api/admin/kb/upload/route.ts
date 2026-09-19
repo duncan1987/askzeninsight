@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { verifyAdminAccess } from '@/lib/admin-auth'
 import { ingestKbDocument } from '@/lib/kb'
+import { ensurePdfGlobals } from '@/lib/pdf-globals'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -14,7 +15,9 @@ export async function POST(req: Request) {
 
   // Loaded lazily so a broken pdf-parse install surfaces as a JSON error
   // from this handler instead of crashing the whole route module (opaque
-  // 500 "Internal Server Error" with no diagnostics).
+  // 500 "Internal Server Error" with no diagnostics). The DOMMatrix/
+  // ImageData/Path2D stubs must be in place first — see lib/pdf-globals.
+  ensurePdfGlobals()
   let PDFParse: typeof import('pdf-parse').PDFParse
   try {
     ;({ PDFParse } = await import('pdf-parse'))
