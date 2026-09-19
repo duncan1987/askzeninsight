@@ -12,15 +12,19 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // pdf-parse v2 must stay external (native-ish CJS bundle). Its runtime
-  // require of pdfjs-dist is built via eval'd strings that file tracing
-  // cannot see statically, so force-include both packages for the upload
-  // route to guarantee a complete standalone output.
+  // pdf-parse v2 must stay external (native-ish CJS bundle). It polyfills
+  // DOMMatrix/ImageData for its embedded pdf.js from @napi-rs/canvas, and
+  // both are loaded via eval'd/dynamic requires that static file tracing
+  // cannot see — without these includes the standalone build dies with
+  // "ReferenceError: DOMMatrix is not defined". Globs target the pnpm
+  // virtual store because canvas is a transitive dep (no top-level link).
   serverExternalPackages: ['pdf-parse'],
   outputFileTracingIncludes: {
     '/api/admin/kb/upload': [
       './node_modules/pdf-parse/dist/**/*.{js,cjs,mjs}',
       './node_modules/pdfjs-dist/**/*.{js,cjs,mjs}',
+      './node_modules/.pnpm/@napi-rs+canvas@*/node_modules/@napi-rs/canvas/**',
+      './node_modules/.pnpm/@napi-rs+canvas-*/node_modules/@napi-rs/canvas-*/**',
     ],
   },
   images: {
