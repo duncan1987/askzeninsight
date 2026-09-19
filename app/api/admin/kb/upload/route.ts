@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { PDFParse } from 'pdf-parse'
 import { verifyAdminAccess } from '@/lib/admin-auth'
 import { ingestKbDocument } from '@/lib/kb'
 
@@ -12,6 +11,23 @@ const MAX_PDF_BYTES = 20 * 1024 * 1024 // 20MB
 export async function POST(req: Request) {
   const authError = await verifyAdminAccess(req)
   if (authError) return authError
+
+  // Loaded lazily so a broken pdf-parse install surfaces as a JSON error
+  // from this handler instead of crashing the whole route module (opaque
+  // 500 "Internal Server Error" with no diagnostics).
+  let PDFParse: typeof import('pdf-parse').PDFParse
+  try {
+    ;({ PDFParse } = await import('pdf-parse'))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('[KB Upload] pdf-parse failed to load:', error)
+    return NextResponse.json(
+      {
+        error: `PDF 解析模块加载失败（Node ${process.version}）: ${message}`,
+      },
+      { status: 500 }
+    )
+  }
 
   try {
     const formData = await req.formData()
