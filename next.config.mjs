@@ -13,11 +13,14 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   // pdf-parse v2 embeds pdf.js as data-URL modules and must stay external.
-  // Its own package + pdfjs-dist are traced automatically; the browser
-  // globals it normally polyfills from @napi-rs/canvas are provided by
-  // lib/pdf-globals.ts instead (canvas is unreachable through the pnpm
-  // symlink layout in standalone builds — see 051ccfb/e097e25 history).
+  // pdf.js lazily imports pdfjs-dist's worker ("fake worker" setup) via a
+  // dynamic path that static tracing cannot see — without this include the
+  // standalone build throws "Cannot find module .../legacy/build/pdf.worker.mjs"
+  // at getText(). Browser globals (DOMMatrix et al.) come from lib/pdf-globals.
   serverExternalPackages: ['pdf-parse'],
+  outputFileTracingIncludes: {
+    '/api/admin/kb/upload': ['./node_modules/pdfjs-dist/**/*.{js,mjs,cjs}'],
+  },
   images: {
     unoptimized: true,
   },
