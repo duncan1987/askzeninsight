@@ -511,14 +511,8 @@
     "cancelSubscription": "Cancel Subscription"
   },
   "notification": {
-    "ninePlus": "9+",
     "notifications": "Notifications",
-    "viewAll": "View All",
-    "viewUnread": "View Unread",
-    "dismissAll": "Dismiss All",
-    "noNotifications": "No notifications",
-    "noUnread": "No unread notifications",
-    "viewAllNotifications": "View All Notifications"
+    "noNotifications": "No notifications"
   },
   "billing": {
     "opening": "Opening...",

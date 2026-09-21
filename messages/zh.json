@@ -511,14 +511,8 @@
     "cancelSubscription": "取消订阅"
   },
   "notification": {
-    "ninePlus": "9+",
     "notifications": "通知",
-    "viewAll": "查看全部",
-    "viewUnread": "查看未读",
-    "dismissAll": "全部忽略",
-    "noNotifications": "暂无通知",
-    "noUnread": "暂无未读通知",
-    "viewAllNotifications": "查看所有通知"
+    "noNotifications": "暂无通知"
   },
   "billing": {
     "opening": "打开中...",

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { useTranslations } from "next-intl"
 
-const READ_NOTIFICATIONS_KEY = 'read_notifications'
+const LAST_SEEN_KEY = 'notifications_last_seen_at'
 
 interface Notification {
   id: string
@@ -26,22 +26,31 @@ interface Notification {
 
 export function NotificationIcon() {
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [hasNew, setHasNew] = useState(false)
   const [open, setOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set())
-  const [showAll, setShowAll] = useState(false)
+  const lastSeenAtRef = useRef<string | null>(null)
   const t = useTranslations('notification')
 
   useEffect(() => {
-    const stored = localStorage.getItem(READ_NOTIFICATIONS_KEY)
-    if (stored) {
-      try {
-        const ids = JSON.parse(stored) as string[]
-        setReadNotificationIds(new Set(ids))
-      } catch (e) {
-        console.error('Failed to parse read notifications:', e)
-      }
+    lastSeenAtRef.current = localStorage.getItem(LAST_SEEN_KEY)
+  }, [])
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const response = await fetch('/api/notifications')
+      if (!response.ok) return
+      const data = await response.json()
+      const list: Notification[] = data.notifications || []
+      setNotifications(list)
+
+      // Red dot shown when any active notification is newer than the
+      // last time the user opened the popover. Opening the popover marks
+      // everything currently published as seen — no per-id bookkeeping.
+      const lastSeen = lastSeenAtRef.current
+      const hasUnseen = list.some((n) => n.is_active && (!lastSeen || new Date(n.created_at) > new Date(lastSeen)))
+      setHasNew(hasUnseen)
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error)
     }
   }, [])
 
@@ -49,58 +58,29 @@ export function NotificationIcon() {
     fetchNotifications()
     const interval = setInterval(fetchNotifications, 120000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchNotifications])
 
-  const fetchNotifications = async () => {
-    if (isLoading) return
-
-    setIsLoading(true)
-    try {
-      const response = await fetch('/api/notifications')
-      if (response.ok) {
-        const data = await response.json()
-        setNotifications(data.notifications || [])
-
-        const activeCount = (data.notifications || []).filter(
-          (n: Notification) => n.is_active && !readNotificationIds.has(n.id)
-        ).length
-        setUnreadCount(activeCount)
-      }
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error)
-    } finally {
-      setIsLoading(false)
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      // Mark all current notifications as seen
+      const now = new Date().toISOString()
+      lastSeenAtRef.current = now
+      localStorage.setItem(LAST_SEEN_KEY, now)
+      setHasNew(false)
     }
+    setOpen(nextOpen)
   }
-
-  const dismissAll = () => {
-    const currentIds = notifications.map(n => n.id)
-    const newReadIds = new Set([...readNotificationIds, ...currentIds])
-
-    localStorage.setItem(READ_NOTIFICATIONS_KEY, JSON.stringify([...newReadIds]))
-
-    setReadNotificationIds(newReadIds)
-    setShowAll(false)
-    setUnreadCount(0)
-    setOpen(false)
-  }
-
-  const filteredNotifications = showAll
-    ? notifications
-    : notifications.filter(n => !readNotificationIds.has(n.id))
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative" aria-label={t('notifications')}>
           <Bell className={cn(
             "h-5 w-5 transition-all duration-200",
-            unreadCount > 0 && "text-amber-500 dark:text-amber-400"
+            hasNew && "text-amber-500 dark:text-amber-400"
           )} />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
-              {unreadCount > 9 ? t('ninePlus') : unreadCount}
-            </span>
+          {hasNew && (
+            <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-red-500" aria-hidden="true" />
           )}
         </Button>
       </PopoverTrigger>
@@ -108,60 +88,16 @@ export function NotificationIcon() {
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h3 className="font-semibold text-foreground">{t('notifications')}</h3>
-            <div className="flex gap-2">
-              {!showAll && notifications.length > filteredNotifications.length && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground"
-                  onClick={() => setShowAll(true)}
-                >
-                  {t('viewAll')}
-                </Button>
-              )}
-              {showAll && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground"
-                  onClick={() => setShowAll(false)}
-                >
-                  {t('viewUnread')}
-                </Button>
-              )}
-              {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground"
-                  onClick={dismissAll}
-                >
-                  {t('dismissAll')}
-                </Button>
-              )}
-            </div>
           </div>
 
-          {filteredNotifications.length === 0 ? (
+          {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center text-muted-foreground">
-              <p className="text-sm">
-                {showAll ? t('noNotifications') : t('noUnread')}
-              </p>
-              {!showAll && notifications.length > 0 && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => setShowAll(true)}
-                >
-                  {t('viewAllNotifications')}
-                </Button>
-              )}
+              <p className="text-sm">{t('noNotifications')}</p>
             </div>
           ) : (
             <ScrollArea className="h-80">
               <div className="space-y-3 px-4 pb-4">
-                {filteredNotifications.map((notification) => (
+                {notifications.map((notification) => (
                   <div
                     key={notification.id}
                     className={cn(
@@ -194,7 +130,7 @@ export function NotificationIcon() {
                           {notification.title}
                         </p>
                         {notification.content && (
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">
                             {notification.content}
                           </p>
                         )}

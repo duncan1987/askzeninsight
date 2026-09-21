@@ -16,6 +16,7 @@ import {
   UsersRound,
   Home,
   Library,
+  BellRing,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -28,6 +29,7 @@ const menuItems = [
   { href: "/admin/study/checkins", label: "打卡统计", icon: BarChart3 },
   { href: "/admin/study/groups", label: "用户组管理", icon: UsersRound },
   { href: "/admin/kb", label: "知识库管理", icon: Library },
+  { href: "/admin/notifications", label: "通知管理", icon: BellRing },
   { href: "/admin/blog", label: "博客管理", icon: FileText },
 ]
 
