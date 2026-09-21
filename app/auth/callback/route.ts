@@ -4,11 +4,20 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
   const redirectTo = searchParams.get('redirect_to') ?? '/'
+
+  // Behind nginx, request.url may be reconstructed from the server's bind
+  // address (https://0.0.0.0:3000) instead of the public Host header.
+  // Derive the origin from the forwarded headers so the redirect always
+  // lands back on the domain the user actually visited.
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  const host = forwardedHost || request.headers.get('host')
+  const proto = request.headers.get('x-forwarded-proto') || 'https'
+  const origin = host ? `${proto}://${host}` : new URL(request.url).origin
 
   // Handle OAuth errors (including those caused by ad-blockers)
   if (error) {

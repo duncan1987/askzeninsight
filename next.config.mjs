@@ -9,6 +9,13 @@ const nextConfig = {
   // privileges (EPERM); CI builds on Linux where this works normally.
   // Vercel ignores this option, so production deploys are unaffected.
   ...(process.platform === 'win32' ? {} : { output: 'standalone' }),
+  // Self-hosted behind nginx: Next standalone otherwise reconstructs
+  // request.url from its own bind address (HOSTNAME=0.0.0.0), producing
+  // redirects to https://0.0.0.0:3000 (e.g. the OAuth callback). This
+  // makes request.url use the Host header passed by the proxy instead.
+  experimental: {
+    trustHostHeader: true,
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
