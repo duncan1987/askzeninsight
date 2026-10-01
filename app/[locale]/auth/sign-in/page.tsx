@@ -53,6 +53,8 @@ export default function SignInPage() {
           setError(t('accountPending'))
         } else if (data.error === 'accountRejected') {
           setError(t('accountRejected'))
+        } else if (data.error === 'serviceUnavailable') {
+          setError(t('serviceUnavailable'))
         } else {
           setError(t('invalidCredentials'))
         }
@@ -136,8 +138,17 @@ export default function SignInPage() {
   const passwordRules = password ? validatePassword(password).rules : []
   const passwordIsValid = password ? validatePassword(password).isValid : false
 
-  if (locale !== 'zh') {
-    router.push('/')
+  // This page is zh-only (username/password auth); redirect other locales
+  // from an effect instead of during render to avoid render-phase side effects.
+  const shouldRedirectToHome = locale !== 'zh'
+
+  useEffect(() => {
+    if (shouldRedirectToHome) {
+      router.replace('/')
+    }
+  }, [shouldRedirectToHome, router])
+
+  if (shouldRedirectToHome) {
     return null
   }
 

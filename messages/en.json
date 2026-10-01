@@ -269,6 +269,7 @@
     "notConfigured": "Authentication not configured. Please check environment variables.",
     "signInFailed": "Sign In Failed",
     "signInError": "Sign In Error",
+    "serviceUnavailable": "Service is temporarily unavailable. Please try again later.",
     "loading": "Loading...",
     "forgotPasswordTitle": "Reset Password",
     "submitResetRequest": "Submit Reset Request",

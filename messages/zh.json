@@ -269,6 +269,7 @@
     "notConfigured": "登录未配置。请检查环境变量。",
     "signInFailed": "登录失败",
     "signInError": "登录错误",
+    "serviceUnavailable": "服务暂时不可用，请稍后重试",
     "loading": "加载中...",
     "forgotPasswordTitle": "找回密码",
     "submitResetRequest": "提交重置请求",

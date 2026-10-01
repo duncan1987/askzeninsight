@@ -49,7 +49,17 @@ export async function POST(req: Request) {
       .ilike('username', normalizedUsername)
       .maybeSingle()
 
-    if (profileError || !profile) {
+    if (profileError) {
+      // DB/network failure is NOT "wrong credentials" - tell the client the
+      // service is unavailable instead of a misleading 401.
+      console.error('[Sign-In] Profile lookup error:', profileError)
+      return NextResponse.json(
+        { error: 'serviceUnavailable' },
+        { status: 503 }
+      )
+    }
+
+    if (!profile) {
       console.log('[Sign-In] User not found:', normalizedUsername)
       return NextResponse.json(
         { error: 'invalidCredentials' },
@@ -108,6 +118,18 @@ export async function POST(req: Request) {
     })
 
     if (signInError || !signInData.user) {
+      // supabase-js reports network failures as AuthRetryableFetchError
+      // (status 0) - map those to 503, real auth failures stay 401.
+      const isNetworkError =
+        signInError?.name === 'AuthRetryableFetchError' ||
+        (signInError as { status?: number } | null)?.status === 0
+      if (isNetworkError) {
+        console.error('[Sign-In] Auth service unreachable:', signInError)
+        return NextResponse.json(
+          { error: 'serviceUnavailable' },
+          { status: 503 }
+        )
+      }
       console.log('[Sign-In] Invalid credentials for:', normalizedUsername)
       return NextResponse.json(
         { error: 'invalidCredentials' },
