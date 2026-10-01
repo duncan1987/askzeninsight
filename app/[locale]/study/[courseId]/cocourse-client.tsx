@@ -14,6 +14,7 @@ import {
   FileDown,
   Loader2,
   Merge,
+  Share2,
   UserCheck,
 } from "lucide-react"
 
@@ -71,6 +72,38 @@ export function CocourseClient({ course, sections: initialSections, userId }: Co
   const [merging, setMerging] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [claimingId, setClaimingId] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  const handleShare = useCallback(async () => {
+    const url = `${window.location.origin}/study/${course.id}`
+    const shareData = {
+      title: `${course.title} - 空寂课程共创`,
+      text: `邀请你一起共创课程《${course.title}》，点击链接登录后即可在线编辑！`,
+      url,
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+        return
+      } catch (e) {
+        if ((e as DOMException).name === "AbortError") return
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareData.text + "\n" + url)
+    } catch {
+      const textarea = document.createElement("textarea")
+      textarea.value = shareData.text + "\n" + url
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand("copy")
+      document.body.removeChild(textarea)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }, [course.id, course.title])
 
   const firstUnfilled = initialSections.find((s) => !isFilled(s.content_html))
   const [expandedId, setExpandedId] = useState<string | null>(
@@ -207,6 +240,14 @@ export function CocourseClient({ course, sections: initialSections, userId }: Co
           >
             {courseStatus === "merged" ? "已合并" : "共创中"}
           </span>
+          <Button variant="outline" size="sm" onClick={handleShare}>
+            {copied ? (
+              <Check className="h-4 w-4 mr-1" />
+            ) : (
+              <Share2 className="h-4 w-4 mr-1" />
+            )}
+            {copied ? "已复制" : "分享协作链接"}
+          </Button>
         </div>
         {/* Progress bar */}
         <div className="flex items-center gap-3">

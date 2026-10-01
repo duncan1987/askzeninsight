@@ -15,7 +15,7 @@ interface Course {
   published_at: string | null
 }
 
-interface Comment {
+export interface Comment {
   id: string
   content: string
   created_at: string

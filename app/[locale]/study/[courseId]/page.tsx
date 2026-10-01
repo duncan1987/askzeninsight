@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { cookies } from "next/headers"
-import { CourseDetailClient } from "./course-detail-client"
+import { CourseDetailClient, type Comment } from "./course-detail-client"
 import { CocourseClient, type CoCourseSection } from "./cocourse-client"
 import { BackToTop } from "@/components/study/back-to-top"
 
@@ -86,6 +86,11 @@ export default async function CoursePage({ params }: CoursePageProps) {
         .order("created_at", { ascending: true })
     : { data: null }
 
+  // The untyped Supabase client infers FK joins as arrays, but
+  // `profiles!study_comments_user_id_fkey` (many-to-one) returns a single
+  // object at runtime — normalize the type after the fetch.
+  const typedComments: Comment[] = (comments ?? []) as unknown as Comment[]
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -94,7 +99,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
           <CourseDetailClient
             course={course}
             isCheckedIn={isCheckedIn}
-            comments={comments || []}
+            comments={typedComments}
           />
         </div>
       </main>
@@ -114,8 +119,6 @@ export default async function CoursePage({ params }: CoursePageProps) {
   } | null> {
     if (!adminClient) return null
     if (!supabase) return null
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
 
     const { data: coCourse } = await adminClient
       .from("study_courses")
@@ -125,6 +128,13 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
     if (!coCourse || coCourse.course_type !== "cocreate" || !coCourse.cocreate_group_id) {
       return null
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      // Shared collaboration link: send the visitor to sign-in, then back
+      // to this page so they land directly in the co-edit view.
+      redirect(`/auth/sign-in?redirect=${encodeURIComponent(`/study/${id}`)}`)
     }
 
     const { data: membership } = await adminClient
@@ -194,7 +204,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
 function truncateHtml(html: string, charIndex: number): string {
   if (charIndex >= html.length) return html
-  let openTags: string[] = []
+  const openTags: string[] = []
   let i = 0
   let textCount = 0
 
