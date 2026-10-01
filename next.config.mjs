@@ -13,6 +13,15 @@ const nextConfig = {
   // request.url from its own bind address (HOSTNAME=0.0.0.0), producing
   // redirects to https://0.0.0.0:3000 (e.g. the OAuth callback). This
   // makes request.url use the Host header passed by the proxy instead.
+  //
+  // NOTE: `next dev` prints "? trustHostHeader (invalid experimental key)"
+  // because the key is missing from Next 16.0.10's config-schema allowlist.
+  // This is a FALSE POSITIVE: the production server runtime DOES consume it
+  // (dist/compiled/next-server/server.runtime.prod.js `attachRequestMeta`
+  // builds `https://<Host header><path>` when this flag is set, and falls
+  // back to a path-only URL otherwise, breaking absolute URL construction
+  // on the EC2 deployment). Verified against next@16.0.10 - do NOT remove
+  // based on the warning alone; re-verify on the next Next.js upgrade.
   experimental: {
     trustHostHeader: true,
   },
@@ -39,11 +48,9 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      {
-        source: '/&',
-        destination: '/',
-        permanent: true,
-      },
+      // NOTE: a previous rule `source: '/&'` (f1eb46b) tried to normalize
+      // URLs with a trailing '&', but redirect `source` only matches the
+      // pathname — query strings never reach it. The rule was dead config.
       {
         source: '/meditation',
         destination: '/study',
