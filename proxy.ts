@@ -95,7 +95,7 @@ async function refreshSupabaseSession(request: NextRequest) {
   return response
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (
@@ -113,6 +113,17 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/') ||
     pathname === '/admin' || pathname.startsWith('/admin/')
   ) {
+    return supabaseResponse
+  }
+
+  // Next 16 dev mode re-runs middleware for the URL it rewrote to
+  // (e.g. '/' --rewrite--> '/en'). Re-entering next-intl's middleware for a
+  // locale-prefixed path under localePrefix:'never' redirects back to the
+  // unprefixed path, causing an infinite redirect loop (307 '/' <-> '/en').
+  // Pass prefixed paths straight through: rendering is driven by the
+  // [locale] URL segment, not by the middleware.
+  const firstSegment = pathname.split('/')[1]
+  if (routing.locales.includes(firstSegment as 'en' | 'zh')) {
     return supabaseResponse
   }
 

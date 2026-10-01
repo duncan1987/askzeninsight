@@ -29,6 +29,11 @@ next-env.d.ts
 # temporary files
 tmpclaude-*/
 nul
+dev-server.log
+scripts/preload.log
 
 # Claude settings (local)
 .claude/settings.local.json
+
+# DevEco Code tooling (local plans)
+.deveco/
