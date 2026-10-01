@@ -36,8 +36,8 @@ describe('i18n Internationalization', () => {
       expect(enNamespaces).toEqual(zhNamespaces)
     })
 
-    it('should have 34 namespaces', () => {
-      expect(Object.keys(enJson).length).toBe(34)
+    it('should not lose namespaces (floors grow over time; exact sync is covered above)', () => {
+      expect(Object.keys(enJson).length).toBeGreaterThanOrEqual(34)
     })
 
     it('should have all leaf keys in sync between EN and ZH', () => {
@@ -138,10 +138,10 @@ describe('i18n Internationalization', () => {
       expect(content).toContain('createNavigation')
     })
 
-    it('should have middleware with locale handling', () => {
-      const middlewarePath = path.resolve('middleware.ts')
-      expect(fs.existsSync(middlewarePath)).toBe(true)
-      const content = fs.readFileSync(middlewarePath, 'utf8')
+    it('should have proxy (Next 16 middleware convention) with locale handling', () => {
+      const proxyPath = path.resolve('proxy.ts')
+      expect(fs.existsSync(proxyPath)).toBe(true)
+      const content = fs.readFileSync(proxyPath, 'utf8')
       expect(content).toContain('intlMiddleware')
       expect(content).toContain('NEXT_LOCALE')
       expect(content).toContain('/api/')

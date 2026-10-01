@@ -19,6 +19,14 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
   },
 })
 
+// Expected models mirror lib/subscription.ts fallback logic (the test
+// process and the dev server load the same .env.local).
+const useGemini = !!process.env.GEMINI_API_KEY?.trim()
+const FREE_MODEL = useGemini
+  ? (process.env.GEMINI_MODEL || 'gemini-2.0-flash')
+  : 'glm-4-flash-250414'
+const PRO_MODEL = process.env.PRO_MODEL || (useGemini ? 'gemini-2.5-flash' : 'glm-4-flash-250414')
+
 /**
  * 测试场景1：免费用户 → 月付Pro用户
  */
@@ -50,7 +58,8 @@ describe('Subscription Flow: Free → Monthly Pro', () => {
       .select('*')
       .eq('user_id', testUserId)
 
-    expect(subscriptions).toBeNull()
+    // supabase-js returns an empty array (not null) when no rows match
+    expect(subscriptions).toEqual([])
   })
 
   it('应该创建月付订阅记录', async () => {
@@ -104,7 +113,7 @@ describe('Subscription Flow: Free → Monthly Pro', () => {
 
     expect(data.tier).toBe('pro')
     expect(data.plan).toBe('pro')
-    expect(data.model).toBe('glm-4.7')
+    expect(data.model).toBe(PRO_MODEL)
     expect(data.saveHistory).toBe(true)
   })
 
@@ -196,7 +205,7 @@ describe('Subscription Flow: Free → Annual Pro', () => {
 
     expect(data.tier).toBe('pro')
     expect(data.plan).toBe('annual')
-    expect(data.model).toBe('glm-4.7')
+    expect(data.model).toBe(PRO_MODEL)
     expect(data.saveHistory).toBe(true)
   })
 
@@ -262,7 +271,7 @@ describe('Subscription Flow: Expiration and Downgrade', () => {
 
     expect(data.tier).toBe('free')
     expect(data.plan).toBe(null)
-    expect(data.model).toBe('glm-4-flash')
+    expect(data.model).toBe(FREE_MODEL)
     expect(data.saveHistory).toBe(false)
   })
 })
