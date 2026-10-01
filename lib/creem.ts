@@ -1,5 +1,7 @@
 import 'server-only'
 
+import crypto from 'crypto'
+
 /**
  * Creem Payment helpers (server-only).
  */
@@ -74,9 +76,6 @@ export function verifyCreemWebhook(
     // Creem signs on raw request body with HMAC-SHA256 (hex) and sends it in `creem-signature`.
     // Docs also show that header value can contain spaces/newlines when copied; trim and normalize.
     // Additionally support "v1=<hex>" style headers defensively.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const crypto = require('crypto') as typeof import('crypto')
-
     const extracted =
       /v1=([0-9a-f]{64})/i.exec(signature)?.[1] ?? signature.trim().replace(/\s+/g, '')
 

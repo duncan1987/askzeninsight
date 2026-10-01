@@ -118,7 +118,7 @@ export async function GET(req: Request) {
 
     let users: { id: string; username: string | null }[] = []
     if (distinctUserIds.length > 0) {
-      let profilesQuery = adminClient
+      const profilesQuery = adminClient
         .from('profiles')
         .select('id, username')
         .in('id', distinctUserIds)

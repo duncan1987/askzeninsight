@@ -67,7 +67,7 @@ export async function GET(
 
 function truncateHtml(html: string, charIndex: number): string {
   if (charIndex >= html.length) return html
-  let openTags: string[] = []
+  const openTags: string[] = []
   let i = 0
   let textCount = 0
 
