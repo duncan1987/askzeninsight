@@ -171,7 +171,10 @@ export async function getUserSubscription(userId?: string): Promise<Subscription
     model: isPro ? proModel : freeModel,
     apiKey: isPro ? (proKey || '') : freeApiKey,
     apiUrl: isPro ? proApiUrl : freeApiUrl,
-    saveHistory: isPro,
+    // `subscription && ...` short-circuits to undefined (not false) for users
+    // with no subscription row — without the coercion, JSON serialization
+    // drops the key entirely and clients doing `saveHistory === false` break.
+    saveHistory: !!isPro,
   }
 }
 
