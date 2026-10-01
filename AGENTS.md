@@ -1,9 +1,18 @@
+<!--
+ * @Author: dufan dufan@imagesky.com.cn
+ * @Date: 2026-07-25 09:14:09
+ * @LastEditors: dufan dufan@imagesky.com.cn
+ * @LastEditTime: 2026-09-14 16:10:00
+ * @FilePath: \aibudda\AGENTS.md
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
 # AGENTS.md
 
 ## Commands
 
 ```bash
 pnpm dev          # dev server (Windows: if Node not in PATH, use start-dev.bat or node_modules/next/dist/bin/next dev)
+dev-server-proxy.bat  # Windows local dev with split routing (Supabase via local proxy, fonts/domestic direct) - use this when Supabase is unreachable directly; logs to dev-server.log
 pnpm build        # production build (note: next.config.mjs has ignoreBuildErrors:true for TS)
 pnpm lint         # eslint
 pnpm test         # jest (tests live in tests/; integration tests require dev server running)
@@ -32,13 +41,21 @@ Run a single test file: `pnpm test subscription-usage-limits.test.ts`
 
 ### Tiers & models
 
+Two user populations with different semantics:
+
+- **English locale, Google/Logto login** — the tiered population (Free / Monthly Pro / Annual Pro):
+
 | Tier | Daily limit | Model | API key env var | Save history |
 |------|------------|-------|-----------------|-------------|
-| Anonymous | 10 | glm-4.7-flash | `ZHIPU_API_FREE` | No |
-| Free (authed) | 10 | glm-4.7-flash | `ZHIPU_API_FREE` | No |
-| Pro | 30 | glm-5 | `ZHIPU_API_KEY` | Yes |
+| Anonymous | 10 | `glm-4-flash-250414` (or Gemini when `GEMINI_API_KEY` set) | `ZHIPU_API_KEY`/`ZHIPU_API_FREE` | No |
+| Free (authed) | 10 | same as anonymous | same | No |
+| Pro (monthly/annual) | 30 | `PRO_MODEL` env (defaults to same as free) | `PRO_API_KEY`/`ZHIPU_API_KEY` | Yes |
 
-Pro users exceeding premium quota get downgraded to glm-4.7-flash mid-day (fair use policy).
+- **Chinese locale, username/password registration** — after admin approval these users are tier `approved_zh`: unlimited messages (limit = Infinity), no per-day quota, save history.
+
+Pro users exceeding premium quota get downgraded to the basic model mid-day (fair use policy). Model names are env-driven (`PRO_MODEL`, `GEMINI_MODEL`) — never hardcode them in tests; derive expected values from env with the same fallbacks as `lib/subscription.ts`.
+
+Pro usage counting filters `usage_records` by BOTH `user_tier` AND `subscription_id` — changing plans resets the counter.
 
 ### Key directories
 
@@ -47,7 +64,7 @@ Pro users exceeding premium quota get downgraded to glm-4.7-flash mid-day (fair 
 - `components/auth/` — Supabase auth UI components
 - `content/blog/` — MDX blog posts (processed by `next-mdx-remote`)
 - `i18n/` — next-intl routing, request, navigation config
-- `messages/` — translation JSON files (`en.json`, `zh.json`), 31 namespaces each
+- `messages/` — translation JSON files (`en.json`, `zh.json`), namespaces must stay in sync between the two
 - `lib/` — business logic (subscription, usage-limits, creem, email, site config, sensitive-keywords, logto)
 - `supabase/` — SQL schema and migrations
 - `tests/` — Jest integration tests (require running dev server + Supabase)
@@ -86,7 +103,10 @@ Copy `.env.example` to `.env.local`. Key vars:
 
 - `next.config.mjs` has `typescript.ignoreBuildErrors: true` — `pnpm build` won't catch TS errors. Run editor/IDE type checking separately.
 - The chat route (`app/api/chat/route.ts`) does **not** use Vercel AI SDK's `streamText()` — it calls Zhipu's OpenAI-compatible endpoint directly with `fetch` and manually transforms SSE to plain text streaming. Includes bilingual system prompts and locale-aware crisis messages.
-- `middleware.ts` uses next-intl `createMiddleware` for locale routing; skips `/api/`, `/_next/`, `/auth/callback` routes.
+- `proxy.ts` (Next 16 convention, formerly `middleware.ts`) uses next-intl `createMiddleware` for locale routing; skips `/api/`, `/_next/`, `/auth/callback` routes.
 - `components.json` is shadcn/ui config. Run `npx shadcn@latest add <component>` to add UI primitives.
 - Subscription `refund_status` field enables staged downgrade: `requested` keeps Pro access during 3-day review; `approved`/`rejected` triggers downgrade.
 - When editing `messages/*.json`, ensure UTF-8 encoding — background agents can introduce mojibake for multi-byte characters (em dashes, emojis). Validate with `node -e "JSON.parse(require('fs').readFileSync('messages/en.json','utf8'))"`.
+
+## 编程准则
+

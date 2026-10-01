@@ -209,25 +209,91 @@ curl -I http://<EIP>/                 # Nginx 反代正常
 
 ---
 
-## 3. 域名切换（Cloudflare，停机约 0-2 分钟）
+## 3. 域名切换（Cloudflare，详细操作步骤）
 
-> 前提：先用 `http://<EIP>/` 直接全功能验收一遍（登录、聊天、课程、共创、后台、支付回调除外——回调类需域名）。
+> **前提**：EC2 上的应用已通过 `http://<EIP>/` 全功能验收（登录、聊天、课程、共创、后台；支付回调除外——回调类需域名）。
+> **你的现状**：Cloudflare 上已有一条 A 记录 `@ → 76.76.21.21（Vercel IP）` + 橙云（Proxied），`www` 类似。
+> **做法**：不删除重建，直接**编辑现有记录**——改 IP + 把橙云点成灰云，一步到位且方便回滚。
 
-1. Cloudflare DNS：**删除** Vercel 的 CNAME 记录，**新增** `A` 记录 → Elastic IP，**云朵置灰（DNS only）**
-2. `www` 同样处理（或 CNAME 指向主域名）
-3. 等待 DNS 生效（灰云无 CDN 缓存，TTL 默认 5 分钟内）：
-   ```bash
-   nslookup 你的域名   # 返回 EIP 即生效
-   ```
-4. **HTTPS**：灰云下 Cloudflare 不再提供边缘证书，需要服务器自己签：
-   ```bash
-   sudo apt install -y certbot python3-certbot-nginx
-   sudo certbot --nginx -d 你的域名 -d www.你的域名
-   # 自动配置 443 + 90 天自动续期（systemd timer 已自动启用）
-   ```
-5. 验证：`https://你的域名` 全流程走一遍（见 §5 验收清单）
+### 3.1 切换前的准备（各 1 分钟）
 
-> 注意：橙云→灰云后，Cloudflare 的免费 SSL/CDN/防护不再生效，HTTPS 由服务器 Let's Encrypt 提供，防护靠 Nginx + 安全组。若将来想恢复橙云防护，代价是国内访问绕行 CF 海外节点（速度回退）。
+- [ ] 记下当前 Vercel 的记录值（回滚用）：本节操作前，把现有 A 记录的 Content（如 `76.76.21.21`）抄下来
+- [ ] 选择低峰时段操作：橙云→灰云切换后到证书签发完成前，**https 会有几分钟中断**（见 3.4 说明）
+- [ ] 确认 Nginx 已在 EC2 上监听 80 且 `curl -I http://<EIP>/` 返回正常
+
+### 3.2 Cloudflare 控制台操作
+
+1. 登录 [dash.cloudflare.com](https://dash.cloudflare.com) → 点击你的域名进入站点
+2. 左侧菜单 **DNS → Records**
+3. 找到根域名记录：Type `A`，Name `@`（或显示为你的域名），Content 是 Vercel 的 IP（形如 `76.76.21.21`），Proxy status 是**橙色云朵**（Proxied）
+4. 点该行右侧 **Edit**（铅笔图标），在编辑面板里做三件事：
+   - **IPv4 address**：清掉 Vercel IP，粘贴你的 **Elastic IP**
+   - **Proxy status**：点橙色云朵图标切换为**灰色云朵**（按钮文字从 `Proxied` 变为 `DNS only`）
+   - **TTL**：从 `Auto` 改为 **5 分钟**（切灰云后 TTL 变为可编辑；先设短方便快速回滚，稳定运行一周后可改回）
+5. **Save** 保存
+6. 对 `www` 记录重复编辑，分两种情况：
+   - **Type 是 `A`**：同 3~4 步，Content 改为 Elastic IP + 灰云 + TTL 5 分钟
+   - **Type 是 `CNAME`（如指向 `xxxx.vercel-dns-017.com`）**：CNAME 的 Content 不能填 IP，且 Cloudflare 编辑面板**不允许改记录类型**（改类型必须删除重建）。原地编辑做法：Content 改为根域名（如 `zeninsight.xyz`，www→根域是合法 CNAME，效果与 A 记录等价）+ 灰云 + TTL 5 分钟，Save。也可以 Delete 后重建一条 `A` 记录指向 EIP，二选一
+   - 编辑前先抄下原 Content（如 `da0c143e0c4de0c8.vercel-dns-017.com`）备回滚
+
+完成后 DNS → Records 列表应类似：
+
+| Type | Name | Content | Proxy status | TTL |
+|------|------|---------|--------------|-----|
+| A | @ | 你的EIP | DNS only（灰） | 5 min |
+| A | www | 你的EIP | DNS only（灰） | 5 min |
+
+### 3.3 验证 DNS 生效
+
+```powershell
+# 本地 PowerShell（先清本机 DNS 缓存）
+ipconfig /flushdns
+nslookup 你的域名        # 返回的地址 = 你的 EIP 即生效（不再是 Cloudflare 的 IP 段）
+```
+
+- Cloudflare 侧修改是即时的，但全球 DNS 解析器有旧记录缓存——原橙云记录的 Auto TTL 一般是 300 秒，所以**通常 5~10 分钟内全球生效**，个别解析器可能拖到半小时
+- 生效前：用户仍走橙云→Vercel（旧站照常服务，无感知）；生效后：用户直连 EC2
+
+### 3.4 签发 HTTPS 证书（切换后立刻做）
+
+> 为什么有几分钟 https 中断：橙云时代 https 由 Cloudflare 边缘证书终结；灰云后浏览器直达 EC2，而 Nginx 还只有 80 端口、没有证书——https 请求会失败，直到下面命令跑完。
+
+SSH 到 EC2 执行：
+
+```bash
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d 你的域名 -d www.你的域名
+# 按提示输入邮箱、同意条款
+# certbot 会自动：签发证书 → 给 Nginx 加 443 配置 → 加 http→https 跳转 → 注册 90 天自动续期
+sudo systemctl reload nginx
+```
+
+> 进阶（可选，追求零中断）：用 DNS-01 挑战在切换 DNS **之前**预签证书（需 Cloudflare API Token + `certbot-dns-cloudflare` 插件，证书先行、Nginx 先配好 443，再切 DNS）。当前体量没必要，记录在此备查。
+
+### 3.5 切换后全量验证
+
+```powershell
+curl -I https://你的域名       # 200/307，证书有效
+curl -I http://你的域名        # 301 跳转到 https
+```
+
+浏览器走一遍 §5 验收清单（重点：登录回调、支付 webhook、AI 聊天流式）。
+
+### 3.6 灰云后失效的 Cloudflare 功能（知悉即可）
+
+橙云提供的这些能力随灰云关闭，HTTPS/防护责任转移到服务器：
+
+| 失效项 | 替代 |
+|--------|------|
+| CF 边缘 SSL 证书 | Let's Encrypt（certbot，已配） |
+| Always Use HTTPS | Nginx 301 跳转（certbot 已自动加） |
+| WAF / 速率限制 / DDoS 防护 | 安全组 + Nginx（可选装 fail2ban） |
+| CF CDN 缓存 | 无（文本站影响小；静态资源由 Next.js 带 hash 缓存头） |
+| 隐藏源站 IP | 源站 IP 暴露（可接受；换来大陆直连速度） |
+
+### 3.7 回滚（如出问题）
+
+Cloudflare → DNS → Records → 编辑 `@` 记录：Content 改回**3.1 记下的 Vercel IP**，云朵点回**橙色**，Save。约 5 分钟内恢复旧站（这就是 TTL 设 5 分钟的原因）。
 
 ---
 
@@ -277,7 +343,7 @@ crontab -e
 | 场景 | 动作 |
 |------|------|
 | 新版本代码有 bug | `git revert` + push，CI 自动重新部署（约 5 分钟）；或直接回滚：上一版产物已被 rsync `--delete` 覆盖，故重要发布前可先 `ssh` 手动备份 `/opt/askzen/app` 为 `app.bak.<日期>` |
-| EC2 整体异常 | Cloudflare DNS 把 A 记录临时切回 Vercel CNAME（**Vercel 项目保留 7 天再删**就是为了这一步），TTL 5 分钟内恢复 |
+| EC2 整体异常 | Cloudflare DNS 把 A 记录临时切回 Vercel IP + 橙云（步骤见 §3.7，**Vercel 项目保留 7 天再删**就是为了这一步），约 5 分钟内恢复 |
 | 数据库问题 | 与本次迁移无关（Supabase 未动），排除应用侧即可 |
 
 ---
