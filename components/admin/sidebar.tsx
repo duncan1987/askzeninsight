@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client"
 import {
   LayoutDashboard,
   Users,
-  DollarSign,
   BookOpen,
   MessageSquare,
   BarChart3,
@@ -23,7 +22,6 @@ import { cn } from "@/lib/utils"
 const menuItems = [
   { href: "/admin", label: "概览", icon: LayoutDashboard },
   { href: "/admin/users", label: "用户审核", icon: Users },
-  { href: "/admin/refunds", label: "退款审核", icon: DollarSign },
   { href: "/admin/study/courses", label: "课程管理", icon: BookOpen },
   { href: "/admin/study/comments", label: "评论审核", icon: MessageSquare },
   { href: "/admin/study/checkins", label: "打卡统计", icon: BarChart3 },
