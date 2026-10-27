@@ -10,7 +10,7 @@ import { TableOfContents } from '@/components/blog/table-of-contents'
 import { RelatedPosts } from '@/components/blog/related-posts'
 import { CategoryBadge } from '@/components/blog/category-badge'
 import { Calendar, Clock, ArrowLeft } from 'lucide-react'
-import { getPostBySlug, getAllSlugs, getRelatedPosts } from '@/lib/blog'
+import { getPostBySlug, getRelatedPosts } from '@/lib/blog'
 import { getDbBlogPostBySlug, estimateReadTime } from '@/lib/blog-db'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { getMdxComponents } from '@/lib/mdx-components'
@@ -18,10 +18,12 @@ import { getTranslations } from 'next-intl/server'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ask.zeninsight.xyz'
 
-export async function generateStaticParams() {
-  const slugs = getAllSlugs()
-  return slugs.map((slug) => ({ slug }))
-}
+// Header reads cookies (auth/locale), so this page can never be truly static.
+// With SSG (generateStaticParams), Next 16 on-demand renders params that were
+// not prerendered at build time (middleware rewrites /blog/x to /<locale>/blog/x)
+// and the dynamic bailout (cookies() in Header) surfaces as a 500 instead of
+// falling back to dynamic rendering. Same reason /blog uses force-dynamic.
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({
   params,
