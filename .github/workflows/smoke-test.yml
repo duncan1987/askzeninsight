@@ -1,0 +1,36 @@
+name: Production smoke test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Smoke test production
+        run: |
+          BASE="https://ask.zeninsight.xyz"
+          check() {
+            desc="$1"; url="$2"
+            out=$(curl -s -o /tmp/body -w "%{http_code} %{time_total}s %{size_download}B" --max-time 60 "$url")
+            echo "$desc => $out"
+          }
+          check "robots.txt          " "$BASE/robots.txt"
+          check "sitemap.xml         " "$BASE/sitemap.xml"
+          echo "  sitemap has new post: $(curl -s --max-time 30 $BASE/sitemap.xml | grep -c 'the-truth-of-zen-part-1')"
+          echo "  sitemap has series:   $(curl -s --max-time 30 $BASE/sitemap.xml | grep -c '/blog/series/the-truth-of-zen')"
+          check "homepage            " "$BASE/"
+          check "post page           " "$BASE/blog/the-truth-of-zen-part-1"
+          check "series page         " "$BASE/blog/series/the-truth-of-zen"
+          check "cover image         " "$BASE/blog/the-truth-of-zen/part-1-cover-unkoku-bodhidharma.jpg"
+          curl -s --max-time 60 "$BASE/blog/the-truth-of-zen-part-1" -o /tmp/post.html
+          echo "--- post page checks ---"
+          grep -o '<title>[^<]*</title>' /tmp/post.html | head -1
+          echo "canonical: $(grep -o 'rel="canonical" href="[^"]*"' /tmp/post.html | head -1)"
+          echo "BlogPosting JSON-LD: $(grep -c 'BlogPosting' /tmp/post.html)"
+          echo "figures: $(grep -c '<figure' /tmp/post.html)"
+          echo "series chip: $(grep -c 'Part 1' /tmp/post.html)"
+          curl -s --max-time 60 "$BASE/blog/series/the-truth-of-zen" -o /tmp/series.html
+          echo "--- series page checks ---"
+          grep -o '<title>[^<]*</title>' /tmp/series.html | head -1
+          echo "ItemList JSON-LD: $(grep -c 'ItemList' /tmp/series.html)"
