@@ -11,10 +11,11 @@ import { RelatedPosts } from '@/components/blog/related-posts'
 import { CategoryBadge } from '@/components/blog/category-badge'
 import { Calendar, Clock, ArrowLeft } from 'lucide-react'
 import { getPostBySlug, getRelatedPosts } from '@/lib/blog'
-import { getDbBlogPostBySlug, estimateReadTime } from '@/lib/blog-db'
+import { getDbBlogPostBySlug, getDbSeriesPosts, estimateReadTime } from '@/lib/blog-db'
+import { resolveSeriesKey, getSeriesMeta, parseSeriesPartFromSlug } from '@/lib/blog-series'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { getMdxComponents } from '@/lib/mdx-components'
-import { getTranslations } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ask.zeninsight.xyz'
 
@@ -32,39 +33,83 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params
   const post = getPostBySlug(slug)
-  if (!post) return {}
+  if (post) {
+    const title = `${post.title} | Ask Zen Insight Blog`
+    const url = `${siteUrl}/blog/${slug}`
 
-  const title = `${post.title} | Ask Zen Insight Blog`
-  const url = `${siteUrl}/blog/${slug}`
+    return {
+      title,
+      description: post.description,
+      keywords: post.tags,
+      authors: [{ name: post.author }],
+      openGraph: {
+        type: 'article',
+        title,
+        description: post.description,
+        url,
+        publishedTime: post.date,
+        modifiedTime: post.updated || post.date,
+        authors: [post.author],
+        tags: post.tags,
+        images: [
+          {
+            url: post.image,
+            width: 1200,
+            height: 630,
+            alt: post.imageAlt || post.title,
+          },
+        ],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description: post.description,
+        images: [post.image],
+      },
+      alternates: {
+        canonical: url,
+      },
+    }
+  }
+
+  // Database blog post (admin-published)
+  const dbPost = await getDbBlogPostBySlug(slug)
+  if (!dbPost) return {}
+
+  const title = `${dbPost.title} | Ask Zen Insight Blog`
+  const url = `${siteUrl}/blog/${dbPost.slug}`
+  const image = dbPost.cover_image
+    ? `${siteUrl}${dbPost.cover_image}`
+    : `${siteUrl}/og-image.svg`
 
   return {
     title,
-    description: post.description,
-    keywords: post.tags,
-    authors: [{ name: post.author }],
+    description: dbPost.description,
+    keywords: dbPost.tags,
+    authors: [{ name: dbPost.author }],
     openGraph: {
       type: 'article',
       title,
-      description: post.description,
+      description: dbPost.description,
       url,
-      publishedTime: post.date,
-      modifiedTime: post.updated || post.date,
-      authors: [post.author],
-      tags: post.tags,
+      publishedTime: dbPost.published_at || dbPost.created_at,
+      modifiedTime: dbPost.updated_at,
+      authors: [dbPost.author],
+      tags: dbPost.tags,
       images: [
         {
-          url: post.image,
+          url: image,
           width: 1200,
           height: 630,
-          alt: post.imageAlt || post.title,
+          alt: dbPost.cover_image_alt || dbPost.title,
         },
       ],
     },
     twitter: {
       card: 'summary_large_image',
       title,
-      description: post.description,
-      images: [post.image],
+      description: dbPost.description,
+      images: [image],
     },
     alternates: {
       canonical: url,
@@ -171,6 +216,36 @@ export default async function BlogPostPage({
   // Database blog post
   const post = dbPost!
   const readTime = estimateReadTime(post.content_html)
+  const locale = await getLocale()
+  const seriesLang = locale === 'zh' ? 'zh' : 'en'
+
+  const seriesKey = resolveSeriesKey(post.series, post.tags)
+  const seriesMeta = seriesKey ? getSeriesMeta(seriesKey) : null
+  const seriesPosts = seriesKey ? await getDbSeriesPosts(seriesKey) : []
+  const currentIndex = seriesPosts.findIndex((p) => p.slug === post.slug)
+  const partNumber =
+    post.series_part ??
+    (currentIndex >= 0 ? seriesPosts[currentIndex].series_part : null) ??
+    parseSeriesPartFromSlug(post.slug)
+  const prevPost = currentIndex > 0 ? seriesPosts[currentIndex - 1] : null
+  const nextPost =
+    currentIndex >= 0 && currentIndex < seriesPosts.length - 1 ? seriesPosts[currentIndex + 1] : null
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.description,
+    image: post.cover_image ? `${siteUrl}${post.cover_image}` : `${siteUrl}/og-image.svg`,
+    datePublished: post.published_at || post.created_at,
+    dateModified: post.updated_at,
+    author: { '@type': 'Organization', name: 'Ask Zen Insight' },
+    publisher: { '@type': 'Organization', name: 'Ask Zen Insight' },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `${siteUrl}/blog/${post.slug}` },
+    keywords: post.tags.join(', '),
+    inLanguage: post.locale,
+  }
+
   const breadcrumbItems = [
     { name: t('home'), href: '/' },
     { name: t('blog'), href: '/blog' },
@@ -187,8 +262,17 @@ export default async function BlogPostPage({
             <ArrowLeft className="h-4 w-4" />{t('backToBlog')}
           </Link>
           <header className="mb-10">
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex flex-wrap items-center gap-3">
               <CategoryBadge category={post.category} />
+              {seriesMeta && seriesKey && (
+                <Link
+                  href={`/blog/series/${seriesKey}`}
+                  className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                >
+                  {seriesMeta.names[seriesLang]}
+                  {partNumber != null ? ` · ${t('partLabel', { n: partNumber })}` : ''}
+                </Link>
+              )}
             </div>
             <h1 className="mb-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl lg:text-5xl">{post.title}</h1>
             {post.description && (
@@ -215,12 +299,45 @@ export default async function BlogPostPage({
               ))}
             </div>
           )}
+          {seriesMeta && seriesKey && (
+            <nav className="mt-10 overflow-hidden rounded-xl border border-border">
+              <div className="flex items-center justify-between border-b border-border bg-muted/30 px-5 py-3">
+                <span className="text-sm font-medium text-foreground">{seriesMeta.names[seriesLang]}</span>
+                <Link href={`/blog/series/${seriesKey}`} className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                  {t('seriesAllParts')}
+                </Link>
+              </div>
+              <div className="grid sm:grid-cols-2">
+                {prevPost ? (
+                  <Link href={`/blog/${prevPost.slug}`} className="group border-b border-border p-5 transition-colors hover:bg-muted/30 sm:border-b-0 sm:border-r">
+                    <span className="mb-1 block text-xs text-muted-foreground">← {t('seriesPrev')}</span>
+                    <span className="block text-sm font-medium text-foreground transition-colors group-hover:text-primary line-clamp-2">{prevPost.title}</span>
+                  </Link>
+                ) : (
+                  <div className="border-b border-border p-5 sm:border-b-0 sm:border-r">
+                    <span className="text-xs text-muted-foreground">{t('seriesFirstPart')}</span>
+                  </div>
+                )}
+                {nextPost ? (
+                  <Link href={`/blog/${nextPost.slug}`} className="group p-5 text-right transition-colors hover:bg-muted/30">
+                    <span className="mb-1 block text-xs text-muted-foreground">{t('seriesNext')} →</span>
+                    <span className="block text-sm font-medium text-foreground transition-colors group-hover:text-primary line-clamp-2">{nextPost.title}</span>
+                  </Link>
+                ) : (
+                  <div className="p-5 text-right">
+                    <span className="text-xs text-muted-foreground">{t('seriesLatestPart')}</span>
+                  </div>
+                )}
+              </div>
+            </nav>
+          )}
           <div className="mt-12"><AuthorBio author={post.author} /></div>
           <div className="mt-12 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5 p-8 text-center">
             <h3 className="mb-2 text-xl font-semibold text-foreground">{t('ctaTitle')}</h3>
             <p className="mb-4 text-muted-foreground">{t('ctaDesc')}</p>
             <Link href="/chat" className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">{t('ctaButton')}</Link>
           </div>
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         </div>
       </main>
       <Footer />

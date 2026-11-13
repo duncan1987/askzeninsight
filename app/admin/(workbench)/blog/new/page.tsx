@@ -45,6 +45,8 @@ export default function NewBlogPage() {
   const [coverImage, setCoverImage] = useState("")
   const [category, setCategory] = useState("meditation")
   const [tagsInput, setTagsInput] = useState("")
+  const [series, setSeries] = useState("")
+  const [seriesPart, setSeriesPart] = useState("")
   const [locale, setLocale] = useState("zh")
   const [saving, setSaving] = useState(false)
   const [loadingCourse, setLoadingCourse] = useState(false)
@@ -98,6 +100,8 @@ export default function NewBlogPage() {
           cover_image: coverImage || undefined,
           category,
           tags,
+          series: series.trim() || undefined,
+          series_part: seriesPart.trim() ? parseInt(seriesPart, 10) : undefined,
           locale,
           is_published: publish,
           source_course_id: fromCourseId || undefined,
@@ -227,6 +231,29 @@ export default function NewBlogPage() {
                 placeholder="冥想, 正念, 禅修"
                 className="w-full px-4 py-2 border rounded-lg"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">专题（series key）</label>
+                <input
+                  type="text"
+                  value={series}
+                  onChange={(e) => setSeries(e.target.value)}
+                  placeholder="the-truth-of-zen（留空表示不属于专题）"
+                  className="w-full px-4 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">专题内序号</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={seriesPart}
+                  onChange={(e) => setSeriesPart(e.target.value)}
+                  placeholder="例如 2"
+                  className="w-full px-4 py-2 border rounded-lg"
+                />
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">封面图片 URL</label>

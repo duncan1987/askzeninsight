@@ -36,6 +36,8 @@ interface BlogPost {
   author: string
   is_published: boolean
   source_course_id: string | null
+  series?: string | null
+  series_part?: number | null
   locale: string
   published_at: string | null
 }
@@ -54,6 +56,8 @@ export default function EditBlogPage() {
   const [coverImage, setCoverImage] = useState("")
   const [category, setCategory] = useState("meditation")
   const [tagsInput, setTagsInput] = useState("")
+  const [series, setSeries] = useState("")
+  const [seriesPart, setSeriesPart] = useState("")
   const [locale, setLocale] = useState("zh")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -75,6 +79,8 @@ export default function EditBlogPage() {
           setCoverImage(p.cover_image || "")
           setCategory(p.category || "meditation")
           setTagsInput((p.tags || []).join(", "))
+          setSeries(p.series || "")
+          setSeriesPart(p.series_part != null ? String(p.series_part) : "")
           setLocale(p.locale || "zh")
         }
       })
@@ -105,6 +111,8 @@ export default function EditBlogPage() {
           cover_image: coverImage || null,
           category,
           tags,
+          series: series.trim() || null,
+          series_part: seriesPart.trim() ? parseInt(seriesPart, 10) : null,
           locale,
           is_published: publish || post?.is_published || false,
         }),
@@ -231,6 +239,29 @@ export default function EditBlogPage() {
                 onChange={(e) => setTagsInput(e.target.value)}
                 className="w-full px-4 py-2 border rounded-lg"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">专题（series key）</label>
+                <input
+                  type="text"
+                  value={series}
+                  onChange={(e) => setSeries(e.target.value)}
+                  placeholder="the-truth-of-zen（留空表示不属于专题）"
+                  className="w-full px-4 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">专题内序号</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={seriesPart}
+                  onChange={(e) => setSeriesPart(e.target.value)}
+                  placeholder="例如 2"
+                  className="w-full px-4 py-2 border rounded-lg"
+                />
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">封面图片 URL</label>

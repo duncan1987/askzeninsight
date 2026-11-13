@@ -78,6 +78,8 @@ export async function POST(req: Request) {
       author,
       is_published,
       source_course_id,
+      series,
+      series_part,
       locale,
     } = body as {
       title: string
@@ -91,6 +93,8 @@ export async function POST(req: Request) {
       author?: string
       is_published?: boolean
       source_course_id?: string
+      series?: string
+      series_part?: number
       locale?: string
     }
 
@@ -130,14 +134,30 @@ export async function POST(req: Request) {
       is_published: is_published ?? false,
       published_at: is_published ? new Date().toISOString() : null,
       source_course_id: source_course_id || null,
+      series: series || null,
+      series_part: typeof series_part === 'number' ? series_part : null,
       locale: locale || 'zh',
     }
 
-    const { data: post, error } = await adminClient
+    let { data: post, error } = await adminClient
       .from('blog_posts')
       .insert(insertData)
       .select()
       .single()
+
+    // Series columns not migrated yet — retry without them (tag fallback keeps
+    // series pages working until 20261108_blog_series.sql is applied).
+    if (error && (error.code === 'PGRST204' || error.code === '42703' || /does not exist/i.test(error.message || ''))) {
+      delete insertData.series
+      delete insertData.series_part
+      const retry = await adminClient
+        .from('blog_posts')
+        .insert(insertData)
+        .select()
+        .single()
+      post = retry.data
+      error = retry.error
+    }
 
     if (error) {
       console.error('[Admin Blog Posts] Create error:', error)

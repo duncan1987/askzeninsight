@@ -1165,7 +1165,17 @@
     "zenPhilosophy": "禅修哲学",
     "mindfulness": "正念",
     "spiritualGrowth": "灵性成长",
-    "practiceGuide": "修行指南"
+    "practiceGuide": "修行指南",
+    "seriesLabel": "专题",
+    "partsCount": "共 {count} 篇",
+    "seriesEmpty": "该专题暂无已发布的篇章。",
+    "partShort": "篇",
+    "partLabel": "第 {n} 篇",
+    "seriesAllParts": "全部篇章",
+    "seriesPrev": "上一篇",
+    "seriesNext": "下一篇",
+    "seriesFirstPart": "本系列第一篇",
+    "seriesLatestPart": "已是本系列最新一篇。"
   },
   "share": {
     "notFoundTitle": "分享未找到 - Ask Zen Insight",

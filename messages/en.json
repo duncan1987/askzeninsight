@@ -1165,7 +1165,17 @@
     "zenPhilosophy": "Zen Philosophy",
     "mindfulness": "Mindfulness",
     "spiritualGrowth": "Spiritual Growth",
-    "practiceGuide": "Practice Guide"
+    "practiceGuide": "Practice Guide",
+    "seriesLabel": "Series",
+    "partsCount": "{count, plural, one {# part} other {# parts}}",
+    "seriesEmpty": "No parts of this series have been published yet.",
+    "partShort": "Part",
+    "partLabel": "Part {n}",
+    "seriesAllParts": "All parts",
+    "seriesPrev": "Previous part",
+    "seriesNext": "Next part",
+    "seriesFirstPart": "This is the first part of the series.",
+    "seriesLatestPart": "You are reading the latest published part."
   },
   "share": {
     "notFoundTitle": "Share Not Found - Ask Zen Insight",

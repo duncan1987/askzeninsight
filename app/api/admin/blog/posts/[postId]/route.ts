@@ -70,7 +70,8 @@ export async function PUT(
     const fields = [
       'title', 'slug', 'description', 'content_html',
       'cover_image', 'cover_image_alt', 'category', 'tags',
-      'author', 'is_published', 'source_course_id', 'locale',
+      'author', 'is_published', 'source_course_id', 'series',
+      'series_part', 'locale',
     ]
     for (const field of fields) {
       if (body[field] !== undefined) {
@@ -82,12 +83,27 @@ export async function PUT(
       updateData.published_at = body.is_published ? new Date().toISOString() : null
     }
 
-    const { data: post, error } = await adminClient
+    let { data: post, error } = await adminClient
       .from('blog_posts')
       .update(updateData)
       .eq('id', postId)
       .select()
       .single()
+
+    // Series columns not migrated yet — retry without them (tag fallback keeps
+    // series pages working until 20261108_blog_series.sql is applied).
+    if (error && (error.code === 'PGRST204' || error.code === '42703' || /does not exist/i.test(error.message || ''))) {
+      delete updateData.series
+      delete updateData.series_part
+      const retry = await adminClient
+        .from('blog_posts')
+        .update(updateData)
+        .eq('id', postId)
+        .select()
+        .single()
+      post = retry.data
+      error = retry.error
+    }
 
     if (error) {
       console.error('[Admin Blog Post Detail] Update error:', error)
