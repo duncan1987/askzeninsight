@@ -1,8 +1,14 @@
 import { headers } from 'next/headers'
 import type { MetadataRoute } from 'next'
 import { getAllPostsMeta } from '@/lib/blog'
+import { getDbBlogPosts } from '@/lib/blog-db'
+import { SERIES_META } from '@/lib/blog-series'
 
 const PRODUCTION_URL = 'https://ask.zeninsight.xyz'
+
+// Blog posts are published at runtime via the admin console (no redeploy),
+// so the sitemap must be generated per-request, never at build time.
+export const dynamic = 'force-dynamic'
 
 const publicPages = [
   {
@@ -98,5 +104,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Blog files may not be available in all environments
   }
 
-  return [...staticPages, ...blogPosts]
+  let dbBlogPosts: MetadataRoute.Sitemap = []
+  try {
+    const posts = await getDbBlogPosts()
+    dbBlogPosts = posts.map((post) => ({
+      url: `${siteUrl}/blog/${post.slug}`,
+      lastModified: new Date(post.published_at || post.created_at),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    }))
+  } catch {
+    console.error('[Sitemap] Failed to fetch database blog posts')
+  }
+
+  const seriesPages: MetadataRoute.Sitemap = Object.values(SERIES_META).map((meta) => ({
+    url: `${siteUrl}/blog/series/${meta.key}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  }))
+
+  return [...staticPages, ...blogPosts, ...dbBlogPosts, ...seriesPages]
 }

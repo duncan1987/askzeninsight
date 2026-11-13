@@ -166,6 +166,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // sitemap.xml / robots.txt must bypass the intl middleware: next-intl
+    // rewrites them to /<locale>/sitemap.xml which has no route, 404ing the
+    // files Google Search Console needs to discover the site.
+    '/((?!_next/static|_next/image|favicon.ico|sitemap\\.xml|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
