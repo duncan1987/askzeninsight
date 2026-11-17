@@ -12,6 +12,8 @@ import { Calendar, Clock, ListOrdered } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ask.zeninsight.xyz'
+
 interface SeriesPageProps {
   params: Promise<{ series: string }>
 }
@@ -59,7 +61,8 @@ export default async function SeriesPage({ params }: SeriesPageProps) {
     itemListElement: posts.map((post, index) => ({
       '@type': 'ListItem',
       position: post.series_part ?? index + 1,
-      url: `/blog/${post.slug}`,
+      // schema.org ListItem requires "item" (absolute URL), not a relative path
+      item: `${siteUrl}/blog/${post.slug}`,
       name: post.title,
     })),
   }

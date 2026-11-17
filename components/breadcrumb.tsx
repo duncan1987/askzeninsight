@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ask.zeninsight.xyz'
+
 interface BreadcrumbItem {
   name: string
   href: string
@@ -28,6 +30,9 @@ export function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
             itemType="https://schema.org/ListItem"
           >
             {index > 0 && <ChevronRight className="h-4 w-4 mx-1 flex-shrink-0" />}
+            {/* Microdata "item" URL is required on every crumb (GSC flags
+                "missing field item" without it); must be absolute */}
+            <link itemProp="item" href={`${siteUrl}${item.href}`} />
             {item.href === items[items.length - 1].href ? (
               <span itemProp="name">{item.name}</span>
             ) : (
