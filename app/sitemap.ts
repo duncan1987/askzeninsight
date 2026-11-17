@@ -1,4 +1,3 @@
-import { headers } from 'next/headers'
 import type { MetadataRoute } from 'next'
 import { getAllPostsMeta } from '@/lib/blog'
 import { getDbBlogPosts } from '@/lib/blog-db'
@@ -7,8 +6,10 @@ import { SERIES_META } from '@/lib/blog-series'
 const PRODUCTION_URL = 'https://ask.zeninsight.xyz'
 
 // Blog posts are published at runtime via the admin console (no redeploy),
-// so the sitemap must be generated per-request, never at build time.
-export const dynamic = 'force-dynamic'
+// so the sitemap must not be frozen at build time. ISR regenerates it hourly:
+// new posts appear within an hour, while crawlers get a fast cached response
+// (no per-request Supabase round-trip that could stall a sitemap fetch).
+export const revalidate = 3600
 
 const publicPages = [
   {
@@ -68,22 +69,12 @@ const publicPages = [
   },
 ]
 
-async function getSiteUrl(): Promise<string> {
-  try {
-    const headersList = await headers()
-    const host = headersList.get('host')
-    const protocol = headersList.get('x-forwarded-proto') || 'https'
-    if (host && !host.includes('localhost')) {
-      return `${protocol}://${host}`
-    }
-  } catch {
-    // headers() not available during build time
-  }
-  return PRODUCTION_URL
-}
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = await getSiteUrl()
+  // Always emit canonical production URLs: a sitemap must contain a single
+  // consistent host (GSC flags mixed-host sitemaps), regardless of which
+  // host (apex or subdomain) the crawler fetched it from. Static output also
+  // lets this route ISR-cache instead of rendering per request.
+  const siteUrl = PRODUCTION_URL
 
   const staticPages = publicPages.map((page) => ({
     url: `${siteUrl}${page.path}`,
